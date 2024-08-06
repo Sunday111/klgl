@@ -1,0 +1,11 @@
+{
+    "ModuleType": "GitClone",
+    "GitUrl": "https://github.com/glfw/glfw",
+    "GitTag": "master",
+    "TargetName": "glfw",
+    "LocalPath": "glfw/glfw",
+    "Dependencies": {
+        "Public": [],
+        "Private": []
+    }
+}
