@@ -1,0 +1,17 @@
+{
+    "ModuleType": "Library",
+    "Dependencies": {
+        "Public": [
+            "edt",
+            "fmtlib",
+            "CppReflection",
+            "nlohmann_json",
+            "glad",
+            "glfw",
+            "imgui_glfw_cmake",
+            "cpptrace",
+            "unordered_dense"
+        ],
+        "Private": []
+    }
+}
