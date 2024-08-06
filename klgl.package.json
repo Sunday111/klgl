@@ -1,0 +1,7 @@
+{
+    "Dependencies": {
+        "GitPackages": [
+            "https://github.com/Sunday111/glad"
+        ]
+    }
+}
