@@ -98,6 +98,7 @@ public:
 
     static void EnableVertexAttribArray(GLuint index) noexcept;
     static void EnableDepthTest() noexcept;
+    static void EnableBlending() noexcept;
 
     static void Viewport(GLint x, GLint y, GLsizei width, GLsizei height) noexcept;
 

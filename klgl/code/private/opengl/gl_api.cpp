@@ -165,6 +165,11 @@ void OpenGl::EnableDepthTest() noexcept
     glEnable(GL_DEPTH_TEST);
 }
 
+void OpenGl::EnableBlending() noexcept
+{
+    glEnable(GL_BLEND);
+}
+
 void OpenGl::SetUniform(uint32_t location, const Vec4f& v) noexcept
 {
     glUniform4f(static_cast<GLint>(location), v.x(), v.y(), v.z(), v.w());
