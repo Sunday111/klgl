@@ -15,6 +15,12 @@ MeshData ProceduralMeshGenerator::GenerateQuadMesh()
             {{-1.0f, -1.0f}},  // left bottom
             {{-1.0f, 1.0f}},   // left top
         },
+        .texture_coordinates{
+            {{1.f, 1.f}},
+            {{1.f, 0.f}},
+            {{0.f, 0.f}},
+            {{0.f, 1.f}},
+        },
         .indices = {0, 1, 3, 1, 2, 3},
         .topology = GL_TRIANGLES,
     };
@@ -47,8 +53,15 @@ std::optional<MeshData> ProceduralMeshGenerator::GenerateCircleMesh(const size_t
 
     indices.back() = 1;
 
+    std::vector<Vec2f> tex_coord;
+    tex_coord.reserve(vertices.size());
+    std::ranges::copy(
+        vertices | std::views::transform([&](const Vec2f& v) { return (v + 1) / 2; }),
+        std::back_inserter(tex_coord));
+
     return {{
         .vertices = std::move(vertices),
+        .texture_coordinates = std::move(tex_coord),
         .indices = std::move(indices),
         .topology = GL_TRIANGLE_FAN,
     }};

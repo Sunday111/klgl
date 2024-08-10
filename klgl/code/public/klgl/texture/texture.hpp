@@ -18,10 +18,20 @@ public:
 
     void Bind() const;
     void SetPixels(std::span<const Vec3<uint8_t>> pixel_data);
+    void SetPixels(std::span<const Vec4<uint8_t>> pixel_data);
     Vec2<size_t> GetSize() const { return {width_, height_}; }
     size_t GetWidth() const { return width_; }
     size_t GetHeight() const { return height_; }
     std::optional<GLuint> GetTexture() const { return texture_; }
+
+private:
+    struct SetPixelsParameters
+    {
+        GLenum pixel_data_format = GL_RGB;
+        GLenum pixel_data_type = GL_UNSIGNED_BYTE;
+        std::span<const uint8_t> pixel_data;
+    };
+    void SetPixelsImpl(const SetPixelsParameters& p);
 
 private:
     std::optional<GLuint> texture_;

@@ -20,6 +20,8 @@ class Application
 
 public:
     Application();
+    Application(const Application&) = delete;
+    Application(Application&&) = delete;
     virtual ~Application();
 
     virtual void Initialize();

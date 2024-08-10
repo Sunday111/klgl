@@ -9,20 +9,23 @@
 namespace klgl
 {
 
-struct MeshData
+class MeshData
 {
+public:
     std::vector<Vec2f> vertices;
+    std::vector<Vec2f> texture_coordinates;
     std::vector<uint32_t> indices;
     GLuint topology = GL_TRIANGLES;
 };
 
-struct MeshOpenGL
+class MeshOpenGL
 {
+public:
     static void ValidateIndicesCountForTopology(const GLuint topology, const size_t num_indices);
 
     template <typename Vertex, size_t VE = std::dynamic_extent, size_t IE = std::dynamic_extent>
     static std::unique_ptr<MeshOpenGL>
-    MakeFromData(std::span<const Vertex, VE> vertices, std::span<const uint32_t, IE> indices, GLuint topology)
+    MakeFromData(std::span<Vertex, VE> vertices, std::span<const uint32_t, IE> indices, GLuint topology)
     {
         ValidateIndicesCountForTopology(topology, indices.size());
 
