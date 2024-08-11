@@ -18,6 +18,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_define.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_uniform.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/texture/procedural_texture_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/texture/texture.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ui/type_id_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window.cpp
@@ -58,6 +59,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/tagged_id_hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/tuple_type_by_index.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/type_to_gl_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/procedural_texture_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/type_id_widget.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/window.hpp)

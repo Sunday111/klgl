@@ -1,15 +1,8 @@
 #pragma once
 
-#include <vector>
-
-#include "EverydayTools/Math/Matrix.hpp"
 #include "klgl/mesh/mesh_data.hpp"
-#include "klgl/opengl/gl_api.hpp"
-
 namespace klgl
 {
-
-using namespace edt::lazy_matrix_aliases;  // NOLINT
 
 class ProceduralMeshGenerator
 {
