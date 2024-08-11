@@ -12,6 +12,8 @@ using namespace edt::lazy_matrix_aliases;  // NOLINT
 class ProceduralTextureGenerator
 {
 public:
+    struct Helper;
+
     // Accepts texture size as Vec2 and yields pixel indices as Vec2
     [[nodiscard]] static constexpr auto PixelIndices(const Vec2<size_t>& texture_size)
     {
@@ -28,6 +30,8 @@ public:
         return PixelIndices(texture_size) | std::views::transform(&Vec2<size_t>::Cast<float>);
     }
 
-    [[nodiscard]] static std::vector<edt::Vec4<uint8_t>> CircleMask(const edt::Vec2<size_t>& size);
+    [[nodiscard]] static std::vector<edt::Vec4<uint8_t>> CircleMask(
+        const edt::Vec2<size_t>& size,
+        size_t upscale_factor = 1);
 };
 }  // namespace klgl
