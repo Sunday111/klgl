@@ -159,7 +159,7 @@ public:
         GLint internal_format,
         size_t width,
         size_t height,
-        GLenum data_format,
+        GLint data_format,
         GLenum pixel_data_type,
         const void* pixels) noexcept;
 
@@ -174,6 +174,9 @@ public:
     static void PolygonMode(GlPolygonMode mode) noexcept;
     static void PointSize(float size) noexcept;
     static void LineWidth(float width) noexcept;
+
+    static constexpr std::string_view ToString(GLint value) noexcept;
+    static constexpr std::string_view ToString(GLenum value) noexcept;
 };
 
 constexpr GLenum OpenGl::ConvertEnum(GlPolygonMode mode) noexcept
@@ -327,3 +330,5 @@ struct TypeReflectionProvider<::klgl::GlTextureFilter>
     }
 };
 }  // namespace cppreflection
+
+#include "gl_api_impl.hpp"

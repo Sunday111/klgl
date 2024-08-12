@@ -231,7 +231,7 @@ void OpenGl::TexImage2d(
     GLint internal_format,
     size_t width,
     size_t height,
-    GLenum data_format,
+    GLint data_format,
     GLenum pixel_data_type,
     const void* pixels) noexcept
 {

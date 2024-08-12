@@ -1,28 +1,150 @@
 #include "klgl/texture/texture.hpp"
 
+#include <ankerl/unordered_dense.h>
+#include <fmt/format.h>
+
 #include <cassert>
 
+#include "ass/fixed_unordered_map.hpp"
 #include "klgl/error_handling.hpp"
 
 namespace klgl
 {
 
-std::unique_ptr<Texture> Texture::CreateEmpty(size_t width, size_t height, GLint internal_format)
+constexpr auto MakeFormatToNumChannelsInfo()
 {
-    assert(width != 0 && height != 0);
+    ass::FixedUnorderedMap<14, GLint, uint8_t, decltype([](const GLint v) { return static_cast<size_t>(v); })> m;
+
+    auto add = [&](GLint key, auto value)
+    {
+        assert(!m.Contains(key));
+        [[maybe_unused]] const bool success = m.TryAdd(key, value);
+        assert(success);
+    };
+
+    add(GL_RED, 1);
+    add(GL_RED_INTEGER, 1);
+    add(GL_DEPTH_COMPONENT, 1);
+
+    add(GL_RG, 2);
+    add(GL_RG_INTEGER, 2);
+
+    add(GL_RGB, 3);
+    add(GL_RGB_INTEGER, 3);
+    add(GL_BGR, 3);
+    add(GL_BGR_INTEGER, 3);
+
+    add(GL_RGBA, 4);
+    add(GL_RGBA_INTEGER, 4);
+    add(GL_BGRA, 4);
+    add(GL_BGRA_INTEGER, 4);
+
+    add(GL_DEPTH_STENCIL, 2);
+
+    return m;
+}
+
+inline constexpr auto kFormatToNumChannels = MakeFormatToNumChannelsInfo();
+
+std::optional<size_t> PixelBufferFormat::TryGetNumChannels(std::string* out_error) const
+{
+    if (!kFormatToNumChannels.Contains(channels_format))
+    {
+        if (out_error)
+        {
+            fmt::format_to(std::back_inserter(*out_error), "Unsupported pixel data format {}", channels_format);
+        }
+        return std::nullopt;
+    }
+
+    return kFormatToNumChannels.Get(channels_format);
+}
+
+size_t PixelBufferFormat::GetNumChannels() const
+{
+    std::string error;
+    if (auto opt = TryGetNumChannels(&error))
+    {
+        return opt.value();
+    }
+
+    klgl::ErrorHandling::ThrowWithMessage("{}", error);
+    return 0;  // To shut up the linter - function above always throws
+}
+
+std::optional<size_t> PixelBufferFormat::TryGetChannelSize(std::string* out_error) const
+{
+    switch (channel_type)
+    {
+    case GL_UNSIGNED_BYTE:
+        return 1;
+        break;
+    case GL_FLOAT:
+        return 4;
+        break;
+    default:
+        if (out_error)
+        {
+            fmt::format_to(std::back_inserter(*out_error), "Unsupported pixel data type {}", channel_type);
+        }
+        return std::nullopt;
+        break;
+    }
+}
+
+size_t PixelBufferFormat::GetChannelSize() const
+{
+    std::string error;
+    if (auto opt = TryGetChannelSize(&error))
+    {
+        return opt.value();
+    }
+
+    klgl::ErrorHandling::ThrowWithMessage("{}", error);
+    return 0;  // To shut up the linter - function above always throws
+}
+
+void PixelBufferFormat::ValidateBufferSize(const Vec2<size_t>& resolution, const size_t num_bytes) const
+{
+    const size_t num_channels = GetNumChannels();
+    const size_t channel_size = GetChannelSize();
+    const size_t texel_size = num_channels * channel_size;
+    const size_t expected_buffer_size = texel_size * resolution.x() * resolution.y();
+    klgl::ErrorHandling::Ensure(
+        expected_buffer_size == num_bytes,
+        "Invalid buffer size for {}x{} texture with pixel of size {} ({} channels). "
+        "Expected buffer with {} bytes but input buffer has {} bytes",
+        resolution.x(),
+        resolution.y(),
+        texel_size,
+        num_channels,
+        expected_buffer_size,
+        num_bytes);
+}
+
+std::unique_ptr<Texture> Texture::CreateEmpty(const Vec2<size_t>& resolution, const PixelBufferFormat& format)
+{
+    ErrorHandling::Ensure(resolution != Vec2<size_t>{}, "Empty texture size!");
+
     auto tex = std::make_unique<Texture>();
     tex->texture_ = OpenGl::GenTexture();
     tex->type_ = GL_TEXTURE_2D;
-    tex->width_ = width;
-    tex->height_ = height;
+    tex->resolution_ = resolution;
+    tex->format_ = format;
     tex->Bind();
-    GLenum pixel_data_format = GL_RGB;
-    GLenum pixel_data_type = GL_UNSIGNED_BYTE;
 
     assert(tex->type_ == GL_TEXTURE_2D);
     // auto err = glGetError();
     // assert(err == GL_NO_ERROR);
-    OpenGl::TexImage2d(tex->type_, 0, internal_format, width, height, pixel_data_format, pixel_data_type, nullptr);
+    OpenGl::TexImage2d(
+        tex->type_,
+        0,
+        format.channels_format,
+        resolution.x(),
+        resolution.y(),
+        format.channels_format,
+        format.channel_type,
+        nullptr);
     // err = glGetError();
     // assert(err == GL_NO_ERROR);
 
@@ -40,48 +162,10 @@ void Texture::Bind() const
     OpenGl::BindTexture(type_, *texture_);
 }
 
-void Texture::SetPixelsImpl(const SetPixelsParameters& p)
+void Texture::SetPixels(const PixelBufferFormat& format, std::span<const uint8_t> data)
 {
-    size_t num_channels = 0;
-    switch (p.pixel_data_format)
-    {
-    case GL_RGB:
-        num_channels = 3;
-        break;
-    case GL_RGBA:
-        num_channels = 4;
-        break;
-    default:
-        klgl::ErrorHandling::ThrowWithMessage("Unsupported pixel data format {}", p.pixel_data_format);
-        break;
-    }
-
-    size_t channel_size = 0;
-    switch (p.pixel_data_type)
-    {
-    case GL_UNSIGNED_BYTE:
-        channel_size = 1;
-        break;
-    case GL_FLOAT:
-        channel_size = 4;
-        break;
-    default:
-        klgl::ErrorHandling::ThrowWithMessage("Unsupported pixel data type {}", p.pixel_data_type);
-        break;
-    }
-
-    const size_t texel_size = num_channels * channel_size;
-    const size_t expected_buffer_size = texel_size * width_ * height_;
-    klgl::ErrorHandling::Ensure(
-        expected_buffer_size == p.pixel_data.size_bytes(),
-        "Invalid buffer size for {}x{} texture with pixel of size {} ({} channels). "
-        "Expected buffer with {} bytes but input buffer has {} bytes",
-        width_,
-        height_,
-        texel_size,
-        num_channels,
-        expected_buffer_size,
-        p.pixel_data.size_bytes());
+    ErrorHandling::Ensure(format == format_, "Format {} does not match internal format {}", format, format_);
+    format.ValidateBufferSize(resolution_, data.size_bytes());
 
     assert(type_ == GL_TEXTURE_2D);
     Bind();
@@ -91,11 +175,11 @@ void Texture::SetPixelsImpl(const SetPixelsParameters& p)
         0,
         x_offset,
         y_offset,
-        static_cast<GLsizei>(width_),
-        static_cast<GLsizei>(height_),
-        p.pixel_data_format,
-        p.pixel_data_type,
-        p.pixel_data.data());
+        static_cast<GLsizei>(resolution_.x()),
+        static_cast<GLsizei>(resolution_.y()),
+        format.channels_format,
+        format.channel_type,
+        data.data());
     assert(glGetError() == GL_NO_ERROR);
 
     // std::vector<Vec3<uint8_t>> got_pixels;
@@ -115,24 +199,26 @@ void Texture::SetPixelsImpl(const SetPixelsParameters& p)
     // assert(different_indices.empty());
 }
 
-void Texture::SetPixels(std::span<const Vec3<uint8_t>> pixel_data)
+void Texture::SetPixelsRGB(std::span<const Vec3<uint8_t>> pixel_data)
 {
-    SetPixelsImpl({
-        .pixel_data_format = GL_RGB,
-        .pixel_data_type = GL_UNSIGNED_BYTE,
-        .pixel_data =
-            std::span(reinterpret_cast<const uint8_t*>(pixel_data.data()), pixel_data.size_bytes()),  // NOLINT
-    });
+    SetPixels(
+        {
+            .channels_format = GL_RGB,
+            .channel_type = GL_UNSIGNED_BYTE,
+        },
+        std::span(reinterpret_cast<const uint8_t*>(pixel_data.data()), pixel_data.size_bytes())  // NOLINT
+    );
 }
 
-void Texture::SetPixels(std::span<const Vec4<uint8_t>> pixel_data)
+void Texture::SetPixelsRGBA(std::span<const Vec4<uint8_t>> pixel_data)
 {
-    SetPixelsImpl({
-        .pixel_data_format = GL_RGBA,
-        .pixel_data_type = GL_UNSIGNED_BYTE,
-        .pixel_data =
-            std::span(reinterpret_cast<const uint8_t*>(pixel_data.data()), pixel_data.size_bytes()),  // NOLINT
-    });
+    SetPixels(
+        {
+            .channels_format = GL_RGBA,
+            .channel_type = GL_UNSIGNED_BYTE,
+        },
+        std::span(reinterpret_cast<const uint8_t*>(pixel_data.data()), pixel_data.size_bytes())  // NOLINT
+    );
 }
 
 Texture::~Texture()

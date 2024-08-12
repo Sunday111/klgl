@@ -32,6 +32,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/mouse_events.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/window_events.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/filesystem/filesystem.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/formatting/simple_format.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/warning_suppress.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array_adapter.hpp
@@ -42,6 +43,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/annotations.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/gl_debug_messenger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/reflection_utils.hpp
@@ -65,7 +67,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/window.hpp)
 add_library(klgl STATIC ${module_source_files})
 set_generic_compiler_options(klgl PRIVATE)
-target_link_libraries(klgl PUBLIC edt
+target_link_libraries(klgl PUBLIC ass
+                                  edt
                                   fmt
                                   CppReflection
                                   nlohmann_json
