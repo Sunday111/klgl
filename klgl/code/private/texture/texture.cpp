@@ -63,13 +63,9 @@ std::optional<size_t> PixelBufferFormat::TryGetNumChannels(std::string* out_erro
 size_t PixelBufferFormat::GetNumChannels() const
 {
     std::string error;
-    if (auto opt = TryGetNumChannels(&error))
-    {
-        return opt.value();
-    }
-
-    klgl::ErrorHandling::ThrowWithMessage("{}", error);
-    return 0;  // To shut up the linter - function above always throws
+    auto opt = TryGetNumChannels(&error);
+    klgl::ErrorHandling::Ensure(opt.has_value(), "{}", error);
+    return *opt;
 }
 
 std::optional<size_t> PixelBufferFormat::TryGetChannelSize(std::string* out_error) const
@@ -95,13 +91,9 @@ std::optional<size_t> PixelBufferFormat::TryGetChannelSize(std::string* out_erro
 size_t PixelBufferFormat::GetChannelSize() const
 {
     std::string error;
-    if (auto opt = TryGetChannelSize(&error))
-    {
-        return opt.value();
-    }
-
-    klgl::ErrorHandling::ThrowWithMessage("{}", error);
-    return 0;  // To shut up the linter - function above always throws
+    auto opt = TryGetChannelSize(&error);
+    klgl::ErrorHandling::Ensure(opt.has_value(), "{}", error);
+    return *opt;
 }
 
 void PixelBufferFormat::ValidateBufferSize(const Vec2<size_t>& resolution, const size_t num_bytes) const
