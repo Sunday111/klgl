@@ -36,10 +36,10 @@ public:
         mesh->ebo = OpenGl::GenBuffer();
 
         mesh->Bind();
-        OpenGl::BindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-        OpenGl::BufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
-        OpenGl::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
-        OpenGl::BufferData(GL_ELEMENT_ARRAY_BUFFER, std::span{indices}, GL_STATIC_DRAW);
+        OpenGl::BindBuffer(GlBufferType::Array, mesh->vbo);
+        OpenGl::BufferData(GlBufferType::Array, vertices, GlUsage::StaticDraw);
+        OpenGl::BindBuffer(GlBufferType::ElementArray, mesh->ebo);
+        OpenGl::BufferData(GlBufferType::ElementArray, std::span{indices}, GlUsage::StaticDraw);
 
         mesh->elements_count = indices.size();
         mesh->topology = topology;

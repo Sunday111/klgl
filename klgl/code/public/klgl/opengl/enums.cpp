@@ -3,13 +3,6 @@
 #include <ass/enum_map.hpp>
 
 #include "klgl/macro/ensure_enum_size.hpp"
-#include "klgl/opengl/detail/maps/pixel_buffer_layout_to_string.hpp"
-
-#ifndef KLGL_STRING_MAP_ADD
-#define KLGL_STRING_MAP_ADD(Token) add(Token, #Token)
-#else
-#error
-#endif
 
 namespace klgl
 {
@@ -43,23 +36,6 @@ inline constexpr auto kGlPixelBufferLayoutToGLint = []
     return map;
 }();
 
-inline constexpr auto kGlPixelBufferChannelTypeToString = []
-{
-    ass::EnumMap<GlPixelBufferChannelType, std::string_view> map;
-
-    auto add = [&](auto key, auto value)
-    {
-        assert(!map.Contains(key));
-        map.GetOrAdd(key) = value;
-    };
-
-    KLGL_ENSURE_ENUM_SIZE(GlPixelBufferChannelType, 2);
-    KLGL_STRING_MAP_ADD(GlPixelBufferChannelType::UByte);
-    KLGL_STRING_MAP_ADD(GlPixelBufferChannelType::Float);
-
-    return map;
-}();
-
 inline constexpr auto kGlPixelBufferChannelTypeToGLenum = []
 {
     ass::EnumMap<GlPixelBufferChannelType, GLenum> map;
@@ -73,89 +49,6 @@ inline constexpr auto kGlPixelBufferChannelTypeToGLenum = []
     KLGL_ENSURE_ENUM_SIZE(GlPixelBufferChannelType, 2);
     add(GlPixelBufferChannelType::UByte, GL_UNSIGNED_BYTE);
     add(GlPixelBufferChannelType::Float, GL_FLOAT);
-
-    return map;
-}();
-
-inline constexpr auto kGlTextureInternalFormatToString = []
-{
-    ass::EnumMap<GlTextureInternalFormat, std::string_view> map;
-
-    auto add = [&](auto key, auto value)
-    {
-        assert(!map.Contains(key));
-        map.GetOrAdd(key) = value;
-    };
-
-    KLGL_ENSURE_ENUM_SIZE(GlTextureInternalFormat, 67);
-
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::DEPTH_COMPONENT);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::DEPTH_STENCIL);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RED);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R8);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R8_SNORM);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R16);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R16_SNORM);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG8);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG8_SNORM);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG16);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG16_SNORM);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R3_G3_B2);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB4);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB5);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB8);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB8_SNORM);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB10);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB12);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB16_SNORM);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA2);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA4);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB5_A1);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA8);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA8_SNORM);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB10_A2);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB10_A2UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA12);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA16);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::SRGB8);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::SRGB8_ALPHA8);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R16F);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG16F);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB16F);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA16F);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R32F);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG32F);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB32F);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA32F);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R11F_G11F_B10F);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB9_E5);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R8I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R8UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R16I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R16UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R32I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::R32UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG8I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG8UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG16I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG16UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG32I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RG32UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB8I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB8UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB16I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB16UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB32I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGB32UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA8I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA8UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA16I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA16UI);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA32I);
-    KLGL_STRING_MAP_ADD(GlTextureInternalFormat::RGBA32UI);
 
     return map;
 }();
@@ -242,21 +135,6 @@ inline constexpr auto kGlTextureInternalFormatToGLint = []
 
     return map;
 }();
-
-std::string_view ToString(GlPixelBufferLayout v)
-{
-    return detail::kGlPixelBufferLayoutToString.Get(v);
-}
-
-std::string_view ToString(GlPixelBufferChannelType v)
-{
-    return kGlPixelBufferChannelTypeToString.Get(v);
-}
-
-std::string_view ToString(GlTextureInternalFormat v)
-{
-    return kGlTextureInternalFormatToString.Get(v);
-}
 
 GLint ToGlValue(GlPixelBufferLayout v)
 {

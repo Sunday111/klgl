@@ -54,7 +54,7 @@ concept Formattable = IsFormattable<T>::value;
         }                                                                                          \
     }
 
-#define KLGL_MAKE_ENUM_FORMATTER(TypeName, Function)                                                     \
+#define KLGL_MAKE_ENUM_FORMATTER(TypeName)                                                               \
     template <>                                                                                          \
     struct klgl::IsFormattable<klgl::TypeName>                                                           \
     {                                                                                                    \
@@ -67,7 +67,7 @@ concept Formattable = IsFormattable<T>::value;
         template <typename FmtContext>                                                                   \
         constexpr auto format(const klgl::TypeName& value, FmtContext& ctx) const -> decltype(ctx.out()) \
         {                                                                                                \
-            fmt::format_to(ctx.out(), "{}", Function(value));                                            \
+            fmt::format_to(ctx.out(), "{}", magic_enum::enum_name<klgl::TypeName>(value));               \
             return ctx.out();                                                                            \
         }                                                                                                \
     }

@@ -1,13 +1,29 @@
 #include "klgl/opengl/gl_api.hpp"
 
-#include <fmt/format.h>
-
-#include <stdexcept>
-
+#include "fmt/format.h"
+#include "fmt/ranges.h"  // IWYU pragma: keep
 #include "klgl/opengl/debug/annotations.hpp"
+#include "klgl/opengl/detail/maps/gl_buffer_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_usage_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_value_to_gl_error.hpp"
+#include "klgl/opengl/open_gl_error.hpp"
 
 namespace klgl
 {
+
+struct OpenGl::Internal
+{
+    template <typename... Args>
+    static void Check(fmt::format_string<Args...> format_string, Args&&... args)
+    {
+        [[unlikely]] if (const auto error = OpenGl::GetError(); error != GlError::NoError)
+        {
+            std::string message = fmt::format("OpenGL error: {}. Context: ", error);
+            fmt::format_to(std::back_inserter(message), format_string, std::forward<Args>(args)...);
+            throw OpenGlError(error, std::move(message));
+        }
+    }
+};
 
 template <typename T>
 void GenObjects(T api_fn, const std::span<GLuint>& objects)
@@ -21,6 +37,22 @@ GLuint GenObject(T api_fn)
     GLuint object{};
     GenObjects(api_fn, std::span(&object, 1));
     return object;
+}
+
+GlError OpenGl::GetError() noexcept
+{
+    const auto error = glGetError();
+    [[likely]] if (error == GL_NO_ERROR)
+    {
+        return GlError::NoError;
+    }
+
+    if (!kGlValueToGlError.Contains(error))
+    {
+        return GlError::Unknown;
+    }
+
+    return kGlValueToGlError.Get(error);
 }
 
 GLuint OpenGl::GenVertexArray() noexcept
@@ -53,19 +85,37 @@ void OpenGl::GenTextures(const std::span<GLuint>& textures) noexcept
     GenObjects(glGenTextures, textures);
 }
 
-void OpenGl::BindVertexArray(GLuint array) noexcept
+void OpenGl::BindVertexArrayNE(GLuint array) noexcept
 {
     glBindVertexArray(array);
 }
 
-void OpenGl::BindBuffer(GLenum target, GLuint buffer) noexcept
+void OpenGl::BindVertexArray(GLuint array)
 {
-    glBindBuffer(target, buffer);
+    BindVertexArrayNE(array);
+    Internal::Check("glBindVertexArray(array: {})", array);
 }
 
-void OpenGl::BufferData(GLenum target, GLsizeiptr size, const void* data, GLenum usage) noexcept
+void OpenGl::BindBufferNE(GlBufferType target, GLuint buffer) noexcept
 {
-    glBufferData(target, size, data, usage);
+    glBindBuffer(ToGlValue(target), buffer);
+}
+
+void OpenGl::BindBuffer(GlBufferType target, GLuint buffer)
+{
+    BindBufferNE(target, buffer);
+    Internal::Check("glBindBuffer(target: {}, buffer: {})", target, buffer);
+}
+
+void OpenGl::BufferDataNE(GlBufferType target, GLsizeiptr size, const void* data, GlUsage usage) noexcept
+{
+    glBufferData(ToGlValue(target), size, data, ToGlValue(usage));
+}
+
+void OpenGl::BufferData(GlBufferType target, GLsizeiptr size, const void* data, GlUsage usage)
+{
+    BufferDataNE(target, size, data, usage);
+    Internal::Check("glBufferData(target: {}, size: {}, data: {}, usage: {})", target, size, data, usage);
 }
 
 constexpr GLboolean OpenGl::CastBool(bool value) noexcept
@@ -73,7 +123,7 @@ constexpr GLboolean OpenGl::CastBool(bool value) noexcept
     return static_cast<GLboolean>(value);
 }
 
-void OpenGl::VertexAttribPointer(
+void OpenGl::VertexAttribPointerNE(
     GLuint index,
     size_t size,
     GLenum type,
@@ -90,42 +140,108 @@ void OpenGl::VertexAttribPointer(
         pointer);
 }
 
-void OpenGl::EnableVertexAttribArray(GLuint index) noexcept
+void OpenGl::VertexAttribPointer(
+    GLuint index,
+    size_t size,
+    GLenum type,
+    bool normalized,
+    size_t stride,
+    const void* pointer)
+{
+    VertexAttribPointerNE(index, size, type, normalized, stride, pointer);
+    Internal::Check(
+        "glVertexAttribPointer(index: {}, size: {}, type: {}, normalized: {}, stride: {}, pointer: {})",
+        index,
+        size,
+        type,
+        normalized,
+        stride,
+        pointer);
+}
+
+void OpenGl::EnableVertexAttribArrayNE(GLuint index) noexcept
 {
     glEnableVertexAttribArray(index);
 }
 
-void OpenGl::Viewport(GLint x, GLint y, GLsizei width, GLsizei height) noexcept
+void OpenGl::EnableVertexAttribArray(GLuint index)
+{
+    EnableVertexAttribArrayNE(index);
+    Internal::Check("glEnableVertexAttribArray(index: {})", index);
+}
+
+void OpenGl::ViewportNE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept
 {
     glViewport(x, y, width, height);
 }
 
-void OpenGl::SetClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) noexcept
+void OpenGl::Viewport(GLint x, GLint y, GLsizei width, GLsizei height)
+{
+    ViewportNE(x, y, width, height);
+    Internal::Check("glViewport(x: {}, y: {}, width: {}, height {})", x, y, width, height);
+}
+
+void OpenGl::SetClearColorNE(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) noexcept
 {
     glClearColor(red, green, blue, alpha);
 }
-void OpenGl::SetClearColor(const Vec4f& color) noexcept
+
+void OpenGl::SetClearColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
+{
+    SetClearColorNE(r, g, b, a);
+    Internal::Check("glClearColor(r: {}, g: {}, b: {}, a: {})", r, g, b, a);
+}
+
+void OpenGl::SetClearColorNE(const Vec4f& color) noexcept
+{
+    SetClearColorNE(color.x(), color.y(), color.z(), color.w());
+}
+
+void OpenGl::SetClearColor(const Vec4f& color)
 {
     SetClearColor(color.x(), color.y(), color.z(), color.w());
 }
 
-void OpenGl::Clear(GLbitfield mask) noexcept
+void OpenGl::ClearNE(GLbitfield mask) noexcept
 {
     glClear(mask);
 }
 
-void OpenGl::UseProgram(GLuint program) noexcept
+void OpenGl::Clear(GLbitfield mask) noexcept
+{
+    ClearNE(mask);
+    Internal::Check("glClear(mask: {})", mask);
+}
+
+void OpenGl::UseProgramNE(GLuint program) noexcept
 {
     glUseProgram(program);
 }
 
-void OpenGl::DrawElements(GLenum mode, size_t num, GLenum indices_type, const void* indices) noexcept
+void OpenGl::UseProgram(GLuint program)
+{
+    UseProgramNE(program);
+    Internal::Check("glUseProgram(program: {})", program);
+}
+
+void OpenGl::DrawElementsNE(GLenum mode, size_t num, GLenum indices_type, const void* indices) noexcept
 {
     ScopeAnnotation annotation("OpenGl::Draw");
     glDrawElements(mode, static_cast<GLsizei>(num), indices_type, indices);
 }
 
-std::optional<uint32_t> OpenGl::FindUniformLocation(GLuint shader_program, const char* name) noexcept
+void OpenGl::DrawElements(GLenum mode, size_t num, GLenum indices_type, const void* indices)
+{
+    DrawElementsNE(mode, num, indices_type, indices);
+    Internal::Check(
+        "glDrawElements(mode: {}, num: {}, indices_type: {}, indices: {})",
+        mode,
+        num,
+        indices_type,
+        indices);
+}
+
+std::optional<uint32_t> OpenGl::FindUniformLocationNE(GLuint shader_program, const char* name) noexcept
 {
     int result = glGetUniformLocation(shader_program, name);
     [[likely]] if (result >= 0)
@@ -133,6 +249,13 @@ std::optional<uint32_t> OpenGl::FindUniformLocation(GLuint shader_program, const
         return static_cast<uint32_t>(result);
     }
     return std::optional<uint32_t>();
+}
+
+std::optional<uint32_t> OpenGl::FindUniformLocation(GLuint shader_program, const char* name)
+{
+    auto result = FindUniformLocationNE(shader_program, name);
+    Internal::Check("glGetUniformLocation(program: {}, name: {})", shader_program, name);
+    return result;
 }
 
 uint32_t OpenGl::GetUniformLocation(GLuint shader_program, const char* name)
@@ -143,81 +266,172 @@ uint32_t OpenGl::GetUniformLocation(GLuint shader_program, const char* name)
         return *location;
     }
 
-    throw std::invalid_argument(fmt::format("Uniform with name {} was not found", name));
+    throw cpptrace::invalid_argument(fmt::format("Uniform with name {} was not found", name));
 }
 
-void OpenGl::SetUniform(uint32_t location, const float& f) noexcept
+void OpenGl::SetUniformNE(uint32_t location, const float& f) noexcept
 {
     glUniform1f(static_cast<GLint>(location), f);
 }
 
-void OpenGl::SetUniform(uint32_t location, const Mat4f& m, bool transpose) noexcept
+void OpenGl::SetUniformNE(uint32_t location, const Mat4f& m, bool transpose) noexcept
 {
     glUniformMatrix4fv(static_cast<GLint>(location), 1, CastBool(transpose), m.data());
 }
 
-void OpenGl::SetUniform(uint32_t location, const Mat3f& m, bool transpose) noexcept
+void OpenGl::SetUniformNE(uint32_t location, const Mat3f& m, bool transpose) noexcept
 {
     glUniformMatrix3fv(static_cast<GLint>(location), 1, CastBool(transpose), m.data());
 }
-void OpenGl::EnableDepthTest() noexcept
-{
-    glEnable(GL_DEPTH_TEST);
-}
 
-void OpenGl::EnableBlending() noexcept
-{
-    glEnable(GL_BLEND);
-}
-
-void OpenGl::SetUniform(uint32_t location, const Vec4f& v) noexcept
+void OpenGl::SetUniformNE(uint32_t location, const Vec4f& v) noexcept
 {
     glUniform4f(static_cast<GLint>(location), v.x(), v.y(), v.z(), v.w());
 }
 
-void OpenGl::SetUniform(uint32_t location, const Vec3f& v) noexcept
+void OpenGl::SetUniformNE(uint32_t location, const Vec3f& v) noexcept
 {
     glUniform3f(static_cast<GLint>(location), v.x(), v.y(), v.z());
 }
 
-void OpenGl::SetUniform(uint32_t location, const Vec2f& v) noexcept
+void OpenGl::SetUniformNE(uint32_t location, const Vec2f& v) noexcept
 {
     glUniform2f(static_cast<GLint>(location), v.x(), v.y());
 }
 
-void OpenGl::SetTextureParameter(GLenum target, GLenum pname, const GLfloat* value) noexcept
+void OpenGl::SetUniform(uint32_t location, const float& f)
+{
+    SetUniformNE(location, f);
+    Internal::Check("glUniform1f(location: {}, value: {})", location, f);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Mat4f& m, bool transpose)
+{
+    SetUniformNE(location, m, transpose);
+    Internal::Check("glUniformMatrix4fv(location: {}, matrix: {}, transpose: {})", location, m.data_, transpose);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Mat3f& m, bool transpose)
+{
+    SetUniformNE(location, m, transpose);
+    Internal::Check("glUniformMatrix3fv(location: {}, matrix: {}, transpose: {})", location, m.data_, transpose);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Vec4f& v)
+{
+    SetUniformNE(location, v);
+    Internal::Check("glUniform4f(location: {}, v: {})", location, v.data_);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Vec3f& v)
+{
+    SetUniformNE(location, v);
+    Internal::Check("glUniform3f(location: {}, v: {})", location, v.data_);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Vec2f& v)
+{
+    SetUniformNE(location, v);
+    Internal::Check("glUniform2f(location: {}, v: {})", location, v.data_);
+}
+
+void OpenGl::EnableDepthTestNE() noexcept
+{
+    glEnable(GL_DEPTH_TEST);
+}
+
+void OpenGl::EnableDepthTest()
+{
+    EnableDepthTestNE();
+    Internal::Check("glEnable(GL_DEPTH_TEST)");
+}
+
+void OpenGl::EnableBlendingNE() noexcept
+{
+    glEnable(GL_BLEND);
+}
+
+void OpenGl::EnableBlending()
+{
+    EnableBlendingNE();
+    Internal::Check("glEnable(GL_BLEND)");
+}
+
+void OpenGl::SetTextureParameterNE(GLenum target, GLenum pname, const GLfloat* value) noexcept
 {
     glTexParameterfv(target, pname, value);
 }
 
-void OpenGl::SetTextureParameter(GLenum target, GLenum name, GLint param) noexcept
+void OpenGl::SetTextureParameter(GLenum target, GLenum pname, const GLfloat* value)
+{
+    SetTextureParameterNE(target, pname, value);
+    Internal::Check(
+        "glTexParameterfv(target: {}, name: {}, values_ptr: {})",
+        target,
+        pname,
+        static_cast<const void*>(value));
+}
+
+void OpenGl::SetTextureParameterNE(GLenum target, GLenum name, GLint param) noexcept
 {
     glTexParameteri(target, name, param);
 }
 
-void OpenGl::SetTexture2dBorderColor(const Vec4f& v) noexcept
+void OpenGl::SetTextureParameter(GLenum target, GLenum name, GLint param)
 {
-    SetTextureParameter2d(GL_TEXTURE_BORDER_COLOR, v.data());
+    SetTextureParameterNE(target, name, param);
+    Internal::Check("glTexParameteri(target: {}, name: {}, param: {})", target, name, param);
 }
 
-void OpenGl::SetTexture2dWrap(GlTextureWrap wrap, GlTextureWrapMode mode) noexcept
+void OpenGl::SetTexture2dBorderColorNE(const Vec4f& v) noexcept
 {
-    SetTextureParameter2d(ToGlValue(wrap), ToGlValue(mode));
+    SetTextureParameter2dNE(GL_TEXTURE_BORDER_COLOR, v.data());
 }
 
-void OpenGl::SetTexture2dMinFilter(GlTextureFilter filter) noexcept
+void OpenGl::SetTexture2dBorderColor(const Vec4f& v)
 {
-    SetTextureParameter2d(GL_TEXTURE_MIN_FILTER, ToGlValue(filter));
+    SetTexture2dBorderColorNE(v);
 }
 
-void OpenGl::SetTexture2dMagFilter(GlTextureFilter filter) noexcept
+void OpenGl::SetTexture2dWrapNE(GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept
 {
-    SetTextureParameter2d(GL_TEXTURE_MAG_FILTER, ToGlValue(filter));
+    SetTextureParameter2dNE(ToGlValue(wrap), ToGlValue(mode));
 }
 
-void OpenGl::BindTexture(GLenum target, GLuint texture) noexcept
+void OpenGl::SetTexture2dWrap(GlTextureWrapAxis wrap, GlTextureWrapMode mode)
+{
+    SetTexture2dWrapNE(wrap, mode);
+}
+
+void OpenGl::SetTexture2dMinFilterNE(GlTextureFilter filter) noexcept
+{
+    SetTextureParameter2dNE(GL_TEXTURE_MIN_FILTER, ToGlValue(filter));
+}
+
+void OpenGl::SetTexture2dMinFilter(GlTextureFilter filter)
+{
+    SetTexture2dMinFilterNE(filter);
+}
+
+void OpenGl::SetTexture2dMagFilterNE(GlTextureFilter filter) noexcept
+{
+    SetTextureParameter2dNE(GL_TEXTURE_MAG_FILTER, ToGlValue(filter));
+}
+
+void OpenGl::SetTexture2dMagFilter(GlTextureFilter filter)
+{
+    SetTexture2dMagFilterNE(filter);
+}
+
+void OpenGl::BindTextureNE(GLenum target, GLuint texture) noexcept
 {
     glBindTexture(target, texture);
+}
+
+void OpenGl::BindTexture(GLenum target, GLuint texture)
+{
+    BindTextureNE(target, texture);
+    Internal::Check("glBindTexture(target: {}, texture: {})", target, texture);
 }
 
 void OpenGl::BindTexture2d(GLuint texture)
@@ -225,7 +439,7 @@ void OpenGl::BindTexture2d(GLuint texture)
     BindTexture(GL_TEXTURE_2D, texture);
 }
 
-void OpenGl::TexImage2d(
+void OpenGl::TexImage2dNE(
     GLenum target,
     size_t level_of_detail,
     GLint internal_format,
@@ -247,29 +461,82 @@ void OpenGl::TexImage2d(
         pixels);
 }
 
-void OpenGl::GenerateMipmap(GLenum target) noexcept
+void OpenGl::TexImage2d(
+    GLenum target,
+    size_t level_of_detail,
+    GLint internal_format,
+    size_t width,
+    size_t height,
+    GLint data_format,
+    GLenum pixel_data_type,
+    const void* pixels)
+{
+    TexImage2dNE(target, level_of_detail, internal_format, width, height, data_format, pixel_data_type, pixels);
+    Internal::Check(
+        "glTexImage2D(target: {}, lod: {}, internal_format: {}, width: {}, height: {}, pixel_buffer_layout: {}, "
+        "pixel_buffer_type: {}, pixels: {})",
+        target,
+        level_of_detail,
+        internal_format,
+        width,
+        height,
+        data_format,
+        pixel_data_type,
+        pixels);
+}
+
+void OpenGl::GenerateMipmapNE(GLenum target) noexcept
 {
     glGenerateMipmap(target);
 }
 
-void OpenGl::GenerateMipmap2d() noexcept
+void OpenGl::GenerateMipmap(GLenum target)
+{
+    GenerateMipmapNE(target);
+    Internal::Check("glGenerateMipmap(target: {})", target);
+}
+
+void OpenGl::GenerateMipmap2dNE() noexcept
 {
     GenerateMipmap(GL_TEXTURE_2D);
 }
 
-void OpenGl::PolygonMode(GlPolygonMode mode) noexcept
+void OpenGl::GenerateMipmap2d()
 {
-    const GLenum converted = ToGlValue(mode);
-    glPolygonMode(GL_FRONT_AND_BACK, converted);
+    GenerateMipmap2dNE();
 }
 
-void OpenGl::PointSize(float size) noexcept
+void OpenGl::PolygonModeNE(GlPolygonMode mode) noexcept
+{
+    glPolygonMode(GL_FRONT_AND_BACK, ToGlValue(mode));
+}
+
+void OpenGl::PolygonMode(GlPolygonMode mode)
+{
+    PolygonModeNE(mode);
+    Internal::Check("glPolygonMode(face: GL_FRONT_AND_BACK, mode: {})", mode);
+}
+
+void OpenGl::PointSizeNE(float size) noexcept
 {
     glPointSize(size);
 }
-void OpenGl::LineWidth(float width) noexcept
+
+void OpenGl::PointSize(float size)
+{
+    PointSizeNE(size);
+    Internal::Check("glPointSize(size: {})", size);
+}
+
+void OpenGl::LineWidthNE(float width) noexcept
 {
     glLineWidth(width);
+}
+
+void OpenGl::LineWidth(float width)
+{
+    LineWidthNE(width);
+    Internal::Check("glLineWidth(width: {})", width);
 }
 
 }  // namespace klgl

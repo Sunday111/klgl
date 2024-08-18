@@ -10,12 +10,12 @@ namespace klgl
 class ErrorHandling
 {
 public:
-    template <typename... Args>
+    template <typename Exception = cpptrace::runtime_error, typename... Args>
     static void Ensure(const bool condition, fmt::format_string<Args...> format, Args&&... args)
     {
         if (!condition)
         {
-            throw cpptrace::runtime_error(fmt::format(format, std::forward<Args>(args)...));
+            throw Exception(fmt::format(format, std::forward<Args>(args)...));
         }
     }
 
@@ -46,5 +46,7 @@ public:
             fmt::println("Unhandled exception of unknown type");
         }
     }
+
+    static void CheckOpenGlError(const std::string_view context);
 };
 }  // namespace klgl

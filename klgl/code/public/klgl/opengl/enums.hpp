@@ -1,13 +1,23 @@
 #pragma once
 
-#include <string_view>
-
 #include "glad/glad.h"
 #include "klgl/formatting/simple_format.hpp"
 #include "klgl/macro/enum_as_index.hpp"
 
 namespace klgl
 {
+
+enum class GlError
+{
+    NoError,
+    InvalidEnum,
+    InvalidValue,
+    InvalidOperation,
+    StackOverflow,
+    StackUnderflow,
+    OutOfMemory,
+    Unknown
+};
 
 enum class GlPixelBufferLayout
 {
@@ -25,16 +35,12 @@ enum class GlPixelBufferLayout
     BGRA,
     BGRA_Int,
     DepthStencil,
-
-    kMax
 };
 
 enum class GlPixelBufferChannelType
 {
     UByte,
     Float,
-
-    kMax
 };
 
 enum class GlPolygonMode : uint8_t
@@ -43,15 +49,13 @@ enum class GlPolygonMode : uint8_t
     Line,
     Fill,
 
-    kMax
 };
 
-enum class GlTextureWrap : uint8_t
+enum class GlTextureWrapAxis : uint8_t
 {
     S,
     T,
     R,
-    kMax
 };
 
 enum class GlTextureWrapMode : uint8_t
@@ -61,7 +65,6 @@ enum class GlTextureWrapMode : uint8_t
     MirroredRepeat,
     Repeat,
     MirrorClampToEdge,
-    kMax
 };
 
 enum class GlTextureFilter : uint8_t
@@ -72,7 +75,6 @@ enum class GlTextureFilter : uint8_t
     LinearMipmapNearest,
     NearestMipmapLinear,
     LinearMipmapLinear,
-    kMax
 };
 
 enum class GlTextureInternalFormat
@@ -145,36 +147,69 @@ enum class GlTextureInternalFormat
     RGBA16UI,
     RGBA32I,
     RGBA32UI,
-
-    kMax
 };
 
-std::string_view ToString(GlPixelBufferLayout);
-std::string_view ToString(GlPixelBufferChannelType);
-std::string_view ToString(GlTextureInternalFormat);
-constexpr std::string_view ToString(GlPolygonMode);
+enum class GlBufferType
+{
+    Array,
+    AtomicCounter,
+    CopyRead,
+    CopyWrite,
+    DispatchIndirect,
+    DrawIndirect,
+    ElementArray,
+    PixelPack,
+    PixelUnpack,
+    Query,
+    ShaderStorage,
+    Texture,
+    TransformFeedback,
+    Uniform
+};
+
+enum class GlUsage
+{
+    StreamDraw,
+    StreamRead,
+    StreamCopy,
+    StaticDraw,
+    StaticRead,
+    StaticCopy,
+    DynamicDraw,
+    DynamicRead,
+    DynamicCopy
+};
 
 GLint ToGlValue(GlPixelBufferLayout);
 GLenum ToGlValue(GlPixelBufferChannelType);
 GLint ToGlValue(GlTextureInternalFormat);
 constexpr GLenum ToGlValue(GlPolygonMode mode) noexcept;
 
-constexpr GLenum ToGlValue(GlTextureWrap wrap) noexcept;
+constexpr GLenum ToGlValue(GlTextureWrapAxis wrap) noexcept;
 constexpr GLint ToGlValue(GlTextureWrapMode mode) noexcept;
 constexpr GLint ToGlValue(GlTextureFilter mode) noexcept;
 
 }  // namespace klgl
 
-KLGL_ENUM_AS_INDEX_ZERO_TO_KMAX(GlPixelBufferLayout);
-KLGL_MAKE_ENUM_FORMATTER(GlPixelBufferLayout, klgl::ToString);
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlError);
+KLGL_MAKE_ENUM_FORMATTER(GlError);
 
-KLGL_ENUM_AS_INDEX_ZERO_TO_KMAX(GlPixelBufferChannelType);
-KLGL_MAKE_ENUM_FORMATTER(GlPixelBufferChannelType, klgl::ToString);
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlPixelBufferLayout);
+KLGL_MAKE_ENUM_FORMATTER(GlPixelBufferLayout);
 
-KLGL_ENUM_AS_INDEX_ZERO_TO_KMAX(GlTextureInternalFormat);
-KLGL_MAKE_ENUM_FORMATTER(GlTextureInternalFormat, klgl::ToString);
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlPixelBufferChannelType);
+KLGL_MAKE_ENUM_FORMATTER(GlPixelBufferChannelType);
 
-KLGL_ENUM_AS_INDEX_ZERO_TO_KMAX(GlPolygonMode);
-KLGL_MAKE_ENUM_FORMATTER(GlPolygonMode, klgl::ToString);
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlTextureInternalFormat);
+KLGL_MAKE_ENUM_FORMATTER(GlTextureInternalFormat);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlPolygonMode);
+KLGL_MAKE_ENUM_FORMATTER(GlPolygonMode);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlBufferType);
+KLGL_MAKE_ENUM_FORMATTER(GlBufferType);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlUsage);
+KLGL_MAKE_ENUM_FORMATTER(GlUsage);
 
 #include "detail/enums_impl.hpp"  // IWYU pragma: keep

@@ -1,10 +1,9 @@
 #pragma once
 
-#include <type_traits>  // IWYU pragma: keep
+#include "magic_enum.hpp"  // IWYU pragma: keep
 
 #ifndef KLGL_ENSURE_ENUM_SIZE
-#define KLGL_ENSURE_ENUM_SIZE(Type, ExpectedValueOfKMax) \
-    static_assert(static_cast<std::underlying_type_t<Type>>(Type::kMax) == ExpectedValueOfKMax)
+#define KLGL_ENSURE_ENUM_SIZE(Type, ExpectedCount) static_assert(magic_enum::enum_count<Type>() == ExpectedCount)
 #else
 #error
 #endif

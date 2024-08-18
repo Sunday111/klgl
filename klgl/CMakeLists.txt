@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/application.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/error_handling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/events/event_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/filesystem/filesystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/memory/type_erased_array.cpp
@@ -46,10 +47,9 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/annotations.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/gl_debug_messenger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/enums_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_value_to_gl_error.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/pixel_buffer_layout_to_num_channels.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/pixel_buffer_layout_to_string.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/polygon_mode_to_gl_value.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/polygon_mode_to_string.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/enums.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/enums.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp

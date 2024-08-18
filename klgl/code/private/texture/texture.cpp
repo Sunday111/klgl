@@ -53,8 +53,6 @@ std::unique_ptr<Texture> Texture::CreateEmpty(const Vec2<size_t>& resolution, co
     tex->Bind();
 
     assert(tex->type_ == GL_TEXTURE_2D);
-    // auto err = glGetError();
-    // assert(err == GL_NO_ERROR);
     OpenGl::TexImage2d(
         tex->type_,
         0,
@@ -64,12 +62,11 @@ std::unique_ptr<Texture> Texture::CreateEmpty(const Vec2<size_t>& resolution, co
         GL_RGBA,
         GL_UNSIGNED_BYTE,
         nullptr);
-    // err = glGetError();
-    // assert(err == GL_NO_ERROR);
+    klgl::ErrorHandling::CheckOpenGlError("OpenGl::TexImage2d");
 
-    OpenGl::SetTexture2dWrap(GlTextureWrap::R, GlTextureWrapMode::Repeat);
-    OpenGl::SetTexture2dWrap(GlTextureWrap::S, GlTextureWrapMode::Repeat);
-    OpenGl::SetTexture2dWrap(GlTextureWrap::T, GlTextureWrapMode::Repeat);
+    OpenGl::SetTexture2dWrap(GlTextureWrapAxis::R, GlTextureWrapMode::Repeat);
+    OpenGl::SetTexture2dWrap(GlTextureWrapAxis::S, GlTextureWrapMode::Repeat);
+    OpenGl::SetTexture2dWrap(GlTextureWrapAxis::T, GlTextureWrapMode::Repeat);
     OpenGl::SetTexture2dMagFilter(GlTextureFilter::Nearest);
     OpenGl::SetTexture2dMinFilter(GlTextureFilter::Nearest);
 
