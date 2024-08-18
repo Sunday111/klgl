@@ -1,13 +1,6 @@
 #pragma once
 
-#if defined(_MSC_VER) && !defined(__clang__)
 #include <glad/glad.h>
-#else
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wlanguage-extension-token"
-#include <glad/glad.h>
-#pragma GCC diagnostic pop
-#endif
 
 #include <optional>
 #include <span>
@@ -15,46 +8,12 @@
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "EverydayTools/Math/Matrix.hpp"
+#include "enums.hpp"
 
 namespace klgl
 {
 
 using namespace edt::lazy_matrix_aliases;  // NOLINT
-
-enum class GlPolygonMode : uint8_t
-{
-    Point,
-    Line,
-    Fill,
-    Max
-};
-enum class GlTextureWrap : uint8_t
-{
-    S,
-    T,
-    R,
-    Max
-};
-enum class GlTextureWrapMode : uint8_t
-{
-    ClampToEdge,
-    ClampToBorder,
-    MirroredRepeat,
-    Repeat,
-    MirrorClampToEdge,
-    Max
-};
-
-enum class GlTextureFilter : uint8_t
-{
-    Nearest,
-    Linear,
-    NearestMipmapNearest,
-    LinearMipmapNearest,
-    NearestMipmapLinear,
-    LinearMipmapLinear,
-    Max
-};
 
 class OpenGl
 {
@@ -111,14 +70,6 @@ public:
 
     static void DrawElements(GLenum mode, size_t num, GLenum indices_type, const void* indices) noexcept;
 
-    [[nodiscard]] constexpr static GLenum ConvertEnum(GlPolygonMode mode) noexcept;
-
-    [[nodiscard]] static constexpr GLenum ConvertEnum(GlTextureWrap wrap) noexcept;
-
-    [[nodiscard]] static constexpr GLint ConvertEnum(GlTextureWrapMode mode) noexcept;
-
-    [[nodiscard]] static constexpr GLint ConvertEnum(GlTextureFilter mode) noexcept;
-
     static void SetUniform(uint32_t location, const float& f) noexcept;
 
     static void SetUniform(uint32_t location, const Mat4f& m, bool transpose = false) noexcept;
@@ -174,92 +125,7 @@ public:
     static void PolygonMode(GlPolygonMode mode) noexcept;
     static void PointSize(float size) noexcept;
     static void LineWidth(float width) noexcept;
-
-    static constexpr std::string_view ToString(GLint value) noexcept;
-    static constexpr std::string_view ToString(GLenum value) noexcept;
 };
-
-constexpr GLenum OpenGl::ConvertEnum(GlPolygonMode mode) noexcept
-{
-    static_assert(static_cast<std::underlying_type_t<GlPolygonMode>>(GlPolygonMode::Max) == 3);
-    switch (mode)
-    {
-    case GlPolygonMode::Point:
-        return GL_POINT;
-        break;
-
-    case GlPolygonMode::Line:
-        return GL_LINE;
-        break;
-
-    default:
-        return GL_FILL;
-        break;
-    }
-}
-
-constexpr GLenum OpenGl::ConvertEnum(GlTextureWrap wrap) noexcept
-{
-    static_assert(static_cast<std::underlying_type_t<GlTextureWrap>>(GlTextureWrap::Max) == 3);
-    switch (wrap)
-    {
-    case GlTextureWrap::S:
-        return GL_TEXTURE_WRAP_S;
-    case GlTextureWrap::T:
-        return GL_TEXTURE_WRAP_T;
-    default:
-        return GL_TEXTURE_WRAP_T;
-    }
-}
-
-constexpr GLint OpenGl::ConvertEnum(GlTextureWrapMode mode) noexcept
-{
-    static_assert(static_cast<std::underlying_type_t<GlTextureWrapMode>>(GlTextureWrapMode::Max) == 5);
-    switch (mode)
-    {
-    case GlTextureWrapMode::ClampToEdge:
-        return GL_CLAMP_TO_EDGE;
-        break;
-    case GlTextureWrapMode::ClampToBorder:
-        return GL_CLAMP_TO_BORDER;
-        break;
-    case GlTextureWrapMode::MirroredRepeat:
-        return GL_MIRRORED_REPEAT;
-        break;
-    case GlTextureWrapMode::Repeat:
-        return GL_REPEAT;
-        break;
-    default:
-        return GL_MIRROR_CLAMP_TO_EDGE;
-        break;
-    }
-}
-
-constexpr GLint OpenGl::ConvertEnum(GlTextureFilter mode) noexcept
-{
-    static_assert(static_cast<std::underlying_type_t<GlTextureFilter>>(GlTextureFilter::Max) == 6);
-    switch (mode)
-    {
-    case GlTextureFilter::Nearest:
-        return GL_NEAREST;
-        break;
-    case GlTextureFilter::Linear:
-        return GL_LINEAR;
-        break;
-    case GlTextureFilter::NearestMipmapNearest:
-        return GL_NEAREST_MIPMAP_NEAREST;
-        break;
-    case GlTextureFilter::LinearMipmapNearest:
-        return GL_LINEAR_MIPMAP_NEAREST;
-        break;
-    case GlTextureFilter::NearestMipmapLinear:
-        return GL_NEAREST_MIPMAP_LINEAR;
-        break;
-    default:
-        return GL_LINEAR_MIPMAP_LINEAR;
-        break;
-    }
-}
 
 }  // namespace klgl
 
@@ -276,7 +142,7 @@ struct TypeReflectionProvider<::klgl::GlPolygonMode>
             .Value(::klgl::GlPolygonMode::Point, "Point")
             .Value(::klgl::GlPolygonMode::Line, "Line")
             .Value(::klgl::GlPolygonMode::Fill, "Fill")
-            .Value(::klgl::GlPolygonMode::Max, "Max");
+            .Value(::klgl::GlPolygonMode::kMax, "Max");
     }
 };
 
@@ -291,7 +157,7 @@ struct TypeReflectionProvider<::klgl::GlTextureWrap>
             .Value(::klgl::GlTextureWrap::S, "S")
             .Value(::klgl::GlTextureWrap::T, "T")
             .Value(::klgl::GlTextureWrap::R, "R")
-            .Value(::klgl::GlTextureWrap::Max, "Max");
+            .Value(::klgl::GlTextureWrap::kMax, "Max");
     }
 };
 
@@ -308,7 +174,7 @@ struct TypeReflectionProvider<::klgl::GlTextureWrapMode>
             .Value(::klgl::GlTextureWrapMode::MirroredRepeat, "MirroredRepeat")
             .Value(::klgl::GlTextureWrapMode::Repeat, "Repeat")
             .Value(::klgl::GlTextureWrapMode::MirrorClampToEdge, "MirrorClampToEdge")
-            .Value(::klgl::GlTextureWrapMode::Max, "Max");
+            .Value(::klgl::GlTextureWrapMode::kMax, "Max");
     }
 };
 
@@ -326,9 +192,7 @@ struct TypeReflectionProvider<::klgl::GlTextureFilter>
             .Value(::klgl::GlTextureFilter::LinearMipmapNearest, "LinearMipmapNearest")
             .Value(::klgl::GlTextureFilter::NearestMipmapLinear, "NearestMipmapLinear")
             .Value(::klgl::GlTextureFilter::LinearMipmapLinear, "LinearMipmapLinear")
-            .Value(::klgl::GlTextureFilter::Max, "Max");
+            .Value(::klgl::GlTextureFilter::kMax, "Max");
     }
 };
 }  // namespace cppreflection
-
-#include "gl_api_impl.hpp"

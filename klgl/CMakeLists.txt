@@ -20,6 +20,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_uniform.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/texture/procedural_texture_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/texture/texture.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/texture/texture_format_helper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ui/type_id_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/application.hpp
@@ -33,6 +34,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/window_events.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/filesystem/filesystem.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/formatting/simple_format.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/ensure_enum_size.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/enum_as_index.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/warning_suppress.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array_adapter.hpp
@@ -42,8 +45,15 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/name_cache/name_cache.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/annotations.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/gl_debug_messenger.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/enums_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/pixel_buffer_layout_to_num_channels.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/pixel_buffer_layout_to_string.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/polygon_mode_to_gl_value.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/polygon_mode_to_string.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/enums.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/enums.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/reflection_utils.hpp
@@ -63,6 +73,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/type_to_gl_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/procedural_texture_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture_format_helper.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/type_id_widget.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/window.hpp)
 add_library(klgl STATIC ${module_source_files})
@@ -76,6 +87,7 @@ target_link_libraries(klgl PUBLIC ass
                                   glfw
                                   imgui_glfw_cmake
                                   cpptrace::cpptrace
-                                  unordered_dense)
+                                  unordered_dense
+                                  magic_enum)
 target_include_directories(klgl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(klgl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)

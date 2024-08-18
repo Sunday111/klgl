@@ -202,17 +202,17 @@ void OpenGl::SetTexture2dBorderColor(const Vec4f& v) noexcept
 
 void OpenGl::SetTexture2dWrap(GlTextureWrap wrap, GlTextureWrapMode mode) noexcept
 {
-    SetTextureParameter2d(ConvertEnum(wrap), ConvertEnum(mode));
+    SetTextureParameter2d(ToGlValue(wrap), ToGlValue(mode));
 }
 
 void OpenGl::SetTexture2dMinFilter(GlTextureFilter filter) noexcept
 {
-    SetTextureParameter2d(GL_TEXTURE_MIN_FILTER, ConvertEnum(filter));
+    SetTextureParameter2d(GL_TEXTURE_MIN_FILTER, ToGlValue(filter));
 }
 
 void OpenGl::SetTexture2dMagFilter(GlTextureFilter filter) noexcept
 {
-    SetTextureParameter2d(GL_TEXTURE_MAG_FILTER, ConvertEnum(filter));
+    SetTextureParameter2d(GL_TEXTURE_MAG_FILTER, ToGlValue(filter));
 }
 
 void OpenGl::BindTexture(GLenum target, GLuint texture) noexcept
@@ -259,7 +259,7 @@ void OpenGl::GenerateMipmap2d() noexcept
 
 void OpenGl::PolygonMode(GlPolygonMode mode) noexcept
 {
-    const GLenum converted = ConvertEnum(mode);
+    const GLenum converted = ToGlValue(mode);
     glPolygonMode(GL_FRONT_AND_BACK, converted);
 }
 

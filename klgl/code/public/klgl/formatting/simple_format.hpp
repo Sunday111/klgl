@@ -53,3 +53,21 @@ concept Formattable = IsFormattable<T>::value;
             return ctx.out();                                                                      \
         }                                                                                          \
     }
+
+#define KLGL_MAKE_ENUM_FORMATTER(TypeName, Function)                                                     \
+    template <>                                                                                          \
+    struct klgl::IsFormattable<klgl::TypeName>                                                           \
+    {                                                                                                    \
+        static constexpr bool kValue = true;                                                             \
+    };                                                                                                   \
+                                                                                                         \
+    template <>                                                                                          \
+    struct fmt::formatter<klgl::TypeName> : klgl::FormatterWithEmptyParse                                \
+    {                                                                                                    \
+        template <typename FmtContext>                                                                   \
+        constexpr auto format(const klgl::TypeName& value, FmtContext& ctx) const -> decltype(ctx.out()) \
+        {                                                                                                \
+            fmt::format_to(ctx.out(), "{}", Function(value));                                            \
+            return ctx.out();                                                                            \
+        }                                                                                                \
+    }
