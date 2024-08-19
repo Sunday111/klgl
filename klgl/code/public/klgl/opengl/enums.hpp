@@ -180,6 +180,86 @@ enum class GlUsage
     DynamicCopy
 };
 
+enum class GlPrimitiveType
+{
+    Points,
+    LineStrip,
+    LineLoop,
+    Lines,
+    LineStripAdjacency,
+    LinesAdjacency,
+    TriangleStrip,
+    TriangleFan,
+    Triangles,
+    TriangleStripAdjacency,
+    TrianglesAdjacency,
+    Patches
+};
+
+enum class GlIndexBufferElementType
+{
+    UnsignedByte,
+    UnsignedShort,
+    UnsignedInt
+};
+
+enum class GlVertexAttribComponentType
+{
+    // glVertexAttribPointer and glVertexAttribIPointer
+    Byte,
+    UnsignedByte,
+    Short,
+    UnsignedShort,
+    Int,
+    UnsignedInt,
+
+    // glVertexAttribPointer only
+    HalfFloat,
+    Float,
+    Double,  // the only param for glVertexAttribLPointer
+    Fixed,
+    Int_2_10_10_10_Rev,
+    UnsignedInt_2_10_10_10_Rev,
+    UnsignedInt_10F_11F_11F_Rev,
+};
+
+enum class GlTextureParameterTarget
+{
+    Texture1d,
+    Texture1dArray,
+    Texture2d,
+    Texture2dArray,
+    Texture2dMultisample,
+    Texture2dMultisampleArray,
+    Texture3d,
+    TextureCubeMap,
+    TextureCubeMapArray,
+    TextureRectangle
+};
+
+// Specifies the comparison operator used when GL_TEXTURE_COMPARE_MODE is set to GL_COMPARE_REF_TO_TEXTURE.
+enum class GlDepthTextureCompareFunction
+{
+    LessOrEqual,
+    GreaterOrEqual,
+    Less,
+    Greater,
+    Equal,
+    NotEqual,
+    Always,
+    Never,
+};
+
+enum class GlDepthTextureCompareMode
+{
+    // Specifies that the interpolated and clamped r texture coordinate should be compared to the value in the currently
+    // bound depth texture. Compare function determines how the comparison is evaluated
+    RefToTexture,
+
+    // Specifies that the red channel should be assigned the appropriate value from the currently bound depth texture.
+    None
+};
+
 GLint ToGlValue(GlPixelBufferLayout);
 GLenum ToGlValue(GlPixelBufferChannelType);
 GLint ToGlValue(GlTextureInternalFormat);
@@ -211,5 +291,23 @@ KLGL_MAKE_ENUM_FORMATTER(GlBufferType);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlUsage);
 KLGL_MAKE_ENUM_FORMATTER(GlUsage);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlPrimitiveType);
+KLGL_MAKE_ENUM_FORMATTER(GlPrimitiveType);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlIndexBufferElementType);
+KLGL_MAKE_ENUM_FORMATTER(GlIndexBufferElementType);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlVertexAttribComponentType);
+KLGL_MAKE_ENUM_FORMATTER(GlVertexAttribComponentType);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlTextureParameterTarget);
+KLGL_MAKE_ENUM_FORMATTER(GlTextureParameterTarget);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlDepthTextureCompareMode);
+KLGL_MAKE_ENUM_FORMATTER(GlDepthTextureCompareMode);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlDepthTextureCompareFunction);
+KLGL_MAKE_ENUM_FORMATTER(GlDepthTextureCompareFunction);
 
 #include "detail/enums_impl.hpp"  // IWYU pragma: keep

@@ -47,6 +47,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/annotations.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/gl_debug_messenger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/enums_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_buffer_type_to_gl_value.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_usage_to_gl_value.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_value_to_gl_error.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/pixel_buffer_layout_to_num_channels.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/polygon_mode_to_gl_value.hpp
@@ -54,6 +56,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/enums.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/hash.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/open_gl_error.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/reflection_utils.hpp

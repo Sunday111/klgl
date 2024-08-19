@@ -22,7 +22,7 @@ MeshData ProceduralMeshGenerator::GenerateQuadMesh()
             {{0.f, 1.f}},
         },
         .indices = {0, 1, 3, 1, 2, 3},
-        .topology = GL_TRIANGLES,
+        .topology = GlPrimitiveType::Triangles,
     };
 }
 
@@ -63,7 +63,7 @@ std::optional<MeshData> ProceduralMeshGenerator::GenerateCircleMesh(const size_t
         .vertices = std::move(vertices),
         .texture_coordinates = std::move(tex_coord),
         .indices = std::move(indices),
-        .topology = GL_TRIANGLE_FAN,
+        .topology = GlPrimitiveType::TriangleFan,
     }};
 }
 }  // namespace klgl

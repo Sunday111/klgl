@@ -67,12 +67,17 @@ public:
     static void VertexAttribPointerNE(
         GLuint index,
         size_t size,
-        GLenum type,
+        GlVertexAttribComponentType type,
         bool normalized,
         size_t stride,
         const void* pointer) noexcept;
-    static void
-    VertexAttribPointer(GLuint index, size_t size, GLenum type, bool normalized, size_t stride, const void* pointer);
+    static void VertexAttribPointer(
+        GLuint index,
+        size_t size,
+        GlVertexAttribComponentType type,
+        bool normalized,
+        size_t stride,
+        const void* pointer);
 
     static void EnableVertexAttribArrayNE(GLuint index) noexcept;
     static void EnableVertexAttribArray(GLuint index);
@@ -98,8 +103,26 @@ public:
     static void UseProgramNE(GLuint program) noexcept;
     static void UseProgram(GLuint program);
 
-    static void DrawElementsNE(GLenum mode, size_t num, GLenum indices_type, const void* indices) noexcept;
-    static void DrawElements(GLenum mode, size_t num, GLenum indices_type, const void* indices);
+    static void DrawElementsNE(
+        GlPrimitiveType mode,
+        size_t num,
+        GlIndexBufferElementType indices_type,
+        const void* indices) noexcept;
+    static void
+    DrawElements(GlPrimitiveType mode, size_t num, GlIndexBufferElementType indices_type, const void* indices);
+
+    static void DrawElementsInstancedNE(
+        GlPrimitiveType mode,
+        size_t num,
+        GlIndexBufferElementType indices_type,
+        const void* indices,
+        size_t num_instances) noexcept;
+    static void DrawElementsInstanced(
+        GlPrimitiveType mode,
+        size_t num,
+        GlIndexBufferElementType indices_type,
+        const void* indices,
+        size_t num_instances);
 
     static void SetUniformNE(uint32_t location, const float& f) noexcept;
     static void SetUniform(uint32_t location, const float& f);
@@ -119,22 +142,61 @@ public:
     static void SetUniformNE(uint32_t location, const Vec2f& v) noexcept;
     static void SetUniform(uint32_t location, const Vec2f& v);
 
-    static void SetTextureParameterNE(GLenum target, GLenum pname, const GLfloat* value) noexcept;
-    static void SetTextureParameter(GLenum target, GLenum pname, const GLfloat* value);
+    // Specifies the texture comparison mode for currently bound depth textures.
+    // (a texture whose internal format is GL_DEPTH_COMPONENT_*)
+    static void SetDepthTextureCompareModeNE(GlTextureParameterTarget target, GlDepthTextureCompareMode mode) noexcept;
+    static void SetDepthTextureCompareMode(GlTextureParameterTarget target, GlDepthTextureCompareMode mode);
 
-    static void SetTextureParameterNE(GLenum target, GLenum name, GLint param) noexcept;
-    static void SetTextureParameter(GLenum target, GLenum name, GLint param);
+    static void SetDepthTextureCompareFunctionNE(
+        GlTextureParameterTarget target,
+        GlDepthTextureCompareFunction function) noexcept;
+    static void SetDepthTextureCompareFunction(GlTextureParameterTarget target, GlDepthTextureCompareFunction function);
+
+    static void SetTextureParameterNE(GlTextureParameterTarget target, GLenum pname, const GLfloat* value) noexcept;
+    static void SetTextureParameter(GlTextureParameterTarget target, GLenum pname, const GLfloat* value);
+
+    static void SetTextureParameterNE(GlTextureParameterTarget target, GLenum name, GLint param) noexcept;
+    static void SetTextureParameter(GlTextureParameterTarget target, GLenum name, GLint param);
+
+    // Specifies the index of the lowest defined mipmap level. The initial value is 0.
+    static void SetTextureBaseLevelNE(GlTextureParameterTarget target, size_t level) noexcept;
+    static void SetTextureBaseLevel(GlTextureParameterTarget target, size_t level);
+
+    // The data in params specifies four values that define the border values that should be used for border texels. If
+    // a texel is sampled from the border of the texture, the values of GL_TEXTURE_BORDER_COLOR are interpreted as an
+    // RGBA color to match the texture's internal format and substituted for the non-existent texel data. If the texture
+    // contains depth components, the first component of GL_TEXTURE_BORDER_COLOR is interpreted as a depth value. The
+    // initial value is (0.0,0.0,0.0,0.0).
+    // If the values are specified with store_as_integer = true the values are stored unmodified with an internal data
+    // type of integer. Otherwise, they are converted to floating point with the following equation: f=2c+1/2^b−1.
+    static void SetTextureBorderColorNE(
+        GlTextureParameterTarget target,
+        std::span<const GLint, 4> color,
+        bool store_as_integer) noexcept;
+    static void
+    SetTextureBorderColor(GlTextureParameterTarget target, std::span<const GLint, 4> color, bool store_as_integer);
+    static void SetTextureBorderColorNE(GlTextureParameterTarget target, std::span<const GLuint, 4> color) noexcept;
+    static void SetTextureBorderColor(GlTextureParameterTarget target, std::span<const GLuint, 4> color);
+    static void SetTextureBorderColorNE(GlTextureParameterTarget target, std::span<const GLfloat, 4> color) noexcept;
+    static void SetTextureBorderColor(GlTextureParameterTarget target, std::span<const GLfloat, 4> color);
+
+    // Specifies a fixed bias value that is to be added to the level-of-detail parameter for the texture before texture
+    // sampling. The specified value is added to the shader-supplied bias value (if any) and subsequently clamped into
+    // the implementation-defined range [−biasmax,biasmax], where biasmax is the value of the implementation defined
+    // constant GL_MAX_TEXTURE_LOD_BIAS. The initial value is 0.0.
+    static void SetTextureLODBiasNE(GlTextureParameterTarget target, float bias) noexcept;
+    static void SetTextureLODBias(GlTextureParameterTarget target, float bias);
 
     template <typename T>
     static void SetTextureParameter2dNE(GLenum pname, T value) noexcept
     {
-        SetTextureParameterNE(GL_TEXTURE_2D, pname, value);
+        SetTextureParameterNE(GlTextureParameterTarget::Texture2d, pname, value);
     }
 
     template <typename T>
     static void SetTextureParameter2d(GLenum pname, T value) noexcept
     {
-        SetTextureParameter(GL_TEXTURE_2D, pname, value);
+        SetTextureParameter(GlTextureParameterTarget::Texture2d, pname, value);
     }
 
     static void SetTexture2dBorderColorNE(const Vec4f& v) noexcept;

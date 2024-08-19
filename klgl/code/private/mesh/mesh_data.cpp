@@ -5,18 +5,18 @@
 namespace klgl
 {
 
-void MeshOpenGL::ValidateIndicesCountForTopology(const GLuint topology, const size_t num_indices)
+void MeshOpenGL::ValidateIndicesCountForTopology(const GlPrimitiveType topology, const size_t num_indices)
 {
     switch (topology)
     {
-    case GL_TRIANGLES:
+    case GlPrimitiveType::Triangles:
         ErrorHandling::Ensure(
             num_indices % 3 == 0,
             "Topology is GL_TRIANGLES but the number of indices is not a multiple of 3 ({} % 3 != 0)",
             num_indices);
         break;
 
-    case GL_TRIANGLE_FAN:
+    case GlPrimitiveType::TriangleFan:
         ErrorHandling::Ensure(
             num_indices > 2,
             "Topology is GL_TRIANGLE_FAN but the number of indices is less than 3 ({})",
@@ -36,19 +36,19 @@ void MeshOpenGL::Bind() const
 
 void MeshOpenGL::Draw() const
 {
-    assert(topology == GL_TRIANGLES || topology == GL_TRIANGLE_FAN);
-    OpenGl::DrawElements(topology, elements_count, GL_UNSIGNED_INT, nullptr);
+    assert(topology == GlPrimitiveType::Triangles || topology == GlPrimitiveType::TriangleFan);
+    OpenGl::DrawElements(topology, elements_count, GlIndexBufferElementType::UnsignedInt, nullptr);
 }
 
 void MeshOpenGL::DrawInstanced(const size_t num_instances)
 {
-    assert(topology == GL_TRIANGLES || topology == GL_TRIANGLE_FAN);
-    glDrawElementsInstanced(
+    assert(topology == GlPrimitiveType::Triangles || topology == GlPrimitiveType::TriangleFan);
+    OpenGl::DrawElementsInstanced(
         topology,
-        static_cast<GLsizei>(elements_count),
-        GL_UNSIGNED_INT,
+        elements_count,
+        GlIndexBufferElementType::UnsignedInt,
         nullptr,
-        static_cast<GLsizei>(num_instances));
+        num_instances);
 }
 
 void MeshOpenGL::BindAndDraw() const

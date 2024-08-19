@@ -15,17 +15,17 @@ public:
     std::vector<Vec2f> vertices;
     std::vector<Vec2f> texture_coordinates;
     std::vector<uint32_t> indices;
-    GLuint topology = GL_TRIANGLES;
+    GlPrimitiveType topology = GlPrimitiveType::Triangles;
 };
 
 class MeshOpenGL
 {
 public:
-    static void ValidateIndicesCountForTopology(const GLuint topology, const size_t num_indices);
+    static void ValidateIndicesCountForTopology(const GlPrimitiveType topology, const size_t num_indices);
 
     template <typename Vertex, size_t VE = std::dynamic_extent, size_t IE = std::dynamic_extent>
     static std::unique_ptr<MeshOpenGL>
-    MakeFromData(std::span<Vertex, VE> vertices, std::span<const uint32_t, IE> indices, GLuint topology)
+    MakeFromData(std::span<Vertex, VE> vertices, std::span<const uint32_t, IE> indices, GlPrimitiveType topology)
     {
         ValidateIndicesCountForTopology(topology, indices.size());
 
@@ -57,7 +57,7 @@ public:
     GLuint vao{};
     GLuint vbo{};
     GLuint ebo{};
-    GLuint topology = GL_TRIANGLES;
+    GlPrimitiveType topology = GlPrimitiveType::Triangles;
     size_t elements_count = 0;
 };
 

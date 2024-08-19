@@ -4,8 +4,14 @@
 #include "fmt/ranges.h"  // IWYU pragma: keep
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/detail/maps/gl_buffer_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_depth_texture_compare_function_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_depth_texture_compare_mode_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_index_buffer_element_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_primitive_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_texture_parameter_target_to_gl_value.hpp"
 #include "klgl/opengl/detail/maps/gl_usage_to_gl_value.hpp"
 #include "klgl/opengl/detail/maps/gl_value_to_gl_error.hpp"
+#include "klgl/opengl/detail/maps/gl_vertex_attrib_component_type_to_gl_value.hpp"
 #include "klgl/opengl/open_gl_error.hpp"
 
 namespace klgl
@@ -126,7 +132,7 @@ constexpr GLboolean OpenGl::CastBool(bool value) noexcept
 void OpenGl::VertexAttribPointerNE(
     GLuint index,
     size_t size,
-    GLenum type,
+    GlVertexAttribComponentType type,
     bool normalized,
     size_t stride,
     const void* pointer) noexcept
@@ -134,7 +140,7 @@ void OpenGl::VertexAttribPointerNE(
     glVertexAttribPointer(
         index,
         static_cast<GLint>(size),
-        type,
+        ToGlValue(type),
         CastBool(normalized),
         static_cast<GLsizei>(stride),
         pointer);
@@ -143,7 +149,7 @@ void OpenGl::VertexAttribPointerNE(
 void OpenGl::VertexAttribPointer(
     GLuint index,
     size_t size,
-    GLenum type,
+    GlVertexAttribComponentType type,
     bool normalized,
     size_t stride,
     const void* pointer)
@@ -224,13 +230,17 @@ void OpenGl::UseProgram(GLuint program)
     Internal::Check("glUseProgram(program: {})", program);
 }
 
-void OpenGl::DrawElementsNE(GLenum mode, size_t num, GLenum indices_type, const void* indices) noexcept
+void OpenGl::DrawElementsNE(
+    GlPrimitiveType mode,
+    size_t num,
+    GlIndexBufferElementType indices_type,
+    const void* indices) noexcept
 {
     ScopeAnnotation annotation("OpenGl::Draw");
-    glDrawElements(mode, static_cast<GLsizei>(num), indices_type, indices);
+    glDrawElements(ToGlValue(mode), static_cast<GLsizei>(num), ToGlValue(indices_type), indices);
 }
 
-void OpenGl::DrawElements(GLenum mode, size_t num, GLenum indices_type, const void* indices)
+void OpenGl::DrawElements(GlPrimitiveType mode, size_t num, GlIndexBufferElementType indices_type, const void* indices)
 {
     DrawElementsNE(mode, num, indices_type, indices);
     Internal::Check(
@@ -239,6 +249,38 @@ void OpenGl::DrawElements(GLenum mode, size_t num, GLenum indices_type, const vo
         num,
         indices_type,
         indices);
+}
+
+void OpenGl::DrawElementsInstancedNE(
+    GlPrimitiveType mode,
+    size_t num,
+    GlIndexBufferElementType indices_type,
+    const void* indices,
+    size_t num_instances) noexcept
+{
+    glDrawElementsInstanced(
+        ToGlValue(mode),
+        static_cast<GLsizei>(num),
+        ToGlValue(indices_type),
+        indices,
+        static_cast<GLsizei>(num_instances));
+}
+
+void OpenGl::DrawElementsInstanced(
+    GlPrimitiveType mode,
+    size_t num,
+    GlIndexBufferElementType indices_type,
+    const void* indices,
+    size_t num_instances)
+{
+    DrawElementsInstancedNE(mode, num, indices_type, indices, num_instances);
+    Internal::Check(
+        "glDrawElementsInstanced(mode: {}, count {}, type: {}, indices: {}, instancecount: {})",
+        mode,
+        num,
+        indices_type,
+        indices,
+        num_instances);
 }
 
 std::optional<uint32_t> OpenGl::FindUniformLocationNE(GLuint shader_program, const char* name) noexcept
@@ -357,12 +399,111 @@ void OpenGl::EnableBlending()
     Internal::Check("glEnable(GL_BLEND)");
 }
 
-void OpenGl::SetTextureParameterNE(GLenum target, GLenum pname, const GLfloat* value) noexcept
+void OpenGl::SetDepthTextureCompareModeNE(GlTextureParameterTarget target, GlDepthTextureCompareMode mode) noexcept
 {
-    glTexParameterfv(target, pname, value);
+    glTextureParameteri(ToGlValue(target), GL_TEXTURE_COMPARE_MODE, ToGlValue(mode));
 }
 
-void OpenGl::SetTextureParameter(GLenum target, GLenum pname, const GLfloat* value)
+void OpenGl::SetDepthTextureCompareMode(GlTextureParameterTarget target, GlDepthTextureCompareMode mode)
+{
+    SetDepthTextureCompareModeNE(target, mode);
+    Internal::Check("glTexParameteri(target: {}, name: GL_TEXTURE_COMPARE_MODE, value: {})", target, mode);
+}
+
+void OpenGl::SetTextureParameterNE(GlTextureParameterTarget target, GLenum pname, const GLfloat* value) noexcept
+{
+    glTexParameterfv(ToGlValue(target), pname, value);
+}
+
+void OpenGl::SetDepthTextureCompareFunctionNE(
+    GlTextureParameterTarget target,
+    GlDepthTextureCompareFunction function) noexcept
+{
+    glTexParameteri(ToGlValue(target), GL_TEXTURE_COMPARE_FUNC, ToGlValue(function));
+}
+
+void OpenGl::SetDepthTextureCompareFunction(GlTextureParameterTarget target, GlDepthTextureCompareFunction function)
+{
+    SetDepthTextureCompareFunctionNE(target, function);
+    Internal::Check("glTexParameteri(target: {}, pname: GL_TEXTURE_COMPARE_FUNCT, param: {})", target, function);
+}
+
+void OpenGl::SetTextureBaseLevelNE(GlTextureParameterTarget target, size_t level) noexcept
+{
+    glTexParameteri(ToGlValue(target), GL_TEXTURE_BASE_LEVEL, static_cast<GLint>(level));
+}
+
+void OpenGl::SetTextureBaseLevel(GlTextureParameterTarget target, size_t level)
+{
+    SetTextureBaseLevelNE(target, level);
+    Internal::Check("glTexParameteri(target: {}, pname: GL_TEXTURE_BASE_LEVEL, param: {})", target, level);
+}
+
+void OpenGl::SetTextureBorderColorNE(
+    GlTextureParameterTarget target,
+    std::span<const GLint, 4> color,
+    bool store_as_integer) noexcept
+{
+    if (store_as_integer)
+    {
+        glTexParameterIiv(ToGlValue(target), GL_TEXTURE_BORDER_COLOR, color.data());
+    }
+    else
+    {
+        glTexParameteriv(ToGlValue(target), GL_TEXTURE_BORDER_COLOR, color.data());
+    }
+}
+
+void OpenGl::SetTextureBorderColor(
+    GlTextureParameterTarget target,
+    std::span<const GLint, 4> color,
+    bool store_as_integer)
+{
+    SetTextureBorderColorNE(target, color, store_as_integer);
+    if (store_as_integer)
+    {
+        Internal::Check("glTexParameterIiv(target: {}, pname: GL_TEXTURE_BORDER_COLOR, color: {})", target, color);
+    }
+    else
+    {
+        Internal::Check("glTexParameteriv(target: {}, pname: GL_TEXTURE_BORDER_COLOR, color: {})", target, color);
+    }
+}
+
+void OpenGl::SetTextureBorderColorNE(GlTextureParameterTarget target, std::span<const GLuint, 4> color) noexcept
+{
+    glTexParameterIuiv(ToGlValue(target), GL_TEXTURE_BORDER_COLOR, color.data());
+}
+
+void OpenGl::SetTextureBorderColor(GlTextureParameterTarget target, std::span<const GLuint, 4> color)
+{
+    SetTextureBorderColorNE(target, color);
+    Internal::Check("glTexParameterIuiv(target: {}, pname: GL_TEXTURE_BORDER_COLOR, color: {})", target, color);
+}
+
+void OpenGl::SetTextureBorderColorNE(GlTextureParameterTarget target, std::span<const GLfloat, 4> color) noexcept
+{
+    glTexParameterfv(ToGlValue(target), GL_TEXTURE_BORDER_COLOR, color.data());
+}
+
+void OpenGl::SetTextureBorderColor(GlTextureParameterTarget target, std::span<const GLfloat, 4> color)
+{
+    SetTextureBorderColorNE(target, color);
+    Internal::Check("glTexParameterfv(target: {}, pname: GL_TEXTURE_BORDER_COLOR, color: {})", target, color);
+}
+
+void OpenGl::SetTextureLODBiasNE(GlTextureParameterTarget target, float bias) noexcept
+{
+    glTexParameterf(ToGlValue(target), GL_TEXTURE_LOD_BIAS, bias);
+}
+
+void OpenGl::SetTextureLODBias(GlTextureParameterTarget target, float bias)
+{
+    SetTextureLODBiasNE(target, bias);
+    Internal::Check("glTexParameterf(target: {}, pname: GL_TEXTURE_LOD_BIAS, bias: {})", target, bias);
+}
+
+void OpenGl::SetTextureParameter(GlTextureParameterTarget target, GLenum pname, const GLfloat* value)
 {
     SetTextureParameterNE(target, pname, value);
     Internal::Check(
@@ -372,12 +513,12 @@ void OpenGl::SetTextureParameter(GLenum target, GLenum pname, const GLfloat* val
         static_cast<const void*>(value));
 }
 
-void OpenGl::SetTextureParameterNE(GLenum target, GLenum name, GLint param) noexcept
+void OpenGl::SetTextureParameterNE(GlTextureParameterTarget target, GLenum name, GLint param) noexcept
 {
-    glTexParameteri(target, name, param);
+    glTexParameteri(ToGlValue(target), name, param);
 }
 
-void OpenGl::SetTextureParameter(GLenum target, GLenum name, GLint param)
+void OpenGl::SetTextureParameter(GlTextureParameterTarget target, GLenum name, GLint param)
 {
     SetTextureParameterNE(target, name, param);
     Internal::Check("glTexParameteri(target: {}, name: {}, param: {})", target, name, param);
