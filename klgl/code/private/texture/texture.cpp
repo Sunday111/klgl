@@ -3,10 +3,11 @@
 #include <cassert>
 
 #include "klgl/error_handling.hpp"
-#include "klgl/opengl/detail/maps/gl_pixel_buffer_channel_type_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_pixel_buffer_layout_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_texture_internal_format_to_gl_int.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_pixel_buffer_channel_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_pixel_buffer_layout_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_texture_internal_format_to_gl_int.hpp"
 #include "klgl/opengl/gl_api.hpp"
+
 
 namespace klgl
 {

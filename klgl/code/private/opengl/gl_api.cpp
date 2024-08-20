@@ -3,20 +3,21 @@
 #include "fmt/format.h"
 #include "fmt/ranges.h"  // IWYU pragma: keep
 #include "klgl/opengl/debug/annotations.hpp"
-#include "klgl/opengl/detail/maps/gl_buffer_type_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_depth_texture_compare_function_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_depth_texture_compare_mode_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_index_buffer_element_type_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_polygon_mode_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_primitive_type_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_texture_filter_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_texture_parameter_target_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_texture_wrap_axis_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_texture_wrap_mode_to_gl_value.hpp"
-#include "klgl/opengl/detail/maps/gl_usage_to_gl_value.hpp"
 #include "klgl/opengl/detail/maps/gl_value_to_gl_error.hpp"
-#include "klgl/opengl/detail/maps/gl_vertex_attrib_component_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_buffer_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_depth_texture_compare_function_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_depth_texture_compare_mode_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_index_buffer_element_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_polygon_mode_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_primitive_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_texture_filter_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_texture_parameter_target_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_texture_wrap_axis_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_texture_wrap_mode_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_usage_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/gl_vertex_attrib_component_type_to_gl_value.hpp"
 #include "klgl/opengl/open_gl_error.hpp"
+
 
 namespace klgl
 {
