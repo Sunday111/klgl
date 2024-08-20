@@ -3,6 +3,9 @@
 #include <cassert>
 
 #include "klgl/error_handling.hpp"
+#include "klgl/opengl/detail/maps/gl_pixel_buffer_channel_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_pixel_buffer_layout_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_texture_internal_format_to_gl_int.hpp"
 #include "klgl/opengl/gl_api.hpp"
 
 namespace klgl
@@ -64,11 +67,11 @@ std::unique_ptr<Texture> Texture::CreateEmpty(const Vec2<size_t>& resolution, co
         nullptr);
     klgl::ErrorHandling::CheckOpenGlError("OpenGl::TexImage2d");
 
-    OpenGl::SetTexture2dWrap(GlTextureWrapAxis::R, GlTextureWrapMode::Repeat);
-    OpenGl::SetTexture2dWrap(GlTextureWrapAxis::S, GlTextureWrapMode::Repeat);
-    OpenGl::SetTexture2dWrap(GlTextureWrapAxis::T, GlTextureWrapMode::Repeat);
-    OpenGl::SetTexture2dMagFilter(GlTextureFilter::Nearest);
-    OpenGl::SetTexture2dMinFilter(GlTextureFilter::Nearest);
+    OpenGl::SetTextureWrap(GlTextureParameterTarget::Texture2d, GlTextureWrapAxis::R, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureWrap(GlTextureParameterTarget::Texture2d, GlTextureWrapAxis::S, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureWrap(GlTextureParameterTarget::Texture2d, GlTextureWrapAxis::T, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureMagFilter(GlTextureParameterTarget::Texture2d, GlTextureFilter::Nearest);
+    OpenGl::SetTextureMinFilter(GlTextureParameterTarget::Texture2d, GlTextureFilter::Nearest);
 
     return tex;
 }

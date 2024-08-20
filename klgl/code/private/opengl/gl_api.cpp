@@ -7,8 +7,12 @@
 #include "klgl/opengl/detail/maps/gl_depth_texture_compare_function_to_gl_value.hpp"
 #include "klgl/opengl/detail/maps/gl_depth_texture_compare_mode_to_gl_value.hpp"
 #include "klgl/opengl/detail/maps/gl_index_buffer_element_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_polygon_mode_to_gl_value.hpp"
 #include "klgl/opengl/detail/maps/gl_primitive_type_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_texture_filter_to_gl_value.hpp"
 #include "klgl/opengl/detail/maps/gl_texture_parameter_target_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_texture_wrap_axis_to_gl_value.hpp"
+#include "klgl/opengl/detail/maps/gl_texture_wrap_mode_to_gl_value.hpp"
 #include "klgl/opengl/detail/maps/gl_usage_to_gl_value.hpp"
 #include "klgl/opengl/detail/maps/gl_value_to_gl_error.hpp"
 #include "klgl/opengl/detail/maps/gl_vertex_attrib_component_type_to_gl_value.hpp"
@@ -524,44 +528,37 @@ void OpenGl::SetTextureParameter(GlTextureParameterTarget target, GLenum name, G
     Internal::Check("glTexParameteri(target: {}, name: {}, param: {})", target, name, param);
 }
 
-void OpenGl::SetTexture2dBorderColorNE(const Vec4f& v) noexcept
+void OpenGl::SetTextureWrapNE(GlTextureParameterTarget target, GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept
 {
-    SetTextureParameter2dNE(GL_TEXTURE_BORDER_COLOR, v.data());
+    glTexParameteri(ToGlValue(target), ToGlValue(wrap), ToGlValue(mode));
 }
 
-void OpenGl::SetTexture2dBorderColor(const Vec4f& v)
+void OpenGl::SetTextureWrap(GlTextureParameterTarget target, GlTextureWrapAxis wrap, GlTextureWrapMode mode)
 {
-    SetTexture2dBorderColorNE(v);
+    SetTextureWrapNE(target, wrap, mode);
+    Internal::Check("glTexParameteri(target: {}, axis: {}, wrap: {})", target, wrap, mode);
 }
 
-void OpenGl::SetTexture2dWrapNE(GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept
+void OpenGl::SetTextureMinFilterNE(GlTextureParameterTarget target, GlTextureFilter filter) noexcept
 {
-    SetTextureParameter2dNE(ToGlValue(wrap), ToGlValue(mode));
+    glTexParameteri(ToGlValue(target), GL_TEXTURE_MIN_FILTER, ToGlValue(filter));
 }
 
-void OpenGl::SetTexture2dWrap(GlTextureWrapAxis wrap, GlTextureWrapMode mode)
+void OpenGl::SetTextureMinFilter(GlTextureParameterTarget target, GlTextureFilter filter)
 {
-    SetTexture2dWrapNE(wrap, mode);
+    SetTextureMinFilterNE(target, filter);
+    Internal::Check("glTexParameteri(target: {}, GL_TEXTURE_MIN_FILTER, filter: {})", target, filter);
 }
 
-void OpenGl::SetTexture2dMinFilterNE(GlTextureFilter filter) noexcept
+void OpenGl::SetTextureMagFilterNE(GlTextureParameterTarget target, GlTextureFilter filter) noexcept
 {
-    SetTextureParameter2dNE(GL_TEXTURE_MIN_FILTER, ToGlValue(filter));
+    glTexParameteri(ToGlValue(target), GL_TEXTURE_MAG_FILTER, ToGlValue(filter));
 }
 
-void OpenGl::SetTexture2dMinFilter(GlTextureFilter filter)
+void OpenGl::SetTextureMagFilter(GlTextureParameterTarget target, GlTextureFilter filter)
 {
-    SetTexture2dMinFilterNE(filter);
-}
-
-void OpenGl::SetTexture2dMagFilterNE(GlTextureFilter filter) noexcept
-{
-    SetTextureParameter2dNE(GL_TEXTURE_MAG_FILTER, ToGlValue(filter));
-}
-
-void OpenGl::SetTexture2dMagFilter(GlTextureFilter filter)
-{
-    SetTexture2dMagFilterNE(filter);
+    SetTextureMagFilterNE(target, filter);
+    Internal::Check("glTexParameteri(target: {}, GL_TEXTURE_MAG_FILTER, filter: {})", target, filter);
 }
 
 void OpenGl::BindTextureNE(GLenum target, GLuint texture) noexcept

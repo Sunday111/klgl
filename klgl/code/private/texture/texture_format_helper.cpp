@@ -3,7 +3,7 @@
 #include <ass/enum_map.hpp>
 
 #include "klgl/error_handling.hpp"
-#include "klgl/opengl/detail/maps/pixel_buffer_layout_to_num_channels.hpp"
+#include "klgl/opengl/detail/maps/gl_pixel_buffer_layout_to_num_channels.hpp"
 
 namespace klgl
 {

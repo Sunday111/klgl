@@ -187,29 +187,17 @@ public:
     static void SetTextureLODBiasNE(GlTextureParameterTarget target, float bias) noexcept;
     static void SetTextureLODBias(GlTextureParameterTarget target, float bias);
 
-    template <typename T>
-    static void SetTextureParameter2dNE(GLenum pname, T value) noexcept
-    {
-        SetTextureParameterNE(GlTextureParameterTarget::Texture2d, pname, value);
-    }
+    static void
+    SetTextureWrapNE(GlTextureParameterTarget target, GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept;
+    static void SetTextureWrap(GlTextureParameterTarget target, GlTextureWrapAxis wrap, GlTextureWrapMode mode);
 
-    template <typename T>
-    static void SetTextureParameter2d(GLenum pname, T value) noexcept
-    {
-        SetTextureParameter(GlTextureParameterTarget::Texture2d, pname, value);
-    }
+    static void SetTextureMinFilterNE(GlTextureParameterTarget target, GlTextureFilter filter) noexcept;
+    static void SetTextureMinFilter(GlTextureParameterTarget target, GlTextureFilter filter);
 
-    static void SetTexture2dBorderColorNE(const Vec4f& v) noexcept;
-    static void SetTexture2dBorderColor(const Vec4f& v);
+    static void SetTextureMagFilterNE(GlTextureParameterTarget target, GlTextureFilter filter) noexcept;
+    static void SetTextureMagFilter(GlTextureParameterTarget target, GlTextureFilter filter);
 
-    static void SetTexture2dWrapNE(GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept;
-    static void SetTexture2dWrap(GlTextureWrapAxis wrap, GlTextureWrapMode mode);
-
-    static void SetTexture2dMinFilterNE(GlTextureFilter filter) noexcept;
-    static void SetTexture2dMinFilter(GlTextureFilter filter);
-
-    static void SetTexture2dMagFilterNE(GlTextureFilter filter) noexcept;
-    static void SetTexture2dMagFilter(GlTextureFilter filter);
+    //
 
     static void BindTextureNE(GLenum target, GLuint texture) noexcept;
     static void BindTexture(GLenum target, GLuint texture);

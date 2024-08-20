@@ -24,4 +24,13 @@ inline constexpr auto kGlPolygonModelToGlValue = []
 
     return map;
 }();
+
 }  // namespace klgl::detail
+
+namespace klgl
+{
+[[nodiscard]] inline constexpr GLenum ToGlValue(GlPolygonMode mode) noexcept
+{
+    return detail::kGlPolygonModelToGlValue.Get(mode);
+}
+}  // namespace klgl

@@ -260,15 +260,6 @@ enum class GlDepthTextureCompareMode
     None
 };
 
-GLint ToGlValue(GlPixelBufferLayout);
-GLenum ToGlValue(GlPixelBufferChannelType);
-GLint ToGlValue(GlTextureInternalFormat);
-constexpr GLenum ToGlValue(GlPolygonMode mode) noexcept;
-
-constexpr GLenum ToGlValue(GlTextureWrapAxis wrap) noexcept;
-constexpr GLint ToGlValue(GlTextureWrapMode mode) noexcept;
-constexpr GLint ToGlValue(GlTextureFilter mode) noexcept;
-
 }  // namespace klgl
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlError);
@@ -285,6 +276,15 @@ KLGL_MAKE_ENUM_FORMATTER(GlTextureInternalFormat);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlPolygonMode);
 KLGL_MAKE_ENUM_FORMATTER(GlPolygonMode);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlTextureWrapAxis);
+KLGL_MAKE_ENUM_FORMATTER(GlTextureWrapAxis);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlTextureWrapMode);
+KLGL_MAKE_ENUM_FORMATTER(GlTextureWrapMode);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlTextureFilter);
+KLGL_MAKE_ENUM_FORMATTER(GlTextureFilter);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlBufferType);
 KLGL_MAKE_ENUM_FORMATTER(GlBufferType);
@@ -309,5 +309,3 @@ KLGL_MAKE_ENUM_FORMATTER(GlDepthTextureCompareMode);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlDepthTextureCompareFunction);
 KLGL_MAKE_ENUM_FORMATTER(GlDepthTextureCompareFunction);
-
-#include "detail/enums_impl.hpp"  // IWYU pragma: keep

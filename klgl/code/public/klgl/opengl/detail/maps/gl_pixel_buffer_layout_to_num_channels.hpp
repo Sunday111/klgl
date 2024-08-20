@@ -35,4 +35,9 @@ inline constexpr auto kPixelBufferLayoutToNumChannels = []
 
     return map;
 }();
+
 }  // namespace klgl::detail
+namespace klgl
+{
+
+}  // namespace klgl
