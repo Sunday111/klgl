@@ -46,23 +46,26 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/name_cache/name_cache.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/annotations.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/gl_debug_messenger.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/enums_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_buffer_type_to_gl_value.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_depth_texture_compare_function_to_gl_value.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_depth_texture_compare_mode_to_gl_value.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_index_buffer_element_type_to_gl_value.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_pixel_buffer_channel_type_to_gl_value.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_pixel_buffer_layout_to_gl_value.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_pixel_buffer_layout_to_num_channels.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_polygon_mode_to_gl_value.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_primitive_type_to_gl_value.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_texture_internal_format_to_gl_int.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_texture_parameter_target_to_gl_value.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_usage_to_gl_value.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_value_to_gl_error.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_vertex_attrib_component_type_to_gl_value.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/buffer_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_function.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_mode.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/index_buffer_element_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/pixel_buffer_channel_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/pixel_buffer_layout.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/polygon_mode.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/primitive_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_filter.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_internal_format.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_parameter_target.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_wrap_axis.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_wrap_mode.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/usage.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/vertex_attrib_component_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/enums.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_types_reflection.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/open_gl_error.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
