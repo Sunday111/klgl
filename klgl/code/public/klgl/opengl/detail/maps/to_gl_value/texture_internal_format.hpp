@@ -6,7 +6,7 @@
 
 namespace klgl::detail
 {
-inline constexpr auto kGlTextureInternalFormatToGLint = []
+inline constexpr auto kGlTextureInternalFormatToGlValue = []
 {
     using T = GlTextureInternalFormat;
     ass::EnumMap<T, GLint> map;
@@ -96,7 +96,7 @@ namespace klgl
 
 inline constexpr auto ToGlValue(GlTextureInternalFormat v)
 {
-    return detail::kGlTextureInternalFormatToGLint.Get(v);
+    return detail::kGlTextureInternalFormatToGlValue.Get(v);
 }
 
 }  // namespace klgl
