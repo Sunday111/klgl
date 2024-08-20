@@ -1,36 +1,31 @@
 #pragma once
 
-#include "ass/enum_map.hpp"
 #include "klgl/macro/ensure_enum_size.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/opengl_value_converter.hpp"
 #include "klgl/opengl/enums.hpp"
 
 namespace klgl::detail
 {
 inline constexpr auto kGlPrimitiveTypeToGlValue = []
 {
-    ass::EnumMap<GlPrimitiveType, GLenum> map;
-
-    auto add = [&](auto key, GLenum value)
-    {
-        assert(!map.Contains(key));
-        map.GetOrAdd(key) = value;
-    };
+    using T = GlPrimitiveType;
+    OpenGlValueConverter<T, GLenum> c;
 
     KLGL_ENSURE_ENUM_SIZE(GlPrimitiveType, 12);
-    add(GlPrimitiveType::Points, GL_POINTS);
-    add(GlPrimitiveType::LineStrip, GL_LINE_STRIP);
-    add(GlPrimitiveType::LineLoop, GL_LINE_LOOP);
-    add(GlPrimitiveType::Lines, GL_LINES);
-    add(GlPrimitiveType::LineStripAdjacency, GL_LINE_STRIP_ADJACENCY);
-    add(GlPrimitiveType::LinesAdjacency, GL_LINES_ADJACENCY);
-    add(GlPrimitiveType::TriangleStrip, GL_TRIANGLE_STRIP);
-    add(GlPrimitiveType::TriangleFan, GL_TRIANGLE_FAN);
-    add(GlPrimitiveType::Triangles, GL_TRIANGLES);
-    add(GlPrimitiveType::TriangleStripAdjacency, GL_TRIANGLE_STRIP_ADJACENCY);
-    add(GlPrimitiveType::TrianglesAdjacency, GL_TRIANGLES_ADJACENCY);
-    add(GlPrimitiveType::Patches, GL_PATCHES);
+    c.Add(T::Points, GL_POINTS);
+    c.Add(T::LineStrip, GL_LINE_STRIP);
+    c.Add(T::LineLoop, GL_LINE_LOOP);
+    c.Add(T::Lines, GL_LINES);
+    c.Add(T::LineStripAdjacency, GL_LINE_STRIP_ADJACENCY);
+    c.Add(T::LinesAdjacency, GL_LINES_ADJACENCY);
+    c.Add(T::TriangleStrip, GL_TRIANGLE_STRIP);
+    c.Add(T::TriangleFan, GL_TRIANGLE_FAN);
+    c.Add(T::Triangles, GL_TRIANGLES);
+    c.Add(T::TriangleStripAdjacency, GL_TRIANGLE_STRIP_ADJACENCY);
+    c.Add(T::TrianglesAdjacency, GL_TRIANGLES_ADJACENCY);
+    c.Add(T::Patches, GL_PATCHES);
 
-    return map;
+    return c;
 }();
 }  // namespace klgl::detail
 namespace klgl
@@ -38,7 +33,7 @@ namespace klgl
 
 [[nodiscard]] constexpr GLenum ToGlValue(GlPrimitiveType buffer_type) noexcept
 {
-    return detail::kGlPrimitiveTypeToGlValue.Get(buffer_type);
+    return detail::kGlPrimitiveTypeToGlValue.to_gl_value.Get(buffer_type);
 }
 
 }  // namespace klgl

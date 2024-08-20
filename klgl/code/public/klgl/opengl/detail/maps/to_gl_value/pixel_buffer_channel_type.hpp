@@ -3,6 +3,7 @@
 #include <ass/enum_map.hpp>
 
 #include "klgl/macro/ensure_enum_size.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/opengl_value_converter.hpp"
 #include "klgl/opengl/enums.hpp"
 
 namespace klgl::detail
@@ -10,38 +11,33 @@ namespace klgl::detail
 
 inline constexpr auto kGlPixelBufferLayoutToGlValue = []
 {
-    ass::EnumMap<GlPixelBufferLayout, GLint> map;
+    using T = GlPixelBufferLayout;
+    OpenGlValueConverter<T, GLint> c;
 
-    auto add = [&](auto key, auto value)
-    {
-        assert(!map.Contains(key));
-        map.GetOrAdd(key) = value;
-    };
+    KLGL_ENSURE_ENUM_SIZE(T, 14);
+    c.Add(T::R, GL_RED);
+    c.Add(T::R_Int, GL_RED_INTEGER);
+    c.Add(T::Depth, GL_DEPTH_COMPONENT);
+    c.Add(T::RG, GL_RG);
+    c.Add(T::RG_Int, GL_RG_INTEGER);
+    c.Add(T::RGB, GL_RGB);
+    c.Add(T::RGB_Int, GL_RGB_INTEGER);
+    c.Add(T::BGR, GL_BGR);
+    c.Add(T::BGR_Int, GL_BGR_INTEGER);
+    c.Add(T::RGBA, GL_RGBA);
+    c.Add(T::RGBA_Int, GL_RGBA_INTEGER);
+    c.Add(T::BGRA, GL_BGRA);
+    c.Add(T::BGRA_Int, GL_BGRA_INTEGER);
+    c.Add(T::DepthStencil, GL_DEPTH_STENCIL);
 
-    KLGL_ENSURE_ENUM_SIZE(GlPixelBufferLayout, 14);
-    add(GlPixelBufferLayout::R, GL_RED);
-    add(GlPixelBufferLayout::R_Int, GL_RED_INTEGER);
-    add(GlPixelBufferLayout::Depth, GL_DEPTH_COMPONENT);
-    add(GlPixelBufferLayout::RG, GL_RG);
-    add(GlPixelBufferLayout::RG_Int, GL_RG_INTEGER);
-    add(GlPixelBufferLayout::RGB, GL_RGB);
-    add(GlPixelBufferLayout::RGB_Int, GL_RGB_INTEGER);
-    add(GlPixelBufferLayout::BGR, GL_BGR);
-    add(GlPixelBufferLayout::BGR_Int, GL_BGR_INTEGER);
-    add(GlPixelBufferLayout::RGBA, GL_RGBA);
-    add(GlPixelBufferLayout::RGBA_Int, GL_RGBA_INTEGER);
-    add(GlPixelBufferLayout::BGRA, GL_BGRA);
-    add(GlPixelBufferLayout::BGRA_Int, GL_BGRA_INTEGER);
-    add(GlPixelBufferLayout::DepthStencil, GL_DEPTH_STENCIL);
-
-    return map;
+    return c;
 }();
 }  // namespace klgl::detail
 
 namespace klgl
 {
-[[nodiscard]] inline constexpr GLint ToGlValue(GlPixelBufferLayout v)
+[[nodiscard]] inline constexpr auto ToGlValue(GlPixelBufferLayout v)
 {
-    return detail::kGlPixelBufferLayoutToGlValue.Get(v);
+    return detail::kGlPixelBufferLayoutToGlValue.to_gl_value.Get(v);
 }
 }  // namespace klgl

@@ -1,47 +1,41 @@
 #pragma once
 
-#include <ass/enum_map.hpp>
-
 #include "klgl/macro/ensure_enum_size.hpp"
 #include "klgl/opengl/enums.hpp"
+#include "opengl_value_converter.hpp"
 
 namespace klgl::detail
 {
-inline constexpr auto kGlBufferTypeToGlValue = []
+inline constexpr auto kGlBufferTypeConverter = []
 {
-    ass::EnumMap<GlBufferType, GLenum> map;
+    using T = GlBufferType;
+    OpenGlValueConverter<T, GLenum> c;
 
-    auto add = [&](auto key, GLenum value)
-    {
-        assert(!map.Contains(key));
-        map.GetOrAdd(key) = value;
-    };
+    KLGL_ENSURE_ENUM_SIZE(T, 14);
+    c.Add(T::Array, GL_ARRAY_BUFFER);
+    c.Add(T::AtomicCounter, GL_ATOMIC_COUNTER_BUFFER);
+    c.Add(T::CopyRead, GL_COPY_READ_BUFFER);
+    c.Add(T::CopyWrite, GL_COPY_WRITE_BUFFER);
+    c.Add(T::DispatchIndirect, GL_DISPATCH_INDIRECT_BUFFER);
+    c.Add(T::DrawIndirect, GL_DRAW_INDIRECT_BUFFER);
+    c.Add(T::ElementArray, GL_ELEMENT_ARRAY_BUFFER);
+    c.Add(T::PixelPack, GL_PIXEL_PACK_BUFFER);
+    c.Add(T::PixelUnpack, GL_PIXEL_UNPACK_BUFFER);
+    c.Add(T::Query, GL_QUERY_BUFFER);
+    c.Add(T::ShaderStorage, GL_SHADER_STORAGE_BUFFER);
+    c.Add(T::Texture, GL_TEXTURE_BUFFER);
+    c.Add(T::TransformFeedback, GL_TRANSFORM_FEEDBACK_BUFFER);
+    c.Add(T::Uniform, GL_UNIFORM_BUFFER);
 
-    KLGL_ENSURE_ENUM_SIZE(GlBufferType, 14);
-    add(GlBufferType::Array, GL_ARRAY_BUFFER);
-    add(GlBufferType::AtomicCounter, GL_ATOMIC_COUNTER_BUFFER);
-    add(GlBufferType::CopyRead, GL_COPY_READ_BUFFER);
-    add(GlBufferType::CopyWrite, GL_COPY_WRITE_BUFFER);
-    add(GlBufferType::DispatchIndirect, GL_DISPATCH_INDIRECT_BUFFER);
-    add(GlBufferType::DrawIndirect, GL_DRAW_INDIRECT_BUFFER);
-    add(GlBufferType::ElementArray, GL_ELEMENT_ARRAY_BUFFER);
-    add(GlBufferType::PixelPack, GL_PIXEL_PACK_BUFFER);
-    add(GlBufferType::PixelUnpack, GL_PIXEL_UNPACK_BUFFER);
-    add(GlBufferType::Query, GL_QUERY_BUFFER);
-    add(GlBufferType::ShaderStorage, GL_SHADER_STORAGE_BUFFER);
-    add(GlBufferType::Texture, GL_TEXTURE_BUFFER);
-    add(GlBufferType::TransformFeedback, GL_TRANSFORM_FEEDBACK_BUFFER);
-    add(GlBufferType::Uniform, GL_UNIFORM_BUFFER);
-
-    return map;
+    return c;
 }();
 }  // namespace klgl::detail
 namespace klgl
 {
 
-[[nodiscard]] constexpr GLenum ToGlValue(GlBufferType buffer_type) noexcept
+[[nodiscard]] constexpr auto ToGlValue(GlBufferType buffer_type) noexcept
 {
-    return detail::kGlBufferTypeToGlValue.Get(buffer_type);
+    return detail::kGlBufferTypeConverter.to_gl_value.Get(buffer_type);
 }
 
 }  // namespace klgl

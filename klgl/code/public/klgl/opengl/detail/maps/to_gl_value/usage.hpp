@@ -3,32 +3,28 @@
 #include <ass/enum_map.hpp>
 
 #include "klgl/macro/ensure_enum_size.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/opengl_value_converter.hpp"
 #include "klgl/opengl/enums.hpp"
 
 namespace klgl::detail
 {
 inline constexpr auto kGlUsageToGlValue = []
 {
-    ass::EnumMap<GlUsage, GLenum> map;
+    using T = GlUsage;
+    OpenGlValueConverter<T, GLenum> c;
 
-    auto add = [&](auto key, GLenum value)
-    {
-        assert(!map.Contains(key));
-        map.GetOrAdd(key) = value;
-    };
+    KLGL_ENSURE_ENUM_SIZE(T, 9);
+    c.Add(T::StreamDraw, GL_STREAM_DRAW);
+    c.Add(T::StreamRead, GL_STREAM_READ);
+    c.Add(T::StreamCopy, GL_STREAM_COPY);
+    c.Add(T::StaticDraw, GL_STATIC_DRAW);
+    c.Add(T::StaticRead, GL_STATIC_READ);
+    c.Add(T::StaticCopy, GL_STATIC_COPY);
+    c.Add(T::DynamicDraw, GL_DYNAMIC_DRAW);
+    c.Add(T::DynamicRead, GL_DYNAMIC_READ);
+    c.Add(T::DynamicCopy, GL_DYNAMIC_COPY);
 
-    KLGL_ENSURE_ENUM_SIZE(GlUsage, 9);
-    add(GlUsage::StreamDraw, GL_STREAM_DRAW);
-    add(GlUsage::StreamRead, GL_STREAM_READ);
-    add(GlUsage::StreamCopy, GL_STREAM_COPY);
-    add(GlUsage::StaticDraw, GL_STATIC_DRAW);
-    add(GlUsage::StaticRead, GL_STATIC_READ);
-    add(GlUsage::StaticCopy, GL_STATIC_COPY);
-    add(GlUsage::DynamicDraw, GL_DYNAMIC_DRAW);
-    add(GlUsage::DynamicRead, GL_DYNAMIC_READ);
-    add(GlUsage::DynamicCopy, GL_DYNAMIC_COPY);
-
-    return map;
+    return c;
 }();
 }  // namespace klgl::detail
 
@@ -37,7 +33,7 @@ namespace klgl
 
 [[nodiscard]] constexpr GLenum ToGlValue(GlUsage usage) noexcept
 {
-    return detail::kGlUsageToGlValue.Get(usage);
+    return detail::kGlUsageToGlValue.to_gl_value.Get(usage);
 }
 
 }  // namespace klgl

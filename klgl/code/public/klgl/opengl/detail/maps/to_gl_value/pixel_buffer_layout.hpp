@@ -3,26 +3,21 @@
 #include <ass/enum_map.hpp>
 
 #include "klgl/macro/ensure_enum_size.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/opengl_value_converter.hpp"
 #include "klgl/opengl/enums.hpp"
 
 namespace klgl::detail
 {
-
 inline constexpr auto kGlPixelBufferChannelTypeToGlValue = []
 {
-    ass::EnumMap<GlPixelBufferChannelType, GLenum> map;
+    using T = GlPixelBufferChannelType;
+    OpenGlValueConverter<T, GLint> c;
 
-    auto add = [&](auto key, GLenum value)
-    {
-        assert(!map.Contains(key));
-        map.GetOrAdd(key) = value;
-    };
+    KLGL_ENSURE_ENUM_SIZE(T, 2);
+    c.Add(T::UByte, GL_UNSIGNED_BYTE);
+    c.Add(T::Float, GL_FLOAT);
 
-    KLGL_ENSURE_ENUM_SIZE(GlPixelBufferChannelType, 2);
-    add(GlPixelBufferChannelType::UByte, GL_UNSIGNED_BYTE);
-    add(GlPixelBufferChannelType::Float, GL_FLOAT);
-
-    return map;
+    return c;
 }();
 }  // namespace klgl::detail
 
@@ -30,6 +25,6 @@ namespace klgl
 {
 [[nodiscard]] inline constexpr auto ToGlValue(GlPixelBufferChannelType v)
 {
-    return detail::kGlPixelBufferChannelTypeToGlValue.Get(v);
+    return detail::kGlPixelBufferChannelTypeToGlValue.to_gl_value.Get(v);
 }
 }  // namespace klgl
