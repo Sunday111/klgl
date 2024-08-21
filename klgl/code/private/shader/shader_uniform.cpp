@@ -3,10 +3,10 @@
 #include <stdexcept>
 
 #include "CppReflection/TypeRegistry.hpp"
-#include "EverydayTools/GUID_fmtlib.hpp"
+#include "EverydayTools/GUID_fmtlib.hpp"  // IWYU pragma: keep
 #include "fmt/core.h"
 #include "klgl/opengl/gl_api.hpp"
-#include "klgl/reflection/matrix_reflect.hpp"
+#include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/sampler_uniform.hpp"
 
 namespace klgl
