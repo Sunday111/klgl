@@ -36,6 +36,8 @@ public:
     const Window& GetWindow() const;
 
     const std::filesystem::path& GetExecutableDir() const;
+    virtual std::filesystem::path GetContentDir() const;
+    virtual std::filesystem::path GetShaderDir() const;
 
     events::EventManager& GetEventManager();
 

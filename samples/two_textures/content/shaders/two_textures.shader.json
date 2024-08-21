@@ -1,0 +1,6 @@
+{
+    "vertex": "two_textures.vert",
+    "fragment": "two_textures.frag",
+    "glsl_version": "330 core",
+    "definitions": []
+}

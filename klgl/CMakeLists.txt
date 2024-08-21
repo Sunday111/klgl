@@ -52,6 +52,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_function.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_mode.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/index_buffer_element_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/opengl_value_converter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/pixel_buffer_channel_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/pixel_buffer_layout.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/polygon_mode.hpp
@@ -82,6 +83,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/get_enum_underlying.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/member_offset.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/on_scope_leave.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/register_attribute.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/tagged_id_hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/tuple_type_by_index.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/type_to_gl_type.hpp

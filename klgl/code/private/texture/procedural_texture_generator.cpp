@@ -54,4 +54,17 @@ std::vector<uint8_t> ProceduralTextureGenerator::CircleMask(const edt::Vec2<size
             return static_cast<float>(opacity);
         });
 }
+
+std::vector<uint8_t> ProceduralTextureGenerator::TriangleMask(const edt::Vec2<size_t>& size, size_t upscale_factor)
+{
+    return Helper::GenerateImage(
+        size,
+        edt::FloatRange2Df::FromMinMax(Vec2f{} - 1, Vec2f{} + 1),
+        upscale_factor,
+        [&](const Vec2f& sample_position)
+        {
+            const uint8_t opacity = sample_position.x() > sample_position.y() ? 255 : 0;
+            return static_cast<float>(opacity);
+        });
+}
 }  // namespace klgl

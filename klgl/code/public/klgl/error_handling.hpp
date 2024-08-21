@@ -1,8 +1,9 @@
 #pragma once
 
+#include <fmt/color.h>
 #include <fmt/core.h>
 
-#include "cpptrace/cpptrace.hpp"
+#include <cpptrace/cpptrace.hpp>
 
 namespace klgl
 {
@@ -28,22 +29,23 @@ public:
     template <typename F>
     static void InvokeAndCatchAll(F&& f)
     {
+        constexpr auto red_fg = fmt::fg(fmt::rgb(255, 0, 0));
         try
         {
             f();
         }
         catch (const cpptrace::exception& exception)
         {
-            fmt::println("Unhandled exception: {}", exception.message());
+            fmt::print(red_fg, "Unhandled exception: {}\n", exception.message());
             exception.trace().print();
         }
         catch (const std::exception& exception)
         {
-            fmt::println("Unhandled exception: {}", exception.what());
+            fmt::print(red_fg, "Unhandled exception: {}\n", exception.what());
         }
         catch (...)
         {
-            fmt::println("Unhandled exception of unknown type");
+            fmt::print(red_fg, "Unhandled exception of unknown type\n");
         }
     }
 

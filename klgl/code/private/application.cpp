@@ -13,6 +13,7 @@
 #include "klgl/opengl/debug/gl_debug_messenger.hpp"
 #include "klgl/platform/os/os.hpp"
 #include "klgl/reflection/register_types.hpp"
+#include "klgl/shader/shader.hpp"
 #include "klgl/window.hpp"
 #include "platform/glfw/glfw_state.hpp"
 
@@ -165,6 +166,7 @@ void Application::Initialize()
     }
 
     state_->InitTime();
+    Shader::shaders_dir_ = GetShaderDir();
 }
 
 void Application::Run()
@@ -234,6 +236,16 @@ const Window& Application::GetWindow() const
 const std::filesystem::path& Application::GetExecutableDir() const
 {
     return state_->executable_dir_;
+}
+
+std::filesystem::path Application::GetContentDir() const
+{
+    return GetExecutableDir() / "content";
+}
+
+std::filesystem::path Application::GetShaderDir() const
+{
+    return GetContentDir() / "shaders";
 }
 
 float Application::GetTimeSeconds() const

@@ -31,5 +31,18 @@ public:
     }
 
     [[nodiscard]] static std::vector<uint8_t> CircleMask(const edt::Vec2<size_t>& size, size_t upscale_factor = 1);
+    [[nodiscard]] static std::vector<uint8_t> TriangleMask(const edt::Vec2<size_t>& size, size_t upscale_factor = 1);
+
+    static void MirrorX(const edt::Vec2<size_t>& size, std::span<uint8_t> data)
+    {
+        const auto hs = size / 2;
+        for (size_t y = 0; y != size.y(); ++y)
+        {
+            for (size_t x = 0; x != hs.x(); ++x)
+            {
+                std::swap(data[x + y * size.x()], data[(y + 1) * size.x() - x + 1]);
+            }
+        }
+    }
 };
 }  // namespace klgl
