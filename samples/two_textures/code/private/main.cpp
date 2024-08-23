@@ -62,13 +62,6 @@ class TwoTexturesApp : public klgl::Application
         shader_ = std::make_unique<klgl::Shader>("two_textures.shader.json");
         shader_->Use();
 
-        // Obtain uniform handles
-        u_color_ = *shader_->FindUniform(klgl::Name("u_color"));
-        u_scale_ = *shader_->FindUniform(klgl::Name("u_scale"));
-        u_translation_ = *shader_->FindUniform(klgl::Name("u_translation"));
-        u_texture_a_ = *shader_->FindUniform(klgl::Name("u_texture_a"));
-        u_texture_b_ = *shader_->FindUniform(klgl::Name("u_texture_b"));
-
         // Set initial uniform parameter for scale uniform. It wont change anymore
         shader_->SetUniform(u_scale_, edt::Vec2f{0.5f, 0.5f});
 
@@ -118,11 +111,11 @@ class TwoTexturesApp : public klgl::Application
         mesh_->Draw();
     }
 
-    klgl::UniformHandle u_color_;
-    klgl::UniformHandle u_scale_;
-    klgl::UniformHandle u_translation_;
-    klgl::UniformHandle u_texture_a_;
-    klgl::UniformHandle u_texture_b_;
+    klgl::UniformHandle u_color_ = {.name = klgl::Name("u_color")};
+    klgl::UniformHandle u_scale_ = {.name = klgl::Name("u_scale")};
+    klgl::UniformHandle u_translation_ = {.name = klgl::Name("u_translation")};
+    klgl::UniformHandle u_texture_a_ = {.name = klgl::Name("u_texture_a")};
+    klgl::UniformHandle u_texture_b_ = {.name = klgl::Name("u_texture_b")};
     std::shared_ptr<klgl::Shader> shader_;
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
     std::unique_ptr<klgl::Texture> circle_texture_;

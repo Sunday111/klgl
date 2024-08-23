@@ -20,7 +20,15 @@ public:
     ShaderDefine& operator=(const ShaderDefine&) = delete;
     ShaderDefine& operator=(ShaderDefine&& another) noexcept;
 
-    std::string GenDefine() const;
+    void GenDefine(std::string& to) const;
+
+    std::string GenDefine() const
+    {
+        std::string result;
+        GenDefine(result);
+        return result;
+    }
+
     void SetValue(std::span<const uint8_t> value_view);
 
     static ShaderDefine ReadFromJson(const nlohmann::json& json);

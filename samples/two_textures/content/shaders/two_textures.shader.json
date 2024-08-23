@@ -2,5 +2,11 @@
     "vertex": "two_textures.vert",
     "fragment": "two_textures.frag",
     "glsl_version": "330 core",
-    "definitions": []
+    "definitions": [
+        {
+            "name": "MY_DEFINITION",
+            "type": "float",
+            "default": 42.24
+        }
+    ]
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <filesystem>
-#include <vector>
+#include <string>
 
 namespace klgl
 {
@@ -9,7 +9,8 @@ namespace klgl
 class Filesystem
 {
 public:
-    static void ReadFile(const std::filesystem::path& path, std::vector<char>& buffer);
+    static void ReadFile(const std::filesystem::path& path, std::string& buffer);
+    static void AppendFileContentToBuffer(const std::filesystem::path& path, std::string& buffer);
 };
 
 }  // namespace klgl

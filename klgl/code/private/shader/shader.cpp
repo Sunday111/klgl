@@ -4,13 +4,15 @@
 
 #include <array>
 #include <cassert>
+#include <expected>
 #include <filesystem>
-#include <fstream>
 #include <string_view>
 #include <vector>
 
 #include "CppReflection/TypeRegistry.hpp"
 #include "fmt/core.h"
+#include "fmt/std.h"  // IWYU pragma: keep
+#include "klgl/error_handling.hpp"
 #include "klgl/filesystem/filesystem.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep (provides reflection for matrices)
 #include "klgl/shader/sampler_uniform.hpp"
@@ -27,23 +29,59 @@ namespace klgl
 
 std::filesystem::path Shader::shaders_dir_;
 
-static void
-CompileShader(GLuint shader, const std::filesystem::path& path, const std::vector<std::string>& extra_sources)
+static size_t GetShaderLogLength(GLuint shader)
+{
+    GLint log_length{};
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length);
+    return static_cast<size_t>(std::max(0, log_length));
+}
+
+static std::string GetShaderLog(GLuint shader)
+{
+    std::string log;
+    const size_t length = GetShaderLogLength(shader);
+    if (length != 0)
+    {
+        log.resize(length);
+        glGetShaderInfoLog(shader, static_cast<GLint>(length), nullptr, log.data());
+    }
+
+    return log;
+}
+
+static size_t GetProgramLogLength(GLuint program)
+{
+    GLint log_length{};
+    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &log_length);
+    return static_cast<size_t>(std::max(0, log_length));
+}
+
+static std::string GetProgramLog(GLuint program)
+{
+    std::string log;
+    const size_t length = GetProgramLogLength(program);
+    if (length != 0)
+    {
+        log.resize(length);
+        glGetProgramInfoLog(program, static_cast<GLint>(length), nullptr, log.data());
+    }
+
+    return log;
+}
+
+[[nodiscard]] static std::optional<GLuint>
+TryCompileShader(const GLuint type, std::span<const std::string_view> sources, std::string* out_error)
 {
     constexpr size_t stack_reserved = 30;
-
-    fmt::print("compiling shader {}\n", path.stem().string());
-    std::vector<char> buffer;
-    Filesystem::ReadFile(path, buffer);
 
     std::vector<const char*> shader_sources_heap;
     std::vector<GLint> shader_sources_lengths_heap;
     std::array<const char*, stack_reserved> shader_sources_stack{};
     std::array<GLint, stack_reserved> shader_sources_lengths_stack{};
-    const size_t num_sources = extra_sources.size() + 1u;
+    const size_t num_sources = sources.size();
     std::span<const char*> shader_sources;
     std::span<GLint> shader_sources_lengths{};
-    if (num_sources > stack_reserved)
+    if (num_sources > shader_sources_stack.size())
     {
         shader_sources_heap.resize(num_sources);
         shader_sources_lengths_heap.resize(num_sources);
@@ -56,36 +94,50 @@ CompileShader(GLuint shader, const std::filesystem::path& path, const std::vecto
         shader_sources_lengths = shader_sources_lengths_stack;
     }
 
-    for (size_t i = 0; i < extra_sources.size(); ++i)
+    for (size_t i = 0; i < sources.size(); ++i)
     {
-        shader_sources[i] = extra_sources[i].data();
-        shader_sources_lengths[i] = static_cast<GLsizei>(extra_sources[i].size());
+        shader_sources[i] = sources[i].data();
+        shader_sources_lengths[i] = static_cast<GLsizei>(sources[i].size());
     }
 
-    shader_sources[extra_sources.size()] = buffer.data();
-    shader_sources_lengths[extra_sources.size()] = static_cast<GLsizei>(buffer.size());
-
+    const GLuint shader = glCreateShader(type);
     glShaderSource(shader, static_cast<GLsizei>(num_sources), shader_sources.data(), shader_sources_lengths.data());
     glCompileShader(shader);
 
     int success{};
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 
-    [[unlikely]] if (!success)
+    [[likely]] if (success)
     {
-        GLint info_length{};
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_length);
-        std::string error_info;
-        if (info_length > 0)
-        {
-            error_info.resize(static_cast<size_t>(info_length));
-            glGetShaderInfoLog(shader, info_length, nullptr, error_info.data());
-        }
-        throw std::runtime_error(fmt::format("failed to compile shader {} log:\n{}", path.stem().string(), error_info));
+        return shader;
     }
+
+    auto deleter = klgl::OnScopeLeave([&] { glDeleteShader(shader); });
+
+    if (out_error)
+    {
+        *out_error = GetShaderLog(shader);
+    }
+
+    return std::nullopt;
 }
 
-static GLuint LinkShaders(const std::span<const GLuint>& shaders)
+[[nodiscard]] static std::expected<GLuint, std::string> TryCompileShader(
+    const GLuint type,
+    std::span<const std::string_view> sources)
+{
+    std::string error;
+    [[likely]] if (auto opt_program = TryCompileShader(type, sources, &error))
+    {
+        return opt_program.value();
+    }
+
+    return std::unexpected{std::move(error)};
+}
+
+[[nodiscard]] static std::optional<GLuint> TryLinkShaderProgram(
+    const std::span<const GLuint>& shaders,
+    std::string* out_error)
 {
     GLuint program = glCreateProgram();
     for (auto shader : shaders)
@@ -102,37 +154,31 @@ static GLuint LinkShaders(const std::span<const GLuint>& shaders)
         return program;
     }
 
-    GLint info_length{};
-    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_length);
-    std::string error_info;
-    if (info_length > 0)
+    auto deleter = klgl::OnScopeLeave([&] { glDeleteProgram(program); });
+
+    if (out_error)
     {
-        error_info.resize(static_cast<size_t>(info_length));
-        glGetShaderInfoLog(program, info_length, nullptr, error_info.data());
+        *out_error = GetProgramLog(program);
     }
-    glDeleteProgram(program);
-    throw std::runtime_error(fmt::format("failed to link shaders. Log:\n{}", error_info));
+
+    return std::nullopt;
 }
 
-static auto get_shader_json(const std::filesystem::path& path)
+[[nodiscard]] static std::expected<GLuint, std::string> TryLinkShaderProgram(const std::span<const GLuint>& shaders)
 {
-    std::ifstream shader_file(path);
-
-    [[unlikely]] if (!shader_file.is_open())
+    std::string error;
+    [[likely]] if (auto opt_program = TryLinkShaderProgram(shaders, &error))
     {
-        throw std::invalid_argument(fmt::format("Failed to open file {}", path.string()));
+        return opt_program.value();
     }
 
-    nlohmann::json shader_json;
-    shader_file >> shader_json;
-    return shader_json;
+    return std::unexpected{std::move(error)};
 }
 
 Shader::Shader(std::filesystem::path path) : path_(std::move(path))
 {
-    definitions_initialized_ = false;
-    need_recompile_ = false;
-    Compile();
+    std::string compile_buffer;
+    Compile(compile_buffer);
 }
 
 Shader::~Shader()
@@ -157,11 +203,14 @@ uint32_t Shader::GetUniformLocation(const char* name) const noexcept
     return OpenGl::GetUniformLocation(*program_, name);
 }
 
-void Shader::Compile()
+void Shader::Compile(std::string& buffer)
 {
     Destroy();
 
-    nlohmann::json shader_json = get_shader_json(shaders_dir_ / path_);
+    // Reuse the buffer to read JSON file
+    Filesystem::ReadFile(shaders_dir_ / path_, buffer);
+    auto shader_json = nlohmann::json::parse(buffer);
+    buffer.clear();
 
     size_t num_compiled = 0;
     std::array<GLuint, 2> compiled{};
@@ -174,12 +223,9 @@ void Shader::Compile()
             }
         });
 
-    std::vector<std::string> extra_sources;
-
     {
-        const std::string version = shader_json.at("glsl_version");
-        std::string line = fmt::format("#version {}\n\n", version);
-        extra_sources.push_back(line);
+        const std::string& version = shader_json.at("glsl_version");
+        fmt::format_to(std::back_inserter(buffer), "#version {}\n\n", version);
     }
 
     if (!definitions_initialized_)
@@ -195,42 +241,56 @@ void Shader::Compile()
         definitions_initialized_ = true;
     }
 
-    for (const auto& definition : defines_)
+    for (const ShaderDefine& def : defines_)
     {
-        extra_sources.push_back(definition.GenDefine());
+        def.GenDefine(buffer);
     }
 
-    auto add_one = [&](GLuint type, const char* json_name)
+    const size_t common_code_length = buffer.size();
+    const auto shaders_sources_path = shaders_dir_ / "src";
+    auto add_one = [&](GLuint type, const std::string_view json_name)
     {
         if (!shader_json.contains(json_name))
         {
             return;
         }
 
-        auto stage_path = shaders_dir_ / "src" / std::string(shader_json[json_name]);
-        const GLuint shader = glCreateShader(type);
+        const std::string& src_name = shader_json[json_name];
+        Filesystem::AppendFileContentToBuffer(shaders_sources_path / src_name, buffer);
 
-        try
-        {
-            CompileShader(shader, stage_path, extra_sources);
-        }
-        catch (...)
-        {
-            glDeleteShader(shader);
-            throw;
-        }
+        const std::string_view code_view = buffer;
+        const auto compile_result = TryCompileShader(type, std::span{&code_view, 1});
 
-        compiled[num_compiled] = shader;
-        num_compiled += 1;
+        // remove file content to reuse the code shared across all types of shaders
+        buffer.resize(common_code_length);
+
+        [[likely]] if (compile_result.has_value())
+        {
+            compiled[num_compiled] = compile_result.value();
+            num_compiled += 1;
+        }
+        else
+        {
+            throw klgl::ErrorHandling::RuntimeErrorWithMessage(
+                "failed to compile shader {} log:\n{}",
+                src_name,
+                compile_result.error());
+        }
     };
 
     add_one(GL_VERTEX_SHADER, "vertex");
     add_one(GL_FRAGMENT_SHADER, "fragment");
 
-    program_ = LinkShaders(std::span(compiled).subspan(0, num_compiled));
-    need_recompile_ = false;
-
-    UpdateUniforms();
+    [[likely]] if (auto link_result = TryLinkShaderProgram(std::span(compiled).subspan(0, num_compiled)))
+    {
+        program_ = link_result.value();
+        need_recompile_ = false;
+        UpdateUniforms();
+    }
+    else
+    {
+        throw klgl::ErrorHandling::RuntimeErrorWithMessage("Failed to link shader {}. {}", path_, link_result.error());
+    }
 }
 
 void Shader::DrawDetails()
@@ -283,7 +343,8 @@ void Shader::DrawDetails()
 
     if (need_recompile_)
     {
-        Compile();
+        std::string buffer;
+        Compile(buffer);
     }
 }
 

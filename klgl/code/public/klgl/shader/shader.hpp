@@ -25,7 +25,7 @@ public:
 
     void Use();
 
-    void Compile();
+    void Compile(std::string& buffer);
     [[nodiscard]] std::optional<uint32_t> FindUniformLocation(const char*) const noexcept;
     [[nodiscard]] uint32_t GetUniformLocation(const char*) const noexcept;
     void DrawDetails();
@@ -95,8 +95,8 @@ private:
     std::vector<ShaderDefine> defines_;
     std::vector<ShaderUniform> uniforms_;
     std::optional<GLuint> program_;
-    bool definitions_initialized_ : 1;
-    bool need_recompile_ : 1;
+    bool definitions_initialized_ : 1 = false;
+    bool need_recompile_ : 1 = false;
 };
 
 template <typename T>

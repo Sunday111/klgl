@@ -21,9 +21,15 @@ public:
     }
 
     template <typename... Args>
+    static auto RuntimeErrorWithMessage(fmt::format_string<Args...> format, Args&&... args)
+    {
+        return cpptrace::runtime_error(fmt::format(format, std::forward<Args>(args)...));
+    }
+
+    template <typename... Args>
     static void ThrowWithMessage(fmt::format_string<Args...> format, Args&&... args)
     {
-        throw cpptrace::runtime_error(fmt::format(format, std::forward<Args>(args)...));
+        throw RuntimeErrorWithMessage(format, std::forward<Args>(args)...);
     }
 
     template <typename F>

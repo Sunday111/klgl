@@ -29,24 +29,26 @@ inline static const T& CastBuffer(const std::vector<uint8_t>& buffer) noexcept
     return *reinterpret_cast<const T*>(buffer.data());  // NOLINT
 }
 
-std::string ShaderDefine::GenDefine() const
+void ShaderDefine::GenDefine(std::string& to) const
 {
-    std::string value_str;
+    const auto out = std::back_inserter(to);
+    fmt::format_to(out, "#define {}", name.GetView());
+
     if (type_guid == cppreflection::GetStaticTypeGUID<int>())
     {
-        value_str = fmt::format("{}", CastBuffer<int>(value));
+        fmt::format_to(out, " {}", CastBuffer<int>(value));
     }
     else if (type_guid == cppreflection::GetStaticTypeGUID<float>())
     {
-        value_str = fmt::format("{}", CastBuffer<float>(value));
+        fmt::format_to(out, " {}", CastBuffer<float>(value));
     }
     else if (type_guid == cppreflection::GetStaticTypeGUID<Vec3f>())
     {
         const auto& vec = CastBuffer<Vec3f>(value);
-        value_str = fmt::format("vec3({}, {}, {})", vec.x(), vec.y(), vec.z());
+        fmt::format_to(out, "vec3({}, {}, {})", vec.x(), vec.y(), vec.z());
     }
 
-    return fmt::format("#define {} {}\n", name.GetView(), value_str);
+    fmt::format_to(out, "\n");
 }
 
 void ShaderDefine::MoveFrom(ShaderDefine& another)
