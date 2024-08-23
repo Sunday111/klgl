@@ -30,7 +30,7 @@ class QuadApp : public klgl::Application
         klgl::OpenGl::EnableVertexAttribArray(0);
         klgl::OpenGl::VertexAttribPointer(
             0,
-            2,
+            edt::Vec2f::Size(),
             klgl::GlVertexAttribComponentType::Float,
             false,
             sizeof(edt::Vec2f),
