@@ -34,16 +34,11 @@ class QuadApp : public klgl::Application
             klgl::GlVertexAttribComponentType::Float,
             false,
             sizeof(edt::Vec2f),
-            reinterpret_cast<void*>(0));  // NOLINT
+            nullptr);
 
         // Load shader
         shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
         shader_->Use();
-
-        // Obtain uniform handles
-        u_color_ = *shader_->FindUniform(klgl::Name("u_color"));
-        u_scale_ = *shader_->FindUniform(klgl::Name("u_scale"));
-        u_translation_ = *shader_->FindUniform(klgl::Name("u_translation"));
 
         // Set initial uniform parameters of the shader
         shader_->SetUniform(u_color_, edt::Vec4f{1.f, 0.f, 0.f, 1.f});
@@ -65,9 +60,9 @@ class QuadApp : public klgl::Application
         mesh_->BindAndDraw();
     }
 
-    klgl::UniformHandle u_color_;
-    klgl::UniformHandle u_scale_;
-    klgl::UniformHandle u_translation_;
+    klgl::UniformHandle u_color_ = klgl::UniformHandle("u_color");
+    klgl::UniformHandle u_scale_ = klgl::UniformHandle("u_scale");
+    klgl::UniformHandle u_translation_ = klgl::UniformHandle("u_translation");
     std::shared_ptr<klgl::Shader> shader_;
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
 };
