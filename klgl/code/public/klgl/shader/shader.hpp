@@ -19,6 +19,8 @@ class Texture;
 
 class Shader
 {
+    struct Internal;
+
 public:
     explicit Shader(std::filesystem::path path);
     ~Shader();
@@ -65,7 +67,7 @@ public:
             std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&value), sizeof(T)));  // NOLINT
     }
 
-    std::optional<GLuint> GetProgram() const { return program_; }
+    GlProgramId GetProgram() const { return program_; }
 
 protected:
     ShaderUniform& GetUniform(UniformHandle& handle);
@@ -83,7 +85,6 @@ protected:
     }
 
 private:
-    void Check() const;
     void Destroy();
     void UpdateUniforms();
 
@@ -94,7 +95,7 @@ private:
     std::filesystem::path path_;
     std::vector<ShaderDefine> defines_;
     std::vector<ShaderUniform> uniforms_;
-    std::optional<GLuint> program_;
+    GlProgramId program_;
     bool definitions_initialized_ : 1 = false;
     bool need_recompile_ : 1 = false;
 };

@@ -20,6 +20,7 @@ struct MeshVertex
 
 class TwoTexturesApp : public klgl::Application
 {
+    using UniformHandle = klgl::UniformHandle;
     void Initialize() override
     {
         klgl::Application::Initialize();
@@ -111,11 +112,11 @@ class TwoTexturesApp : public klgl::Application
         mesh_->Draw();
     }
 
-    klgl::UniformHandle u_color_ = {.name = klgl::Name("u_color")};
-    klgl::UniformHandle u_scale_ = {.name = klgl::Name("u_scale")};
-    klgl::UniformHandle u_translation_ = {.name = klgl::Name("u_translation")};
-    klgl::UniformHandle u_texture_a_ = {.name = klgl::Name("u_texture_a")};
-    klgl::UniformHandle u_texture_b_ = {.name = klgl::Name("u_texture_b")};
+    UniformHandle u_color_ = UniformHandle("u_color");
+    UniformHandle u_scale_ = UniformHandle("u_scale");
+    UniformHandle u_translation_ = UniformHandle("u_translation");
+    UniformHandle u_texture_a_ = UniformHandle("u_texture_a");
+    UniformHandle u_texture_b_ = UniformHandle("u_texture_b");
     std::shared_ptr<klgl::Shader> shader_;
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
     std::unique_ptr<klgl::Texture> circle_texture_;

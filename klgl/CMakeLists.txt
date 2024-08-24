@@ -46,6 +46,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/name_cache/name_cache.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/annotations.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/gl_debug_messenger.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/gl_api_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_pixel_buffer_layout_to_num_channels.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_value_to_gl_error.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/buffer_type.hpp
@@ -57,6 +58,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/pixel_buffer_layout.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/polygon_mode.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/primitive_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/shader_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_filter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_internal_format.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_parameter_target.hpp
@@ -64,6 +66,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_wrap_mode.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/usage.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/vertex_attrib_component_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/settings.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/enums.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_types_reflection.hpp

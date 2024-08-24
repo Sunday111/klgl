@@ -1,0 +1,11 @@
+#pragma once
+
+#ifndef KLGL_INLINE_OPENGL_WRAPPERS
+#define KLGL_INLINE_OPENGL_WRAPPERS 1
+#endif
+
+#if KLGL_INLINE_OPENGL_WRAPPERS
+#define KLGL_OGL_INLINE inline
+#else
+#define KLGL_OGL_INLINE
+#endif

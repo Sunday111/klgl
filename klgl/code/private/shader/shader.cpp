@@ -1,5 +1,7 @@
 #include "klgl/shader/shader.hpp"
 
+#include <fmt/chrono.h>
+#include <fmt/std.h>
 #include <imgui.h>
 
 #include <array>
@@ -29,178 +31,93 @@ namespace klgl
 
 std::filesystem::path Shader::shaders_dir_;
 
-static size_t GetShaderLogLength(GLuint shader)
+struct Shader::Internal
 {
-    GLint log_length{};
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length);
-    return static_cast<size_t>(std::max(0, log_length));
-}
-
-static std::string GetShaderLog(GLuint shader)
-{
-    std::string log;
-    const size_t length = GetShaderLogLength(shader);
-    if (length != 0)
+    [[nodiscard]] static bool
+    TryCompileShader(GlShaderId shader, std::span<const std::string_view> sources, std::string* out_error)
     {
-        log.resize(length);
-        glGetShaderInfoLog(shader, static_cast<GLint>(length), nullptr, log.data());
+        OpenGl::ShaderSource(shader, sources);
+        OpenGl::CompileShader(shader);
+
+        if (OpenGl::GetShaderCompileStatus(shader))
+        {
+            return true;
+        }
+
+        if (out_error)
+        {
+            if (auto maybe_log = OpenGl::GetShaderLogCE(shader))
+            {
+                *out_error = std::move(maybe_log.value());
+            }
+            else
+            {
+                *out_error = fmt::format("Failed to get shader log. {}", maybe_log.error().message());
+            }
+        }
+
+        return false;
     }
 
-    return log;
-}
-
-static size_t GetProgramLogLength(GLuint program)
-{
-    GLint log_length{};
-    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &log_length);
-    return static_cast<size_t>(std::max(0, log_length));
-}
-
-static std::string GetProgramLog(GLuint program)
-{
-    std::string log;
-    const size_t length = GetProgramLogLength(program);
-    if (length != 0)
+    [[nodiscard]] static bool
+    TryLinkShaderProgram(GlProgramId program, const std::span<const GlShaderId>& shaders, std::string* out_error)
     {
-        log.resize(length);
-        glGetProgramInfoLog(program, static_cast<GLint>(length), nullptr, log.data());
+        std::ranges::for_each(shaders, std::bind_front(OpenGl::AttachShader, program));
+
+        OpenGl::LinkProgram(program);
+        if (OpenGl::GetProgramLinkStatus(program))
+        {
+            return true;
+        }
+
+        if (out_error)
+        {
+            [[likely]] if (auto maybe_log = OpenGl::GetProgramLogCE(program))
+            {
+                *out_error = std::move(maybe_log.value());
+            }
+            else
+            {
+                *out_error = fmt::format("Failed to get program log. {}", maybe_log.error().message());
+            }
+        }
+
+        return false;
     }
-
-    return log;
-}
-
-[[nodiscard]] static std::optional<GLuint>
-TryCompileShader(const GLuint type, std::span<const std::string_view> sources, std::string* out_error)
-{
-    constexpr size_t stack_reserved = 30;
-
-    std::vector<const char*> shader_sources_heap;
-    std::vector<GLint> shader_sources_lengths_heap;
-    std::array<const char*, stack_reserved> shader_sources_stack{};
-    std::array<GLint, stack_reserved> shader_sources_lengths_stack{};
-    const size_t num_sources = sources.size();
-    std::span<const char*> shader_sources;
-    std::span<GLint> shader_sources_lengths{};
-    if (num_sources > shader_sources_stack.size())
-    {
-        shader_sources_heap.resize(num_sources);
-        shader_sources_lengths_heap.resize(num_sources);
-        shader_sources = shader_sources_heap;
-        shader_sources_lengths = shader_sources_lengths_heap;
-    }
-    else
-    {
-        shader_sources = shader_sources_stack;
-        shader_sources_lengths = shader_sources_lengths_stack;
-    }
-
-    for (size_t i = 0; i < sources.size(); ++i)
-    {
-        shader_sources[i] = sources[i].data();
-        shader_sources_lengths[i] = static_cast<GLsizei>(sources[i].size());
-    }
-
-    const GLuint shader = glCreateShader(type);
-    glShaderSource(shader, static_cast<GLsizei>(num_sources), shader_sources.data(), shader_sources_lengths.data());
-    glCompileShader(shader);
-
-    int success{};
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-
-    [[likely]] if (success)
-    {
-        return shader;
-    }
-
-    auto deleter = klgl::OnScopeLeave([&] { glDeleteShader(shader); });
-
-    if (out_error)
-    {
-        *out_error = GetShaderLog(shader);
-    }
-
-    return std::nullopt;
-}
-
-[[nodiscard]] static std::expected<GLuint, std::string> TryCompileShader(
-    const GLuint type,
-    std::span<const std::string_view> sources)
-{
-    std::string error;
-    [[likely]] if (auto opt_program = TryCompileShader(type, sources, &error))
-    {
-        return opt_program.value();
-    }
-
-    return std::unexpected{std::move(error)};
-}
-
-[[nodiscard]] static std::optional<GLuint> TryLinkShaderProgram(
-    const std::span<const GLuint>& shaders,
-    std::string* out_error)
-{
-    GLuint program = glCreateProgram();
-    for (auto shader : shaders)
-    {
-        glAttachShader(program, shader);
-    }
-
-    glLinkProgram(program);
-    int success{};
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-
-    [[likely]] if (success)
-    {
-        return program;
-    }
-
-    auto deleter = klgl::OnScopeLeave([&] { glDeleteProgram(program); });
-
-    if (out_error)
-    {
-        *out_error = GetProgramLog(program);
-    }
-
-    return std::nullopt;
-}
-
-[[nodiscard]] static std::expected<GLuint, std::string> TryLinkShaderProgram(const std::span<const GLuint>& shaders)
-{
-    std::string error;
-    [[likely]] if (auto opt_program = TryLinkShaderProgram(shaders, &error))
-    {
-        return opt_program.value();
-    }
-
-    return std::unexpected{std::move(error)};
-}
+};
 
 Shader::Shader(std::filesystem::path path) : path_(std::move(path))
 {
+    using Clock = std::chrono::high_resolution_clock;
+    auto t0 = Clock::now();
     std::string compile_buffer;
     Compile(compile_buffer);
+    auto t1 = Clock::now();
+    auto d = t1 - t0;
+    fmt::println(
+        "Compile {} duration: {}",
+        path_,
+        std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(d));
 }
 
 Shader::~Shader()
 {
     Destroy();
 }
+
 void Shader::Use()
 {
-    Check();
-    OpenGl::UseProgram(*program_);
+    OpenGl::UseProgram(program_);
 }
 
 std::optional<uint32_t> Shader::FindUniformLocation(const char* name) const noexcept
 {
-    Check();
-    return OpenGl::FindUniformLocation(*program_, name);
+    return OpenGl::FindUniformLocation(program_.GetValue(), name);
 }
 
 uint32_t Shader::GetUniformLocation(const char* name) const noexcept
 {
-    Check();
-    return OpenGl::GetUniformLocation(*program_, name);
+    return OpenGl::GetUniformLocation(program_.GetValue(), name);
 }
 
 void Shader::Compile(std::string& buffer)
@@ -213,13 +130,13 @@ void Shader::Compile(std::string& buffer)
     buffer.clear();
 
     size_t num_compiled = 0;
-    std::array<GLuint, 2> compiled{};
+    std::array<GlShaderId, 2> shaders{};
     auto deleter = OnScopeLeave(
         [&]()
         {
             for (size_t i = 0; i < num_compiled; ++i)
             {
-                glDeleteShader(compiled[i]);
+                OpenGl::DeleteShader(shaders[i]);
             }
         });
 
@@ -248,49 +165,57 @@ void Shader::Compile(std::string& buffer)
 
     const size_t common_code_length = buffer.size();
     const auto shaders_sources_path = shaders_dir_ / "src";
-    auto add_one = [&](GLuint type, const std::string_view json_name)
+    auto add_one = [&](GlShaderType type, const std::string_view json_name)
     {
         if (!shader_json.contains(json_name))
         {
             return;
         }
 
+        auto shader = OpenGl::CreateShader(type);
+        shaders[num_compiled++] = shader;
+
         const std::string& src_name = shader_json[json_name];
         Filesystem::AppendFileContentToBuffer(shaders_sources_path / src_name, buffer);
 
         const std::string_view code_view = buffer;
-        const auto compile_result = TryCompileShader(type, std::span{&code_view, 1});
-
-        // remove file content to reuse the code shared across all types of shaders
-        buffer.resize(common_code_length);
-
-        [[likely]] if (compile_result.has_value())
-        {
-            compiled[num_compiled] = compile_result.value();
-            num_compiled += 1;
-        }
-        else
+        std::string compile_log;
+        [[unlikely]] if (!Internal::TryCompileShader(shader, std::span{&code_view, 1}, &compile_log))
         {
             throw klgl::ErrorHandling::RuntimeErrorWithMessage(
                 "failed to compile shader {} log:\n{}",
                 src_name,
-                compile_result.error());
+                compile_log);
         }
+
+        // remove file content to reuse the code shared across all types of shaders
+        buffer.resize(common_code_length);
     };
 
-    add_one(GL_VERTEX_SHADER, "vertex");
-    add_one(GL_FRAGMENT_SHADER, "fragment");
+    add_one(GlShaderType::Vertex, "vertex");
+    add_one(GlShaderType::Fragment, "fragment");
 
-    [[likely]] if (auto link_result = TryLinkShaderProgram(std::span(compiled).subspan(0, num_compiled)))
+    GlProgramId program = OpenGl::CreateProgram();
+
+    auto program_deleter = klgl::OnScopeLeave(
+        [&]
+        {
+            if (program.IsValid())
+            {
+                OpenGl::DeleteProgram(program);
+            }
+        });
+
+    std::string link_log;
+    [[unlikely]] if (!Internal::TryLinkShaderProgram(program, std::span(shaders).subspan(0, num_compiled), &link_log))
     {
-        program_ = link_result.value();
-        need_recompile_ = false;
-        UpdateUniforms();
+        throw klgl::ErrorHandling::RuntimeErrorWithMessage("Failed to link shader {}. {}", path_, link_log);
     }
-    else
-    {
-        throw klgl::ErrorHandling::RuntimeErrorWithMessage("Failed to link shader {}. {}", path_, link_result.error());
-    }
+
+    program_ = program;
+    program = {};
+    need_recompile_ = false;
+    UpdateUniforms();
 }
 
 void Shader::DrawDetails()
@@ -502,20 +427,12 @@ void Shader::SendUniform(UniformHandle& handle)
     uniform.SendValue();
 }
 
-void Shader::Check() const
-{
-    [[unlikely]] if (!program_)
-    {
-        throw std::runtime_error("Invalid shader");
-    }
-}
-
 void Shader::Destroy()
 {
-    if (program_)
+    if (program_.IsValid())
     {
-        glDeleteProgram(*program_);
-        program_.reset();
+        OpenGl::DeleteProgram(program_);
+        program_ = {};
     }
 }
 
@@ -561,7 +478,7 @@ void Shader::UpdateUniforms()
 
     {
         GLint num_uniforms_{};
-        glGetProgramiv(*program_, GL_ACTIVE_UNIFORMS, &num_uniforms_);
+        glGetProgramiv(program_.GetValue(), GL_ACTIVE_UNIFORMS, &num_uniforms_);
         [[unlikely]] if (num_uniforms_ < 1)
         {
             return;
@@ -570,7 +487,7 @@ void Shader::UpdateUniforms()
     }
 
     GLint max_name_legth = 0;
-    glGetProgramiv(*program_, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_name_legth);
+    glGetProgramiv(program_.GetValue(), GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_name_legth);
 
     std::string name_buffer_heap;
     constexpr GLsizei name_buffer_size_stack = 64;
@@ -599,7 +516,7 @@ void Shader::UpdateUniforms()
         GLenum glsl_type = 0;
         GLsizei actual_name_length = 0;
         glGetActiveUniform(
-            *program_,
+            program_.GetValue(),
             i,
             name_buffer_size,
             &actual_name_length,
@@ -636,7 +553,7 @@ void Shader::UpdateUniforms()
                 uniform.SetType(*cpp_type);
             }
 
-            const GLint location = glGetUniformLocation(*program_, name.data());
+            const GLint location = glGetUniformLocation(program_.GetValue(), name.data());
             uniforms.back().SetLocation(static_cast<uint32_t>(location));
         };
 
@@ -665,7 +582,7 @@ void Shader::UpdateUniforms()
         constexpr edt::GUID sampler_uniform_guid = cppreflection::GetStaticTypeInfo<SamplerUniform>().guid;
         if (uniform.GetTypeGUID() == sampler_uniform_guid)
         {
-            UniformHandle handle{static_cast<uint32_t>(i), uniform.GetName()};
+            UniformHandle handle(static_cast<uint32_t>(i), uniform.GetName());
             auto sampler = GetUniformValue<SamplerUniform>(handle);
             sampler.sampler_index = static_cast<uint8_t>(i);
             uniform.SetValue(std::span(reinterpret_cast<const uint8_t*>(&sampler), sizeof(sampler)));  // NOLINT

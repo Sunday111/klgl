@@ -260,6 +260,16 @@ enum class GlDepthTextureCompareMode
     None
 };
 
+enum class GlShaderType
+{
+    Compute,
+    Vertex,
+    TesselationControl,
+    TesselationEvaluation,
+    Geometry,
+    Fragment,
+};
+
 }  // namespace klgl
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlError);
@@ -309,3 +319,6 @@ KLGL_MAKE_ENUM_FORMATTER(GlDepthTextureCompareMode);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlDepthTextureCompareFunction);
 KLGL_MAKE_ENUM_FORMATTER(GlDepthTextureCompareFunction);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlShaderType);
+KLGL_MAKE_ENUM_FORMATTER(GlShaderType);
