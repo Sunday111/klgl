@@ -1,10 +1,10 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 #include <span>
 
 #include "klgl/opengl/detail/maps/gl_pixel_buffer_layout_to_num_channels.hpp"
+#include "klgl/opengl/identifiers.hpp"
 #include "klgl/texture/texture_format_helper.hpp"
 
 namespace klgl
@@ -52,15 +52,15 @@ public:
     Vec2<size_t> GetSize() const { return resolution_; }
     size_t GetWidth() const { return GetSize().x(); }
     size_t GetHeight() const { return GetSize().y(); }
-    std::optional<GLuint> GetTexture() const { return texture_; }
+    GlTextureId GetTexture() const { return texture_; }
 
 private:
     void SetPixels(const PixelBufferFormat& format, std::span<const uint8_t> data);
 
 private:
-    std::optional<GLuint> texture_;
+    GlTextureId texture_;
     Vec2<size_t> resolution_;
-    GLenum type_ = GL_TEXTURE_2D;
+    GlTargetTextureType type_ = GlTargetTextureType::Texture2d;
     GlTextureInternalFormat format_ = GlTextureInternalFormat::RGBA8;
 };
 

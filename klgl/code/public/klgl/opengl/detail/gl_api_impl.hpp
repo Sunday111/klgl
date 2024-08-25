@@ -1,5 +1,6 @@
 #include "fmt/format.h"
 #include "fmt/ranges.h"  // IWYU pragma: keep
+#include "identifiers_impl.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/detail/maps/gl_value_to_gl_error.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/buffer_type.hpp"
@@ -9,8 +10,9 @@
 #include "klgl/opengl/detail/maps/to_gl_value/polygon_mode.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/primitive_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/shader_type.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/target_texture_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_filter.hpp"
-#include "klgl/opengl/detail/maps/to_gl_value/texture_parameter_target.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/texture_param_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_wrap_axis.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_wrap_mode.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/usage.hpp"
@@ -23,6 +25,44 @@ namespace klgl
 
 struct OpenGl::Internal
 {
+    template <size_t stack_reserve>
+    struct ShaderSourceCollector
+    {
+        std::vector<const char*> shader_sources_heap{};
+        std::vector<GLint> shader_sources_lengths_heap{};
+        std::array<const char*, stack_reserve> shader_sources_stack{};
+        std::array<GLint, stack_reserve> shader_sources_lengths_stack{};
+
+        std::pair<std::span<const char*>, std::span<GLint>> Fill(std::span<const std::string_view> sources)
+        {
+            std::span<const char*> shader_sources;
+            std::span<GLint> shader_sources_lengths{};
+            const size_t num_sources = sources.size();
+            if (num_sources > shader_sources_stack.size())
+            {
+                shader_sources_heap.resize(num_sources);
+                shader_sources_lengths_heap.resize(num_sources);
+                shader_sources = shader_sources_heap;
+                shader_sources_lengths = shader_sources_lengths_heap;
+            }
+            else
+            {
+                shader_sources = shader_sources_stack;
+                shader_sources_lengths = shader_sources_lengths_stack;
+            }
+
+            for (size_t i = 0; i < sources.size(); ++i)
+            {
+                shader_sources[i] = sources[i].data();
+                shader_sources_lengths[i] = static_cast<GLsizei>(sources[i].size());
+            }
+
+            return {shader_sources, shader_sources_lengths};
+        }
+    };
+
+    [[nodiscard]] static constexpr GLboolean CastBool(bool value) noexcept { return static_cast<GLboolean>(value); }
+
     template <typename... Args>
     static void Check(fmt::format_string<Args...> format_string, Args&&... args)
     {
@@ -89,18 +129,61 @@ struct OpenGl::Internal
         return std::unexpected{std::move(expected.error())};
     }
 
-    template <typename T>
-    static void GenObjects(T api_fn, const std::span<GLuint>& objects)
+    template <typename Identifier>
+    static void GenManyNE(std::span<Identifier> identifiers)
     {
-        api_fn(static_cast<GLsizei>(objects.size()), objects.data());
+        using Traits = detail::IdTraits<Identifier>;
+        (*Traits::generator)(
+            static_cast<GLsizei>(identifiers.size()),
+            reinterpret_cast<Identifier::Repr*>(identifiers.data())  // NOLINT
+        );
+    }
+
+    template <typename Identifier>
+    [[nodiscard]] static std::optional<OpenGlError> GenManyCE(std::span<Identifier> identifiers)
+    {
+        using Traits = detail::IdTraits<Identifier>;
+        (*Traits::generator)(
+            static_cast<GLsizei>(identifiers.size()),
+            reinterpret_cast<Identifier::Repr*>(identifiers.data())  // NOLINT
+        );
+        return ConsumeError(
+            "{}(n: {}, array: {})",
+            Traits::generator_name,
+            identifiers.size(),
+            static_cast<const void*>(identifiers.data()));
+    }
+
+    template <typename Identifier>
+    static void GenMany(std::span<Identifier> identifiers)
+    {
+        ThrowIfError(GenManyCE(identifiers));
     }
 
     template <typename T>
-    [[nodiscard]] static GLuint GenObject(T api_fn)
+    [[nodiscard]] static T GenOneNE()
     {
-        GLuint object{};
-        GenObjects(api_fn, std::span(&object, 1));
-        return object;
+        T result{};
+        GenManyNE(std::span{&result, 1});
+        return result;
+    }
+
+    template <typename T>
+    [[nodiscard]] static std::expected<T, OpenGlError> GenOneCE()
+    {
+        T result{};
+        if (auto maybe_error = GenManyCE(std::span{&result, 1}))
+        {
+            return std::unexpected(std::move(maybe_error.value()));
+        }
+
+        return result;
+    }
+
+    template <typename T>
+    [[nodiscard]] static T GenOne()
+    {
+        return TryTakeValue(GenOneCE<T>());
     }
 };
 
@@ -120,73 +203,498 @@ GlError OpenGl::GetError() noexcept
     return kGlValueToGlError.Get(error);
 }
 
-GLuint OpenGl::GenVertexArray() noexcept
+/************************************************** Buffers *******************************************************/
+
+// Gen many
+
+void OpenGl::GenBuffersNE(const std::span<GlBufferId>& buffers) noexcept
 {
-    return Internal::GenObject(glGenVertexArrays);
+    Internal::GenManyNE(buffers);
 }
 
-void OpenGl::GenVertexArrays(const std::span<GLuint>& arrays) noexcept
+std::optional<OpenGlError> OpenGl::GenBuffersCE(const std::span<GlBufferId>& buffers) noexcept
 {
-    Internal::GenObjects(glGenVertexArrays, arrays);
+    return Internal::GenManyCE(buffers);
 }
 
-GLuint OpenGl::GenBuffer() noexcept
+void OpenGl::GenBuffers(const std::span<GlBufferId>& buffers)
 {
-    return Internal::GenObject(glGenBuffers);
+    Internal::GenMany(buffers);
 }
 
-void OpenGl::GenBuffers(const std::span<GLuint>& buffers) noexcept
+// Gen one
+
+GlBufferId OpenGl::GenBufferNE() noexcept
 {
-    return Internal::GenObjects(glGenBuffers, buffers);
+    return Internal::GenOneNE<GlBufferId>();
 }
 
-GLuint OpenGl::GenTexture() noexcept
+std::expected<GlBufferId, OpenGlError> OpenGl::GenBufferCE() noexcept
 {
-    return Internal::GenObject(glGenTextures);
+    return Internal::GenOneCE<GlBufferId>();
 }
 
-void OpenGl::GenTextures(const std::span<GLuint>& textures) noexcept
+GlBufferId OpenGl::GenBuffer()
 {
-    Internal::GenObjects(glGenTextures, textures);
+    return Internal::GenOne<GlBufferId>();
 }
 
-void OpenGl::BindVertexArrayNE(GLuint array) noexcept
+// Bind
+
+void OpenGl::BindBufferNE(GlBufferType target, GlBufferId buffer) noexcept
 {
-    glBindVertexArray(array);
+    glBindBuffer(ToGlValue(target), buffer.GetValue());
 }
 
-void OpenGl::BindVertexArray(GLuint array)
-{
-    BindVertexArrayNE(array);
-    Internal::Check("glBindVertexArray(array: {})", array);
-}
-
-void OpenGl::BindBufferNE(GlBufferType target, GLuint buffer) noexcept
-{
-    glBindBuffer(ToGlValue(target), buffer);
-}
-
-void OpenGl::BindBuffer(GlBufferType target, GLuint buffer)
+std::optional<OpenGlError> OpenGl::BindBufferCE(GlBufferType target, GlBufferId buffer) noexcept
 {
     BindBufferNE(target, buffer);
-    Internal::Check("glBindBuffer(target: {}, buffer: {})", target, buffer);
+    return Internal::ConsumeError("glBindBuffer(target: {}, buffer: {})", target, buffer.GetValue());
 }
 
-void OpenGl::BufferDataNE(GlBufferType target, GLsizeiptr size, const void* data, GlUsage usage) noexcept
+void OpenGl::BindBuffer(GlBufferType target, GlBufferId buffer)
 {
-    glBufferData(ToGlValue(target), size, data, ToGlValue(usage));
+    Internal::ThrowIfError(BindBufferCE(target, buffer));
 }
 
-void OpenGl::BufferData(GlBufferType target, GLsizeiptr size, const void* data, GlUsage usage)
+// Buffer Data
+
+void OpenGl::BufferDataNE(GlBufferType target, std::span<const uint8_t> data, GlUsage usage) noexcept
 {
-    BufferDataNE(target, size, data, usage);
-    Internal::Check("glBufferData(target: {}, size: {}, data: {}, usage: {})", target, size, data, usage);
+    glBufferData(ToGlValue(target), static_cast<GLsizei>(data.size()), data.data(), ToGlValue(usage));
 }
 
-constexpr GLboolean OpenGl::CastBool(bool value) noexcept
+std::optional<OpenGlError>
+OpenGl::BufferDataCE(GlBufferType target, std::span<const uint8_t> data, GlUsage usage) noexcept
 {
-    return static_cast<GLboolean>(value);
+    BufferDataNE(target, data, usage);
+    return Internal::ConsumeError(
+        "glBufferData(target: {}, size: {}, data: {}, usage: {})",
+        target,
+        data.size(),
+        static_cast<const void*>(data.data()),
+        usage);
 }
+
+void OpenGl::BufferData(GlBufferType target, std::span<const uint8_t> data, GlUsage usage)
+{
+    Internal::ThrowIfError(BufferDataCE(target, data, usage));
+}
+
+/*********************************************** Vertex Arrays ****************************************************/
+
+// Gen many
+
+void OpenGl::GenVertexArraysNE(const std::span<GlVertexArrayId>& arrays) noexcept
+{
+    Internal::GenManyNE(arrays);
+}
+
+std::optional<OpenGlError> OpenGl::GenVertexArraysCE(const std::span<GlVertexArrayId>& arrays) noexcept
+{
+    return Internal::GenManyCE(arrays);
+}
+
+void OpenGl::GenVertexArrays(const std::span<GlVertexArrayId>& arrays)
+{
+    Internal::GenMany(arrays);
+}
+
+// Gen one
+
+GlVertexArrayId OpenGl::GenVertexArrayNE() noexcept
+{
+    return Internal::GenOneNE<GlVertexArrayId>();
+}
+
+std::expected<GlVertexArrayId, OpenGlError> OpenGl::GenVertexArrayCE() noexcept
+{
+    return Internal::GenOneCE<GlVertexArrayId>();
+}
+
+GlVertexArrayId OpenGl::GenVertexArray()
+{
+    return Internal::GenOne<GlVertexArrayId>();
+}
+
+// Bind
+
+void OpenGl::BindVertexArrayNE(GlVertexArrayId array) noexcept
+{
+    glBindVertexArray(array.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::BindVertexArrayCE(GlVertexArrayId array) noexcept
+{
+    BindVertexArrayNE(array);
+    return Internal::ConsumeError("glBindVertexArray(array: {})", array.GetValue());
+}
+
+void OpenGl::BindVertexArray(GlVertexArrayId array)
+{
+    Internal::ThrowIfError(BindVertexArrayCE(array));
+}
+
+/************************************************* Textures *******************************************************/
+
+// Gen many
+
+void OpenGl::GenTexturesNE(const std::span<GlTextureId>& textures) noexcept
+{
+    Internal::GenManyNE(textures);
+}
+
+std::optional<OpenGlError> OpenGl::GenTexturesCE(const std::span<GlTextureId>& textures) noexcept
+{
+    return Internal::GenManyCE(textures);
+}
+
+void OpenGl::GenTextures(const std::span<GlTextureId>& textures)
+{
+    Internal::GenMany(textures);
+}
+
+// Gen one
+
+GlTextureId OpenGl::GenTextureNE() noexcept
+{
+    return Internal::GenOneNE<GlTextureId>();
+}
+
+std::expected<GlTextureId, OpenGlError> OpenGl::GenTextureCE() noexcept
+{
+    return Internal::GenOneCE<GlTextureId>();
+}
+
+GlTextureId OpenGl::GenTexture()
+{
+    return Internal::GenOne<GlTextureId>();
+}
+
+// Bind
+
+void OpenGl::BindTextureNE(GlTargetTextureType target, GlTextureId texture) noexcept
+{
+    glBindTexture(ToGlValue(target), texture.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::BindtextureCE(GlTargetTextureType target, GlTextureId texture) noexcept
+{
+    BindTextureNE(target, texture);
+    return Internal::ConsumeError("glBindTexture(target: {}, texture: {})", target, texture.GetValue());
+}
+
+void OpenGl::BindTexture(GlTargetTextureType target, GlTextureId texture)
+{
+    Internal::ThrowIfError(BindtextureCE(target, texture));
+}
+
+// Set base level
+
+void OpenGl::SetTextureBaseLevelNE(GlTargetTextureType target, size_t level) noexcept
+{
+    glTexParameteri(ToGlValue(target), GL_TEXTURE_BASE_LEVEL, static_cast<GLint>(level));
+}
+
+std::optional<OpenGlError> OpenGl::SetTextureBaseLevelCE(GlTargetTextureType target, size_t level) noexcept
+{
+    SetTextureBaseLevelNE(target, level);
+    return Internal::ConsumeError(
+        "glTexParameteri(target: {}, parameter: {}, param: {})",
+        target,
+        GlTextureParameterType::BaseLevel,
+        level);
+}
+
+void OpenGl::SetTextureBaseLevel(GlTargetTextureType target, size_t level)
+{
+    Internal::ThrowIfError(SetTextureBaseLevelCE(target, level));
+}
+
+// Set depth texture compare mode
+
+void OpenGl::SetDepthTextureCompareModeNE(GlTargetTextureType target, GlDepthTextureCompareMode mode) noexcept
+{
+    glTextureParameteri(ToGlValue(target), ToGlValue(GlTextureParameterType::CompareMode), ToGlValue(mode));
+}
+
+std::optional<OpenGlError> OpenGl::SetDepthTextureCompareModeCE(
+    GlTargetTextureType target,
+    GlDepthTextureCompareMode mode) noexcept
+{
+    SetDepthTextureCompareModeNE(target, mode);
+    return Internal::ConsumeError(
+        "glTexParameteri(target: {}, parameter: {}, value: {})",
+        target,
+        GlTextureParameterType::CompareMode,
+        mode);
+}
+
+// Set depth texture compare function
+
+void OpenGl::SetDepthTextureCompareFunctionNE(
+    GlTargetTextureType target,
+    GlDepthTextureCompareFunction function) noexcept
+{
+    glTexParameteri(ToGlValue(target), ToGlValue(GlTextureParameterType::ComapreFunction), ToGlValue(function));
+}
+
+[[nodiscard]] std::optional<OpenGlError> OpenGl::SetDepthTextureCompareFunctionCE(
+    GlTargetTextureType target,
+    GlDepthTextureCompareFunction function) noexcept
+{
+    SetDepthTextureCompareFunctionNE(target, function);
+    return Internal::ConsumeError(
+        "glTexParameteri(target: {}, parameter: {}, param: {})",
+        target,
+        GlTextureParameterType::ComapreFunction,
+        function);
+}
+
+void OpenGl::SetDepthTextureCompareFunction(GlTargetTextureType target, GlDepthTextureCompareFunction function)
+{
+    Internal::ThrowIfError(SetDepthTextureCompareFunctionCE(target, function));
+}
+
+void OpenGl::SetDepthTextureCompareMode(GlTargetTextureType target, GlDepthTextureCompareMode mode)
+{
+    Internal::ThrowIfError(SetDepthTextureCompareModeCE(target, mode));
+}
+
+// Set border color: integers
+
+void OpenGl::SetTextureBorderColorNE(
+    GlTargetTextureType target,
+    std::span<const GLint, 4> color,
+    bool store_as_integer) noexcept
+{
+    if (store_as_integer)
+    {
+        glTexParameterIiv(ToGlValue(target), ToGlValue(GlTextureParameterType::BorderColor), color.data());
+    }
+    else
+    {
+        glTexParameteriv(ToGlValue(target), ToGlValue(GlTextureParameterType::BorderColor), color.data());
+    }
+}
+
+std::optional<OpenGlError> OpenGl::SetTextureBorderColorCE(
+    GlTargetTextureType target,
+    std::span<const GLint, 4> color,
+    bool store_as_integer) noexcept
+{
+    SetTextureBorderColorNE(target, color, store_as_integer);
+    return Internal::ConsumeError(
+        "(target: {}, parameter: {}, color: {})",
+        store_as_integer ? "glTexParameterIiv" : "glTexParameteriv",
+        GlTextureParameterType::BorderColor,
+        target,
+        color);
+}
+
+void OpenGl::SetTextureBorderColor(GlTargetTextureType target, std::span<const GLint, 4> color, bool store_as_integer)
+{
+    Internal::ThrowIfError(SetTextureBorderColorCE(target, color, store_as_integer));
+}
+
+// Set border color: unsigned integers
+
+void OpenGl::SetTextureBorderColorNE(GlTargetTextureType target, std::span<const GLuint, 4> color) noexcept
+{
+    glTexParameterIuiv(ToGlValue(target), ToGlValue(GlTextureParameterType::BorderColor), color.data());
+}
+
+std::optional<OpenGlError> OpenGl::SetTextureBorderColorCE(
+    GlTargetTextureType target,
+    std::span<const GLuint, 4> color) noexcept
+{
+    SetTextureBorderColorNE(target, color);
+    return Internal::ConsumeError(
+        "glTexParameterIuiv(target: {}, parameter: {}, color: {})",
+        target,
+        GlTextureParameterType::BorderColor,
+        color);
+}
+
+void OpenGl::SetTextureBorderColor(GlTargetTextureType target, std::span<const GLuint, 4> color)
+{
+    Internal::ThrowIfError(SetTextureBorderColorCE(target, color));
+}
+
+// Set border color: floats
+
+void OpenGl::SetTextureBorderColorNE(GlTargetTextureType target, std::span<const GLfloat, 4> color) noexcept
+{
+    glTexParameterfv(ToGlValue(target), ToGlValue(GlTextureParameterType::BorderColor), color.data());
+}
+
+std::optional<OpenGlError> OpenGl::SetTextureBorderColorCE(
+    GlTargetTextureType target,
+    std::span<const GLfloat, 4> color) noexcept
+{
+    SetTextureBorderColorNE(target, color);
+    return Internal::ConsumeError(
+        "glTexParameterfv(target: {}, parameter: {}, color: {})",
+        target,
+        GlTextureParameterType::BorderColor,
+        color);
+}
+
+void OpenGl::SetTextureBorderColor(GlTargetTextureType target, std::span<const GLfloat, 4> color)
+{
+    Internal::ThrowIfError(SetTextureBorderColorCE(target, color));
+}
+
+// Set lod bias
+
+void OpenGl::SetTextureLODBiasNE(GlTargetTextureType target, float bias) noexcept
+{
+    glTexParameterf(ToGlValue(target), ToGlValue(GlTextureParameterType::LoadBias), bias);
+}
+
+std::optional<OpenGlError> OpenGl::SetTextureLODBiasCE(GlTargetTextureType target, float bias) noexcept
+{
+    SetTextureLODBiasNE(target, bias);
+    return Internal::ConsumeError(
+        "glTexParameterf(target: {}, parameter: {}, bias: {})",
+        target,
+        GlTextureParameterType::LoadBias,
+        bias);
+}
+
+void OpenGl::SetTextureLODBias(GlTargetTextureType target, float bias)
+{
+    Internal::ThrowIfError(SetTextureLODBiasCE(target, bias));
+}
+
+// Set texture wrap mode
+
+void OpenGl::SetTextureWrapNE(GlTargetTextureType target, GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept
+{
+    glTexParameteri(ToGlValue(target), ToGlValue(wrap), ToGlValue(mode));
+}
+
+[[nodiscard]] std::optional<OpenGlError>
+OpenGl::SetTextureWrapCE(GlTargetTextureType target, GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept
+{
+    SetTextureWrapNE(target, wrap, mode);
+    return Internal::ConsumeError("glTexParameteri(target: {}, axis: {}, wrap: {})", target, wrap, mode);
+}
+
+void OpenGl::SetTextureWrap(GlTargetTextureType target, GlTextureWrapAxis wrap, GlTextureWrapMode mode)
+{
+    Internal::ThrowIfError(SetTextureWrapCE(target, wrap, mode));
+}
+
+// Set texture minification filter
+
+void OpenGl::SetTextureMinFilterNE(GlTargetTextureType target, GlTextureFilter filter) noexcept
+{
+    glTexParameteri(ToGlValue(target), ToGlValue(GlTextureParameterType::MinificationFilter), ToGlValue(filter));
+}
+
+std::optional<OpenGlError> OpenGl::SetTextureMinFilterCE(GlTargetTextureType target, GlTextureFilter filter) noexcept
+{
+    SetTextureMinFilterNE(target, filter);
+    return Internal::ConsumeError(
+        "glTexParameteri(target: {}, parameter: {}, filter: {})",
+        target,
+        GlTextureParameterType::MinificationFilter,
+        filter);
+}
+
+void OpenGl::SetTextureMinFilter(GlTargetTextureType target, GlTextureFilter filter)
+{
+    Internal::ThrowIfError(SetTextureMinFilterCE(target, filter));
+}
+
+// Set texture magnification filter
+
+void OpenGl::SetTextureMagFilterNE(GlTargetTextureType target, GlTextureFilter filter) noexcept
+{
+    glTexParameteri(ToGlValue(target), ToGlValue(GlTextureParameterType::MagnificationFilter), ToGlValue(filter));
+}
+
+std::optional<OpenGlError> OpenGl::SetTextureMagFilterCE(GlTargetTextureType target, GlTextureFilter filter) noexcept
+{
+    SetTextureMagFilterNE(target, filter);
+    return Internal::ConsumeError(
+        "glTexParameteri(target: {}, parameter: {}, filter: {})",
+        target,
+        GlTextureParameterType::MagnificationFilter,
+        filter);
+}
+
+void OpenGl::SetTextureMagFilter(GlTargetTextureType target, GlTextureFilter filter)
+{
+    Internal::ThrowIfError(SetTextureMagFilterCE(target, filter));
+}
+
+// Tex image 2d
+
+void OpenGl::TexImage2dNE(
+    GlTargetTextureType target,
+    size_t level_of_detail,
+    GLint internal_format,
+    size_t width,
+    size_t height,
+    GLint data_format,
+    GLenum pixel_data_type,
+    const void* pixels) noexcept
+{
+    glTexImage2D(
+        ToGlValue(target),
+        static_cast<GLint>(level_of_detail),
+        internal_format,
+        static_cast<GLsizei>(width),
+        static_cast<GLsizei>(height),
+        0,
+        data_format,
+        pixel_data_type,
+        pixels);
+}
+
+std::optional<OpenGlError> OpenGl::TexImage2dCE(
+    GlTargetTextureType target,
+    size_t level_of_detail,
+    GLint internal_format,
+    size_t width,
+    size_t height,
+    GLint data_format,
+    GLenum pixel_data_type,
+    const void* pixels) noexcept
+{
+    TexImage2dNE(target, level_of_detail, internal_format, width, height, data_format, pixel_data_type, pixels);
+    return Internal::ConsumeError(
+        "glTexImage2D(target: {}, lod: {}, internal_format: {}, width: {}, height: {}, pixel_buffer_layout: {}, "
+        "pixel_buffer_type: {}, pixels: {})",
+        target,
+        level_of_detail,
+        internal_format,
+        width,
+        height,
+        data_format,
+        pixel_data_type,
+        pixels);
+}
+
+void OpenGl::TexImage2d(
+    GlTargetTextureType target,
+    size_t level_of_detail,
+    GLint internal_format,
+    size_t width,
+    size_t height,
+    GLint data_format,
+    GLenum pixel_data_type,
+    const void* pixels)
+{
+    return Internal::ThrowIfError(
+        TexImage2dCE(target, level_of_detail, internal_format, width, height, data_format, pixel_data_type, pixels));
+}
+
+/************************************************** Shaders *******************************************************/
+
+// Create
 
 GlShaderId OpenGl::CreateShaderNE(GlShaderType type) noexcept
 {
@@ -203,68 +711,18 @@ GlShaderId OpenGl::CreateShader(GlShaderType type)
     return Internal::TryTakeValue(CreateShaderCE(type));
 }
 
-void OpenGl::DeleteShaderNE(GlShaderId shader) noexcept
-{
-    glDeleteShader(shader.GetValue());
-}
-
-std::optional<OpenGlError> OpenGl::DeleteShaderCE(GlShaderId shader) noexcept
-{
-    DeleteShaderNE(shader);
-    return Internal::ConsumeError("glDeleteShader(shader: {})", shader.GetValue());
-}
-
-void OpenGl::DeleteShader(GlShaderId shader)
-{
-    Internal::ThrowIfError(DeleteShaderCE(shader));
-}
-
-template <size_t stack_reserve>
-struct ShaderSourceCollector
-{
-    std::vector<const char*> shader_sources_heap{};
-    std::vector<GLint> shader_sources_lengths_heap{};
-    std::array<const char*, stack_reserve> shader_sources_stack{};
-    std::array<GLint, stack_reserve> shader_sources_lengths_stack{};
-
-    std::pair<std::span<const char*>, std::span<GLint>> Fill(std::span<const std::string_view> sources)
-    {
-        std::span<const char*> shader_sources;
-        std::span<GLint> shader_sources_lengths{};
-        const size_t num_sources = sources.size();
-        if (num_sources > shader_sources_stack.size())
-        {
-            shader_sources_heap.resize(num_sources);
-            shader_sources_lengths_heap.resize(num_sources);
-            shader_sources = shader_sources_heap;
-            shader_sources_lengths = shader_sources_lengths_heap;
-        }
-        else
-        {
-            shader_sources = shader_sources_stack;
-            shader_sources_lengths = shader_sources_lengths_stack;
-        }
-
-        for (size_t i = 0; i < sources.size(); ++i)
-        {
-            shader_sources[i] = sources[i].data();
-            shader_sources_lengths[i] = static_cast<GLsizei>(sources[i].size());
-        }
-
-        return {shader_sources, shader_sources_lengths};
-    }
-};
+// Shader source
 
 void OpenGl::ShaderSourceNE(GlShaderId shader, std::span<const std::string_view> sources) noexcept
 {
-    ShaderSourceCollector<30> c;
+    Internal::ShaderSourceCollector<30> c;
     auto [sources_span, lengths_span] = c.Fill(sources);
     glShaderSource(shader.GetValue(), static_cast<GLsizei>(sources.size()), sources_span.data(), lengths_span.data());
 }
 
 std::optional<OpenGlError> OpenGl::ShaderSourceCE(GlShaderId shader, std::span<const std::string_view> sources) noexcept
 {
-    ShaderSourceCollector<30> c;
+    Internal::ShaderSourceCollector<30> c;
     auto [sources_span, lengths_span] = c.Fill(sources);
     glShaderSource(shader.GetValue(), static_cast<GLsizei>(sources.size()), sources_span.data(), lengths_span.data());
     return Internal::ConsumeError(
@@ -285,6 +743,8 @@ void OpenGl::CompileShaderNE(GlShaderId shader) noexcept
     glCompileShader(shader.GetValue());
 }
 
+// Compile shader
+
 std::optional<OpenGlError> OpenGl::CompileShaderCE(GlShaderId shader) noexcept
 {
     CompileShaderNE(shader);
@@ -302,6 +762,8 @@ bool OpenGl::GetShaderCompileStatusNE(GlShaderId shader) noexcept
     glGetShaderiv(shader.GetValue(), GL_COMPILE_STATUS, &result);
     return result == GL_TRUE;
 }
+
+// Get compile status
 
 std::expected<bool, OpenGlError> OpenGl::GetShaderCompileStatusCE(GlShaderId shader) noexcept
 {
@@ -322,6 +784,8 @@ size_t OpenGl::GetShaderLogLengthNE(GlShaderId shader) noexcept
     glGetShaderiv(shader.GetValue(), GL_INFO_LOG_LENGTH, &log_length);
     return static_cast<size_t>(std::max(0, log_length));
 }
+
+// Get shader log length
 
 std::expected<size_t, OpenGlError> OpenGl::GetShaderLogLengthCE(GlShaderId shader) noexcept
 {
@@ -347,6 +811,8 @@ std::string OpenGl::GetShaderLogNE(GlShaderId shader) noexcept
     return log;
 }
 
+// Get shader log
+
 std::expected<std::string, OpenGlError> OpenGl::GetShaderLogCE(GlShaderId shader) noexcept
 {
     return Internal::ChainIfValue(
@@ -371,6 +837,145 @@ std::string OpenGl::GetShaderLog(GlShaderId shader)
     return Internal::TryTakeValue(GetShaderLogCE(shader));
 }
 
+// Set uniform: float
+
+void OpenGl::SetUniformNE(uint32_t location, const float& f) noexcept
+{
+    glUniform1f(static_cast<GLint>(location), f);
+}
+
+std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const float& f) noexcept
+{
+    SetUniformNE(location, f);
+    return Internal::ConsumeError("glUniform1f(location: {}, value: {})", location, f);
+}
+
+void OpenGl::SetUniform(uint32_t location, const float& f)
+{
+    Internal::ThrowIfError(SetUniformCE(location, f));
+}
+
+// Set uniform: vec2
+
+void OpenGl::SetUniformNE(uint32_t location, const Vec2f& v) noexcept
+{
+    glUniform2f(static_cast<GLint>(location), v.x(), v.y());
+}
+
+std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Vec2f& v) noexcept
+{
+    SetUniformNE(location, v);
+    return Internal::ConsumeError("glUniform2f(location: {}, v: {})", location, v.data_);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Vec2f& v)
+{
+    Internal::ThrowIfError(SetUniformCE(location, v));
+}
+
+// Set uniform: vec3
+
+void OpenGl::SetUniformNE(uint32_t location, const Vec3f& v) noexcept
+{
+    glUniform3f(static_cast<GLint>(location), v.x(), v.y(), v.z());
+}
+
+std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Vec3f& v) noexcept
+{
+    SetUniformNE(location, v);
+    return Internal::ConsumeError("glUniform3f(location: {}, v: {})", location, v.data_);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Vec3f& v)
+{
+    SetUniformNE(location, v);
+    Internal::ThrowIfError(SetUniformCE(location, v));
+}
+
+// Set uniform: vec4
+
+void OpenGl::SetUniformNE(uint32_t location, const Vec4f& v) noexcept
+{
+    glUniform4f(static_cast<GLint>(location), v.x(), v.y(), v.z(), v.w());
+}
+
+std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Vec4f& v) noexcept
+{
+    SetUniformNE(location, v);
+    return Internal::ConsumeError("glUniform4f(location: {}, v: {})", location, v.data_);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Vec4f& v)
+{
+    Internal::ThrowIfError(SetUniformCE(location, v));
+}
+
+// Set uniform: mat3
+
+void OpenGl::SetUniformNE(uint32_t location, const Mat3f& m, bool transpose) noexcept
+{
+    glUniformMatrix3fv(static_cast<GLint>(location), 1, Internal::CastBool(transpose), m.data());
+}
+
+std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Mat3f& m, bool transpose) noexcept
+{
+    SetUniformNE(location, m, transpose);
+    return Internal::ConsumeError(
+        "glUniformMatrix3fv(location: {}, matrix: {}, transpose: {})",
+        location,
+        m.data_,
+        transpose);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Mat3f& m, bool transpose)
+{
+    Internal::ThrowIfError(SetUniformCE(location, m, transpose));
+}
+
+// Set uniform: mat4
+
+void OpenGl::SetUniformNE(uint32_t location, const Mat4f& m, bool transpose) noexcept
+{
+    glUniformMatrix4fv(static_cast<GLint>(location), 1, Internal::CastBool(transpose), m.data());
+}
+
+std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Mat4f& m, bool transpose) noexcept
+{
+    SetUniformNE(location, m, transpose);
+    return Internal::ConsumeError(
+        "glUniformMatrix4fv(location: {}, matrix: {}, transpose: {})",
+        location,
+        m.data_,
+        transpose);
+}
+
+void OpenGl::SetUniform(uint32_t location, const Mat4f& m, bool transpose)
+{
+    Internal::ThrowIfError(SetUniformCE(location, m, transpose));
+}
+
+// Delete
+
+void OpenGl::DeleteShaderNE(GlShaderId shader) noexcept
+{
+    glDeleteShader(shader.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::DeleteShaderCE(GlShaderId shader) noexcept
+{
+    DeleteShaderNE(shader);
+    return Internal::ConsumeError("glDeleteShader(shader: {})", shader.GetValue());
+}
+
+void OpenGl::DeleteShader(GlShaderId shader)
+{
+    Internal::ThrowIfError(DeleteShaderCE(shader));
+}
+
+/************************************************** Program *******************************************************/
+
+// Create
+
 GlProgramId OpenGl::CreateProgramNE() noexcept
 {
     return GlProgramId::FromValue(glCreateProgram());
@@ -385,6 +990,8 @@ GlProgramId OpenGl::CreateProgram()
 {
     return Internal::TryTakeValue(CreateProgramCE());
 }
+
+// Attach shader
 
 void OpenGl::AttachShaderNE(GlProgramId program, GlShaderId shader) noexcept
 {
@@ -402,6 +1009,8 @@ void OpenGl::AttachShader(GlProgramId program, GlShaderId shader)
     Internal::ThrowIfError(AttachShaderCE(program, shader));
 }
 
+// Link
+
 void OpenGl::LinkProgramNE(GlProgramId program) noexcept
 {
     glLinkProgram(program.GetValue());
@@ -417,6 +1026,8 @@ void OpenGl::LinkProgram(GlProgramId program)
 {
     Internal::ThrowIfError(LinkProgramCE(program));
 }
+
+// Link status
 
 bool OpenGl::GetProgramLinkStatusNE(GlProgramId program) noexcept
 {
@@ -438,6 +1049,8 @@ bool OpenGl::GetProgramLinkStatus(GlProgramId program)
     return Internal::TryTakeValue(GetProgramLinkStatusCE(program));
 }
 
+// Log length
+
 size_t OpenGl::GetProgramLogLengthNE(GlProgramId program) noexcept
 {
     GLint log_length{};
@@ -456,6 +1069,8 @@ size_t OpenGl::GetProgramLogLength(GlProgramId program)
 {
     return Internal::TryTakeValue(GetProgramLogLengthCE(program));
 }
+
+// Log
 
 std::string OpenGl::GetProgramLogNE(GlProgramId program) noexcept
 {
@@ -494,6 +1109,8 @@ std::string OpenGl::GetProgramLog(GlProgramId program)
     return Internal::TryTakeValue(GetProgramLogCE(program));
 }
 
+// Use
+
 void OpenGl::UseProgramNE(GlProgramId program) noexcept
 {
     glUseProgram(program.GetValue());
@@ -509,6 +1126,29 @@ void OpenGl::UseProgram(GlProgramId program)
 {
     Internal::ThrowIfError(UseProgramCE(program));
 }
+
+// Get uniform location
+
+GLint OpenGl::GetUniformLocationNE(GlProgramId program, const char* name) noexcept
+{
+    return glGetUniformLocation(program.GetValue(), name);
+}
+
+std::expected<GLint, OpenGlError> OpenGl::GetUniformLocationCE(GlProgramId program, const char* name) noexcept
+{
+    return Internal::ValueOrError(
+        GetUniformLocationNE(program, name),
+        "glGetUniformLocation(program: {}, name: {})",
+        program.GetValue(),
+        name);
+}
+
+GLint OpenGl::GetUniformLocation(GlProgramId program, const char* name)
+{
+    return Internal::TryTakeValue(GetUniformLocationCE(program, name));
+}
+
+// Delete
 
 void OpenGl::DeleteProgramNE(GlProgramId program) noexcept
 {
@@ -526,6 +1166,63 @@ void OpenGl::DeleteProgram(GlProgramId program)
     Internal::ThrowIfError(DeleteProgramCE(program));
 }
 
+/*************************************************** Clear ********************************************************/
+
+// Set clear color
+
+void OpenGl::SetClearColorNE(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) noexcept
+{
+    glClearColor(red, green, blue, alpha);
+}
+
+std::optional<OpenGlError> OpenGl::SetClearColorCE(GLfloat r, GLfloat g, GLfloat b, GLfloat a) noexcept
+{
+    SetClearColorNE(r, g, b, a);
+    return Internal::ConsumeError("glClearColor(r: {}, g: {}, b: {}, a: {})", r, g, b, a);
+}
+
+void OpenGl::SetClearColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
+{
+    Internal::ThrowIfError(SetClearColorCE(r, g, b, a));
+}
+
+// Set clear color: vector
+
+void OpenGl::SetClearColorNE(const Vec4f& color) noexcept
+{
+    SetClearColorNE(color.x(), color.y(), color.z(), color.w());
+}
+
+std::optional<OpenGlError> OpenGl::SetClearColorCE(const Vec4f& color) noexcept
+{
+    return SetClearColorCE(color.x(), color.y(), color.z(), color.w());
+}
+
+void OpenGl::SetClearColor(const Vec4f& color)
+{
+    SetClearColor(color.x(), color.y(), color.z(), color.w());
+}
+
+// Clear
+
+void OpenGl::ClearNE(GLbitfield mask) noexcept
+{
+    glClear(mask);
+}
+
+std::optional<OpenGlError> OpenGl::ClearCE(GLbitfield mask) noexcept
+{
+    ClearNE(mask);
+    return Internal::ConsumeError("glClear(mask: {})", mask);
+}
+
+void OpenGl::Clear(GLbitfield mask) noexcept
+{
+    Internal::ThrowIfError(ClearCE(mask));
+}
+
+/******************************************************************************************************************/
+
 void OpenGl::VertexAttribPointerNE(
     GLuint index,
     size_t size,
@@ -538,7 +1235,7 @@ void OpenGl::VertexAttribPointerNE(
         index,
         static_cast<GLint>(size),
         ToGlValue(type),
-        CastBool(normalized),
+        Internal::CastBool(normalized),
         static_cast<GLsizei>(stride),
         pointer);
 }
@@ -637,53 +1334,6 @@ void OpenGl::Viewport(GLint x, GLint y, GLsizei width, GLsizei height)
     Internal::ThrowIfError(ViewportCE(x, y, width, height));
 }
 
-void OpenGl::SetClearColorNE(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) noexcept
-{
-    glClearColor(red, green, blue, alpha);
-}
-
-std::optional<OpenGlError> OpenGl::SetClearColorCE(GLfloat r, GLfloat g, GLfloat b, GLfloat a) noexcept
-{
-    SetClearColorNE(r, g, b, a);
-    return Internal::ConsumeError("glClearColor(r: {}, g: {}, b: {}, a: {})", r, g, b, a);
-}
-
-void OpenGl::SetClearColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
-{
-    Internal::ThrowIfError(SetClearColorCE(r, g, b, a));
-}
-
-void OpenGl::SetClearColorNE(const Vec4f& color) noexcept
-{
-    SetClearColorNE(color.x(), color.y(), color.z(), color.w());
-}
-
-std::optional<OpenGlError> OpenGl::SetClearColorCE(const Vec4f& color) noexcept
-{
-    return SetClearColorCE(color.x(), color.y(), color.z(), color.w());
-}
-
-void OpenGl::SetClearColor(const Vec4f& color)
-{
-    SetClearColor(color.x(), color.y(), color.z(), color.w());
-}
-
-void OpenGl::ClearNE(GLbitfield mask) noexcept
-{
-    glClear(mask);
-}
-
-std::optional<OpenGlError> OpenGl::ClearCE(GLbitfield mask) noexcept
-{
-    ClearNE(mask);
-    return Internal::ConsumeError("glClear(mask: {})", mask);
-}
-
-void OpenGl::Clear(GLbitfield mask) noexcept
-{
-    Internal::ThrowIfError(ClearCE(mask));
-}
-
 void OpenGl::DrawElementsNE(
     GlPrimitiveType mode,
     size_t num,
@@ -757,359 +1407,6 @@ void OpenGl::DrawElementsInstanced(
     Internal::ThrowIfError(DrawElementsInstancedCE(mode, num, indices_type, indices, num_instances));
 }
 
-std::optional<uint32_t> OpenGl::FindUniformLocationNE(GLuint shader_program, const char* name) noexcept
-{
-    int result = glGetUniformLocation(shader_program, name);
-    [[likely]] if (result >= 0)
-    {
-        return static_cast<uint32_t>(result);
-    }
-    return std::optional<uint32_t>();
-}
-
-std::optional<uint32_t> OpenGl::FindUniformLocation(GLuint shader_program, const char* name)
-{
-    auto result = FindUniformLocationNE(shader_program, name);
-    Internal::Check("glGetUniformLocation(program: {}, name: {})", shader_program, name);
-    return result;
-}
-
-uint32_t OpenGl::GetUniformLocation(GLuint shader_program, const char* name)
-{
-    auto location = FindUniformLocation(shader_program, name);
-    [[likely]] if (location.has_value())
-    {
-        return *location;
-    }
-
-    throw cpptrace::invalid_argument(fmt::format("Uniform with name {} was not found", name));
-}
-
-void OpenGl::SetUniformNE(uint32_t location, const float& f) noexcept
-{
-    glUniform1f(static_cast<GLint>(location), f);
-}
-
-std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const float& f) noexcept
-{
-    SetUniformNE(location, f);
-    return Internal::ConsumeError("glUniform1f(location: {}, value: {})", location, f);
-}
-
-void OpenGl::SetUniform(uint32_t location, const float& f)
-{
-    Internal::ThrowIfError(SetUniformCE(location, f));
-}
-
-void OpenGl::SetUniformNE(uint32_t location, const Vec2f& v) noexcept
-{
-    glUniform2f(static_cast<GLint>(location), v.x(), v.y());
-}
-
-std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Vec2f& v) noexcept
-{
-    SetUniformNE(location, v);
-    return Internal::ConsumeError("glUniform2f(location: {}, v: {})", location, v.data_);
-}
-
-void OpenGl::SetUniform(uint32_t location, const Vec2f& v)
-{
-    Internal::ThrowIfError(SetUniformCE(location, v));
-}
-
-void OpenGl::SetUniformNE(uint32_t location, const Vec3f& v) noexcept
-{
-    glUniform3f(static_cast<GLint>(location), v.x(), v.y(), v.z());
-}
-
-std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Vec3f& v) noexcept
-{
-    SetUniformNE(location, v);
-    return Internal::ConsumeError("glUniform3f(location: {}, v: {})", location, v.data_);
-}
-
-void OpenGl::SetUniform(uint32_t location, const Vec3f& v)
-{
-    SetUniformNE(location, v);
-    Internal::ThrowIfError(SetUniformCE(location, v));
-}
-
-void OpenGl::SetUniformNE(uint32_t location, const Vec4f& v) noexcept
-{
-    glUniform4f(static_cast<GLint>(location), v.x(), v.y(), v.z(), v.w());
-}
-
-std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Vec4f& v) noexcept
-{
-    SetUniformNE(location, v);
-    return Internal::ConsumeError("glUniform4f(location: {}, v: {})", location, v.data_);
-}
-
-void OpenGl::SetUniform(uint32_t location, const Vec4f& v)
-{
-    Internal::ThrowIfError(SetUniformCE(location, v));
-}
-
-void OpenGl::SetUniformNE(uint32_t location, const Mat3f& m, bool transpose) noexcept
-{
-    glUniformMatrix3fv(static_cast<GLint>(location), 1, CastBool(transpose), m.data());
-}
-
-std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Mat3f& m, bool transpose) noexcept
-{
-    SetUniformNE(location, m, transpose);
-    return Internal::ConsumeError(
-        "glUniformMatrix3fv(location: {}, matrix: {}, transpose: {})",
-        location,
-        m.data_,
-        transpose);
-}
-
-void OpenGl::SetUniform(uint32_t location, const Mat3f& m, bool transpose)
-{
-    Internal::ThrowIfError(SetUniformCE(location, m, transpose));
-}
-
-void OpenGl::SetUniformNE(uint32_t location, const Mat4f& m, bool transpose) noexcept
-{
-    glUniformMatrix4fv(static_cast<GLint>(location), 1, CastBool(transpose), m.data());
-}
-
-std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, const Mat4f& m, bool transpose) noexcept
-{
-    SetUniformNE(location, m, transpose);
-    return Internal::ConsumeError(
-        "glUniformMatrix4fv(location: {}, matrix: {}, transpose: {})",
-        location,
-        m.data_,
-        transpose);
-}
-
-void OpenGl::SetUniform(uint32_t location, const Mat4f& m, bool transpose)
-{
-    Internal::ThrowIfError(SetUniformCE(location, m, transpose));
-}
-
-void OpenGl::SetDepthTextureCompareModeNE(GlTextureParameterTarget target, GlDepthTextureCompareMode mode) noexcept
-{
-    glTextureParameteri(ToGlValue(target), GL_TEXTURE_COMPARE_MODE, ToGlValue(mode));
-}
-
-void OpenGl::SetDepthTextureCompareMode(GlTextureParameterTarget target, GlDepthTextureCompareMode mode)
-{
-    SetDepthTextureCompareModeNE(target, mode);
-    Internal::Check("glTexParameteri(target: {}, name: GL_TEXTURE_COMPARE_MODE, value: {})", target, mode);
-}
-
-void OpenGl::SetTextureParameterNE(GlTextureParameterTarget target, GLenum pname, const GLfloat* value) noexcept
-{
-    glTexParameterfv(ToGlValue(target), pname, value);
-}
-
-void OpenGl::SetDepthTextureCompareFunctionNE(
-    GlTextureParameterTarget target,
-    GlDepthTextureCompareFunction function) noexcept
-{
-    glTexParameteri(ToGlValue(target), GL_TEXTURE_COMPARE_FUNC, ToGlValue(function));
-}
-
-void OpenGl::SetDepthTextureCompareFunction(GlTextureParameterTarget target, GlDepthTextureCompareFunction function)
-{
-    SetDepthTextureCompareFunctionNE(target, function);
-    Internal::Check("glTexParameteri(target: {}, pname: GL_TEXTURE_COMPARE_FUNCT, param: {})", target, function);
-}
-
-void OpenGl::SetTextureBaseLevelNE(GlTextureParameterTarget target, size_t level) noexcept
-{
-    glTexParameteri(ToGlValue(target), GL_TEXTURE_BASE_LEVEL, static_cast<GLint>(level));
-}
-
-void OpenGl::SetTextureBaseLevel(GlTextureParameterTarget target, size_t level)
-{
-    SetTextureBaseLevelNE(target, level);
-    Internal::Check("glTexParameteri(target: {}, pname: GL_TEXTURE_BASE_LEVEL, param: {})", target, level);
-}
-
-void OpenGl::SetTextureBorderColorNE(
-    GlTextureParameterTarget target,
-    std::span<const GLint, 4> color,
-    bool store_as_integer) noexcept
-{
-    if (store_as_integer)
-    {
-        glTexParameterIiv(ToGlValue(target), GL_TEXTURE_BORDER_COLOR, color.data());
-    }
-    else
-    {
-        glTexParameteriv(ToGlValue(target), GL_TEXTURE_BORDER_COLOR, color.data());
-    }
-}
-
-void OpenGl::SetTextureBorderColor(
-    GlTextureParameterTarget target,
-    std::span<const GLint, 4> color,
-    bool store_as_integer)
-{
-    SetTextureBorderColorNE(target, color, store_as_integer);
-    if (store_as_integer)
-    {
-        Internal::Check("glTexParameterIiv(target: {}, pname: GL_TEXTURE_BORDER_COLOR, color: {})", target, color);
-    }
-    else
-    {
-        Internal::Check("glTexParameteriv(target: {}, pname: GL_TEXTURE_BORDER_COLOR, color: {})", target, color);
-    }
-}
-
-void OpenGl::SetTextureBorderColorNE(GlTextureParameterTarget target, std::span<const GLuint, 4> color) noexcept
-{
-    glTexParameterIuiv(ToGlValue(target), GL_TEXTURE_BORDER_COLOR, color.data());
-}
-
-void OpenGl::SetTextureBorderColor(GlTextureParameterTarget target, std::span<const GLuint, 4> color)
-{
-    SetTextureBorderColorNE(target, color);
-    Internal::Check("glTexParameterIuiv(target: {}, pname: GL_TEXTURE_BORDER_COLOR, color: {})", target, color);
-}
-
-void OpenGl::SetTextureBorderColorNE(GlTextureParameterTarget target, std::span<const GLfloat, 4> color) noexcept
-{
-    glTexParameterfv(ToGlValue(target), GL_TEXTURE_BORDER_COLOR, color.data());
-}
-
-void OpenGl::SetTextureBorderColor(GlTextureParameterTarget target, std::span<const GLfloat, 4> color)
-{
-    SetTextureBorderColorNE(target, color);
-    Internal::Check("glTexParameterfv(target: {}, pname: GL_TEXTURE_BORDER_COLOR, color: {})", target, color);
-}
-
-void OpenGl::SetTextureLODBiasNE(GlTextureParameterTarget target, float bias) noexcept
-{
-    glTexParameterf(ToGlValue(target), GL_TEXTURE_LOD_BIAS, bias);
-}
-
-void OpenGl::SetTextureLODBias(GlTextureParameterTarget target, float bias)
-{
-    SetTextureLODBiasNE(target, bias);
-    Internal::Check("glTexParameterf(target: {}, pname: GL_TEXTURE_LOD_BIAS, bias: {})", target, bias);
-}
-
-void OpenGl::SetTextureParameter(GlTextureParameterTarget target, GLenum pname, const GLfloat* value)
-{
-    SetTextureParameterNE(target, pname, value);
-    Internal::Check(
-        "glTexParameterfv(target: {}, name: {}, values_ptr: {})",
-        target,
-        pname,
-        static_cast<const void*>(value));
-}
-
-void OpenGl::SetTextureParameterNE(GlTextureParameterTarget target, GLenum name, GLint param) noexcept
-{
-    glTexParameteri(ToGlValue(target), name, param);
-}
-
-void OpenGl::SetTextureParameter(GlTextureParameterTarget target, GLenum name, GLint param)
-{
-    SetTextureParameterNE(target, name, param);
-    Internal::Check("glTexParameteri(target: {}, name: {}, param: {})", target, name, param);
-}
-
-void OpenGl::SetTextureWrapNE(GlTextureParameterTarget target, GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept
-{
-    glTexParameteri(ToGlValue(target), ToGlValue(wrap), ToGlValue(mode));
-}
-
-void OpenGl::SetTextureWrap(GlTextureParameterTarget target, GlTextureWrapAxis wrap, GlTextureWrapMode mode)
-{
-    SetTextureWrapNE(target, wrap, mode);
-    Internal::Check("glTexParameteri(target: {}, axis: {}, wrap: {})", target, wrap, mode);
-}
-
-void OpenGl::SetTextureMinFilterNE(GlTextureParameterTarget target, GlTextureFilter filter) noexcept
-{
-    glTexParameteri(ToGlValue(target), GL_TEXTURE_MIN_FILTER, ToGlValue(filter));
-}
-
-void OpenGl::SetTextureMinFilter(GlTextureParameterTarget target, GlTextureFilter filter)
-{
-    SetTextureMinFilterNE(target, filter);
-    Internal::Check("glTexParameteri(target: {}, GL_TEXTURE_MIN_FILTER, filter: {})", target, filter);
-}
-
-void OpenGl::SetTextureMagFilterNE(GlTextureParameterTarget target, GlTextureFilter filter) noexcept
-{
-    glTexParameteri(ToGlValue(target), GL_TEXTURE_MAG_FILTER, ToGlValue(filter));
-}
-
-void OpenGl::SetTextureMagFilter(GlTextureParameterTarget target, GlTextureFilter filter)
-{
-    SetTextureMagFilterNE(target, filter);
-    Internal::Check("glTexParameteri(target: {}, GL_TEXTURE_MAG_FILTER, filter: {})", target, filter);
-}
-
-void OpenGl::BindTextureNE(GLenum target, GLuint texture) noexcept
-{
-    glBindTexture(target, texture);
-}
-
-void OpenGl::BindTexture(GLenum target, GLuint texture)
-{
-    BindTextureNE(target, texture);
-    Internal::Check("glBindTexture(target: {}, texture: {})", target, texture);
-}
-
-void OpenGl::BindTexture2d(GLuint texture)
-{
-    BindTexture(GL_TEXTURE_2D, texture);
-}
-
-void OpenGl::TexImage2dNE(
-    GLenum target,
-    size_t level_of_detail,
-    GLint internal_format,
-    size_t width,
-    size_t height,
-    GLint data_format,
-    GLenum pixel_data_type,
-    const void* pixels) noexcept
-{
-    glTexImage2D(
-        target,
-        static_cast<GLint>(level_of_detail),
-        internal_format,
-        static_cast<GLsizei>(width),
-        static_cast<GLsizei>(height),
-        0,
-        data_format,
-        pixel_data_type,
-        pixels);
-}
-
-void OpenGl::TexImage2d(
-    GLenum target,
-    size_t level_of_detail,
-    GLint internal_format,
-    size_t width,
-    size_t height,
-    GLint data_format,
-    GLenum pixel_data_type,
-    const void* pixels)
-{
-    TexImage2dNE(target, level_of_detail, internal_format, width, height, data_format, pixel_data_type, pixels);
-    Internal::Check(
-        "glTexImage2D(target: {}, lod: {}, internal_format: {}, width: {}, height: {}, pixel_buffer_layout: {}, "
-        "pixel_buffer_type: {}, pixels: {})",
-        target,
-        level_of_detail,
-        internal_format,
-        width,
-        height,
-        data_format,
-        pixel_data_type,
-        pixels);
-}
-
 void OpenGl::GenerateMipmapNE(GLenum target) noexcept
 {
     glGenerateMipmap(target);
@@ -1119,16 +1416,6 @@ void OpenGl::GenerateMipmap(GLenum target)
 {
     GenerateMipmapNE(target);
     Internal::Check("glGenerateMipmap(target: {})", target);
-}
-
-void OpenGl::GenerateMipmap2dNE() noexcept
-{
-    GenerateMipmap(GL_TEXTURE_2D);
-}
-
-void OpenGl::GenerateMipmap2d()
-{
-    GenerateMipmap2dNE();
 }
 
 void OpenGl::PolygonModeNE(GlPolygonMode mode) noexcept

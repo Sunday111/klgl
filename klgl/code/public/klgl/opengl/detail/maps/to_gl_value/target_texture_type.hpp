@@ -7,9 +7,9 @@
 
 namespace klgl::detail
 {
-inline constexpr auto kGlTextureParameterTargetToGlValue = []
+inline constexpr auto kGlTargetTextureType = []
 {
-    using T = GlTextureParameterTarget;
+    using T = GlTargetTextureType;
     OpenGlValueConverter<T, GLenum> c;
 
     KLGL_ENSURE_ENUM_SIZE(T, 10);
@@ -30,9 +30,9 @@ inline constexpr auto kGlTextureParameterTargetToGlValue = []
 namespace klgl
 {
 
-[[nodiscard]] constexpr auto ToGlValue(GlTextureParameterTarget buffer_type) noexcept
+[[nodiscard]] constexpr auto ToGlValue(GlTargetTextureType buffer_type) noexcept
 {
-    return detail::kGlTextureParameterTargetToGlValue.to_gl_value.Get(buffer_type);
+    return detail::kGlTargetTextureType.to_gl_value.Get(buffer_type);
 }
 
 }  // namespace klgl

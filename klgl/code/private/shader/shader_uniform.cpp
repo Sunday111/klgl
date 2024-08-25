@@ -38,7 +38,7 @@ struct ValueTypeHelper<SamplerUniform>
             auto& v = *reinterpret_cast<const SamplerUniform*>(value.data());  // NOLINT
             static_assert(GL_TEXTURE31 - GL_TEXTURE0 == 31);
             glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + v.sampler_index));
-            glBindTexture(GL_TEXTURE_2D, v.texture);
+            OpenGl::BindTexture(GlTargetTextureType::Texture2d, v.texture);
             glUniform1i(static_cast<GLint>(location), static_cast<GLint>(v.sampler_index));
 
             return true;

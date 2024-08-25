@@ -16,6 +16,7 @@
 #include "fmt/std.h"  // IWYU pragma: keep
 #include "klgl/error_handling.hpp"
 #include "klgl/filesystem/filesystem.hpp"
+#include "klgl/opengl/gl_api.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep (provides reflection for matrices)
 #include "klgl/shader/sampler_uniform.hpp"
 #include "klgl/shader/shader.hpp"
@@ -25,6 +26,7 @@
 #include "klgl/texture/texture.hpp"
 #include "klgl/ui/type_id_widget.hpp"
 #include "nlohmann/json.hpp"
+
 
 namespace klgl
 {
@@ -112,12 +114,25 @@ void Shader::Use()
 
 std::optional<uint32_t> Shader::FindUniformLocation(const char* name) const noexcept
 {
-    return OpenGl::FindUniformLocation(program_.GetValue(), name);
+    if (GLint location = OpenGl::GetUniformLocation(program_, name); location >= 0)
+    {
+        return static_cast<uint32_t>(location);
+    }
+
+    return std::nullopt;
 }
 
-uint32_t Shader::GetUniformLocation(const char* name) const noexcept
+uint32_t Shader::GetUniformLocation(const char* name) const
 {
-    return OpenGl::GetUniformLocation(program_.GetValue(), name);
+    if (auto maybe_location = FindUniformLocation(name))
+    {
+        return maybe_location.value();
+    }
+
+    throw ErrorHandling::RuntimeErrorWithMessage(
+        "Could not find location of uniform with name \"{}\" in shader \"{}\"",
+        name,
+        path_.stem());
 }
 
 void Shader::Compile(std::string& buffer)
@@ -409,7 +424,7 @@ void Shader::SetUniform(UniformHandle& handle, const Texture& texture)
 {
     auto sampler_uniform = GetUniformValue<SamplerUniform>(handle);
     ShaderUniform& u = uniforms_[handle.index];
-    sampler_uniform.texture = *texture.GetTexture();
+    sampler_uniform.texture = texture.GetTexture();
     u.SetValue(std::span(reinterpret_cast<const uint8_t*>(&sampler_uniform), sizeof(sampler_uniform)));  // NOLINT
 }
 

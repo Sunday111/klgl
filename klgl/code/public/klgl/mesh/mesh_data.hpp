@@ -54,9 +54,9 @@ public:
     void Draw() const;
     void DrawInstanced(const size_t num_instances);
 
-    GLuint vao{};
-    GLuint vbo{};
-    GLuint ebo{};
+    GlVertexArrayId vao{};
+    GlBufferId vbo{};
+    GlBufferId ebo{};
     GlPrimitiveType topology = GlPrimitiveType::Triangles;
     size_t elements_count = 0;
 };

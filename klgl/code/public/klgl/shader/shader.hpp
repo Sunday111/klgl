@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
-#include "klgl/opengl/gl_api.hpp"
+#include "klgl/opengl/identifiers.hpp"
 #include "klgl/shader/define_handle.hpp"
 #include "klgl/shader/uniform_handle.hpp"
 
@@ -29,7 +29,7 @@ public:
 
     void Compile(std::string& buffer);
     [[nodiscard]] std::optional<uint32_t> FindUniformLocation(const char*) const noexcept;
-    [[nodiscard]] uint32_t GetUniformLocation(const char*) const noexcept;
+    [[nodiscard]] uint32_t GetUniformLocation(const char*) const;
     void DrawDetails();
 
     std::optional<UniformHandle> FindUniform(Name name) const noexcept;

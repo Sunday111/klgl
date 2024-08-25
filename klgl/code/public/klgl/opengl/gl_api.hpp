@@ -7,24 +7,15 @@
 #include <span>
 
 #include "EverydayTools/Math/Matrix.hpp"
-#include "EverydayTools/Template/TaggedIdentifier.hpp"
 #include "enums.hpp"
+#include "identifiers.hpp"
 #include "klgl/opengl/detail/settings.hpp"
 #include "open_gl_error.hpp"
-
-namespace klgl::tags
-{
-struct GlShaderIdTag;
-struct GlProgramIdTag;
-}  // namespace klgl::tags
 
 namespace klgl
 {
 
 using namespace edt::lazy_matrix_aliases;  // NOLINT
-
-using GlShaderId = edt::TaggedIdentifier<tags::GlShaderIdTag, GLuint, 0>;
-using GlProgramId = edt::TaggedIdentifier<tags::GlProgramIdTag, GLuint, 0>;
 
 // This class wraps OpenGL calls
 // Most methods have a vew version with different suffixes that tell about how error are going to be handled:
@@ -41,62 +32,214 @@ public:
 
     [[nodiscard]] KLGL_OGL_INLINE static GlError GetError() noexcept;
 
-    [[nodiscard]] KLGL_OGL_INLINE static GLuint GenBuffer() noexcept;
-    KLGL_OGL_INLINE static void GenBuffers(const std::span<GLuint>& buffers) noexcept;
+    /************************************************** Buffers *******************************************************/
 
-    [[nodiscard]] KLGL_OGL_INLINE static GLuint GenVertexArray() noexcept;
-    KLGL_OGL_INLINE static void GenVertexArrays(const std::span<GLuint>& arrays) noexcept;
+    KLGL_OGL_INLINE static void GenBuffersNE(const std::span<GlBufferId>& buffers) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> GenBuffersCE(
+        const std::span<GlBufferId>& buffers) noexcept;
+    KLGL_OGL_INLINE static void GenBuffers(const std::span<GlBufferId>& buffers);
 
-    [[nodiscard]] KLGL_OGL_INLINE static GLuint GenTexture() noexcept;
-    KLGL_OGL_INLINE static void GenTextures(const std::span<GLuint>& textures) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static GlBufferId GenBufferNE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlBufferId, OpenGlError> GenBufferCE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static GlBufferId GenBuffer();
 
-    KLGL_OGL_INLINE static void BindBufferNE(GlBufferType target, GLuint buffer) noexcept;
-    KLGL_OGL_INLINE static void BindBuffer(GlBufferType target, GLuint buffer);
-
-    KLGL_OGL_INLINE static void BindVertexArrayNE(GLuint array) noexcept;
-    KLGL_OGL_INLINE static void BindVertexArray(GLuint array);
+    KLGL_OGL_INLINE static void BindBufferNE(GlBufferType target, GlBufferId buffer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BindBufferCE(
+        GlBufferType target,
+        GlBufferId buffer) noexcept;
+    KLGL_OGL_INLINE static void BindBuffer(GlBufferType target, GlBufferId buffer);
 
     KLGL_OGL_INLINE static void
-    BufferDataNE(GlBufferType target, GLsizeiptr size, const void* data, GlUsage usage) noexcept;
-    KLGL_OGL_INLINE static void BufferData(GlBufferType target, GLsizeiptr size, const void* data, GlUsage usage);
+    BufferDataNE(GlBufferType target, std::span<const uint8_t> data, GlUsage usage) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    BufferDataCE(GlBufferType target, std::span<const uint8_t> data, GlUsage usage) noexcept;
+    KLGL_OGL_INLINE static void BufferData(GlBufferType target, std::span<const uint8_t> data, GlUsage usage);
 
     template <typename T, size_t Extent>
-    KLGL_OGL_INLINE static void
-    BufferDataNE(GlBufferType target, const std::span<T, Extent>& data, GlUsage usage) noexcept
+        requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
+    KLGL_OGL_INLINE
+        static void BufferDataNE(GlBufferType target, const std::span<T, Extent>& data, GlUsage usage) noexcept
     {
-        BufferDataNE(target, static_cast<GLsizeiptr>(sizeof(T) * data.size()), data.data(), usage);
+        std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
+        BufferDataNE(target, bytes, usage);
     }
 
     template <typename T, size_t Extent>
-    KLGL_OGL_INLINE static void BufferData(GlBufferType target, const std::span<T, Extent>& data, GlUsage usage)
+        requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BufferDataCE(
+        GlBufferType target,
+        const std::span<T, Extent>& data,
+        GlUsage usage) noexcept
     {
-        BufferData(target, static_cast<GLsizeiptr>(sizeof(T) * data.size()), data.data(), usage);
+        std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
+        return BufferDataCE(target, bytes, usage);
     }
 
     template <typename T, size_t Extent>
-    KLGL_OGL_INLINE static void
-    BufferDataNE(GlBufferType target, const std::span<const T, Extent>& data, GlUsage usage) noexcept
+        requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
+    KLGL_OGL_INLINE
+        static void BufferData(GlBufferType target, const std::span<T, Extent>& data, GlUsage usage) noexcept
     {
-        BufferDataNE(target, static_cast<GLsizeiptr>(sizeof(T) * data.size()), data.data(), usage);
+        std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
+        return BufferData(target, bytes, usage);
     }
 
-    template <typename T, size_t Extent>
-    KLGL_OGL_INLINE static void
-    BufferData(GlBufferType target, const std::span<const T, Extent>& data, GlUsage usage) noexcept
-    {
-        BufferData(target, static_cast<GLsizeiptr>(sizeof(T) * data.size()), data.data(), usage);
-    }
+    /*********************************************** Vertex Arrays ****************************************************/
 
-    [[nodiscard]] KLGL_OGL_INLINE static constexpr GLboolean CastBool(bool value) noexcept;
+    KLGL_OGL_INLINE static void GenVertexArraysNE(const std::span<GlVertexArrayId>& arrays) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> GenVertexArraysCE(
+        const std::span<GlVertexArrayId>& arrays) noexcept;
+    KLGL_OGL_INLINE static void GenVertexArrays(const std::span<GlVertexArrayId>& arrays);
+
+    [[nodiscard]] KLGL_OGL_INLINE static GlVertexArrayId GenVertexArrayNE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlVertexArrayId, OpenGlError> GenVertexArrayCE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static GlVertexArrayId GenVertexArray();
+
+    KLGL_OGL_INLINE static void BindVertexArrayNE(GlVertexArrayId array) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BindVertexArrayCE(GlVertexArrayId array) noexcept;
+    KLGL_OGL_INLINE static void BindVertexArray(GlVertexArrayId array);
+
+    /************************************************* Textures *******************************************************/
+
+    KLGL_OGL_INLINE static void GenTexturesNE(const std::span<GlTextureId>& textures) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> GenTexturesCE(
+        const std::span<GlTextureId>& textures) noexcept;
+    KLGL_OGL_INLINE static void GenTextures(const std::span<GlTextureId>& textures);
+
+    [[nodiscard]] KLGL_OGL_INLINE static GlTextureId GenTextureNE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlTextureId, OpenGlError> GenTextureCE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static GlTextureId GenTexture();
+
+    KLGL_OGL_INLINE static void BindTextureNE(GlTargetTextureType target, GlTextureId texture) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BindtextureCE(
+        GlTargetTextureType target,
+        GlTextureId texture) noexcept;
+    KLGL_OGL_INLINE static void BindTexture(GlTargetTextureType target, GlTextureId texture);
+
+    // Specifies the index of the lowest defined mipmap level. The initial value is 0.
+    KLGL_OGL_INLINE static void SetTextureBaseLevelNE(GlTargetTextureType target, size_t level) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetTextureBaseLevelCE(
+        GlTargetTextureType target,
+        size_t level) noexcept;
+    KLGL_OGL_INLINE static void SetTextureBaseLevel(GlTargetTextureType target, size_t level);
+
+    // Specifies the texture comparison mode for currently bound depth textures.
+    // (a texture whose internal format is GL_DEPTH_COMPONENT_*)
+    KLGL_OGL_INLINE static void SetDepthTextureCompareModeNE(
+        GlTargetTextureType target,
+        GlDepthTextureCompareMode mode) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetDepthTextureCompareModeCE(
+        GlTargetTextureType target,
+        GlDepthTextureCompareMode mode) noexcept;
+    KLGL_OGL_INLINE static void SetDepthTextureCompareMode(GlTargetTextureType target, GlDepthTextureCompareMode mode);
+
+    KLGL_OGL_INLINE static void SetDepthTextureCompareFunctionNE(
+        GlTargetTextureType target,
+        GlDepthTextureCompareFunction function) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetDepthTextureCompareFunctionCE(
+        GlTargetTextureType target,
+        GlDepthTextureCompareFunction function) noexcept;
+    KLGL_OGL_INLINE static void SetDepthTextureCompareFunction(
+        GlTargetTextureType target,
+        GlDepthTextureCompareFunction function);
+
+    // The data in params specifies four values that define the border values that should be used for border texels. If
+    // a texel is sampled from the border of the texture, the values of GL_TEXTURE_BORDER_COLOR are interpreted as an
+    // RGBA color to match the texture's internal format and substituted for the non-existent texel data. If the texture
+    // contains depth components, the first component of GL_TEXTURE_BORDER_COLOR is interpreted as a depth value. The
+    // initial value is (0.0,0.0,0.0,0.0).
+    // If the values are specified with store_as_integer = true the values are stored unmodified with an internal data
+    // type of integer. Otherwise, they are converted to floating point with the following equation: f=2c+1/2^b−1.
+    KLGL_OGL_INLINE static void SetTextureBorderColorNE(
+        GlTargetTextureType target,
+        std::span<const GLint, 4> color,
+        bool store_as_integer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetTextureBorderColorCE(
+        GlTargetTextureType target,
+        std::span<const GLint, 4> color,
+        bool store_as_integer) noexcept;
+    KLGL_OGL_INLINE static void
+    SetTextureBorderColor(GlTargetTextureType target, std::span<const GLint, 4> color, bool store_as_integer);
+
+    KLGL_OGL_INLINE static void SetTextureBorderColorNE(
+        GlTargetTextureType target,
+        std::span<const GLuint, 4> color) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetTextureBorderColorCE(
+        GlTargetTextureType target,
+        std::span<const GLuint, 4> color) noexcept;
+    KLGL_OGL_INLINE static void SetTextureBorderColor(GlTargetTextureType target, std::span<const GLuint, 4> color);
+
+    KLGL_OGL_INLINE static void SetTextureBorderColorNE(
+        GlTargetTextureType target,
+        std::span<const GLfloat, 4> color) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetTextureBorderColorCE(
+        GlTargetTextureType target,
+        std::span<const GLfloat, 4> color) noexcept;
+    KLGL_OGL_INLINE static void SetTextureBorderColor(GlTargetTextureType target, std::span<const GLfloat, 4> color);
+
+    // Specifies a fixed bias value that is to be added to the level-of-detail parameter for the texture before texture
+    // sampling. The specified value is added to the shader-supplied bias value (if any) and subsequently clamped into
+    // the implementation-defined range [−biasmax,biasmax], where biasmax is the value of the implementation defined
+    // constant GL_MAX_TEXTURE_LOD_BIAS. The initial value is 0.0.
+    KLGL_OGL_INLINE static void SetTextureLODBiasNE(GlTargetTextureType target, float bias) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetTextureLODBiasCE(
+        GlTargetTextureType target,
+        float bias) noexcept;
+    KLGL_OGL_INLINE static void SetTextureLODBias(GlTargetTextureType target, float bias);
+
+    KLGL_OGL_INLINE static void
+    SetTextureWrapNE(GlTargetTextureType target, GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    SetTextureWrapCE(GlTargetTextureType target, GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept;
+    KLGL_OGL_INLINE static void
+    SetTextureWrap(GlTargetTextureType target, GlTextureWrapAxis wrap, GlTextureWrapMode mode);
+
+    KLGL_OGL_INLINE static void SetTextureMinFilterNE(GlTargetTextureType target, GlTextureFilter filter) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetTextureMinFilterCE(
+        GlTargetTextureType target,
+        GlTextureFilter filter) noexcept;
+    KLGL_OGL_INLINE static void SetTextureMinFilter(GlTargetTextureType target, GlTextureFilter filter);
+
+    KLGL_OGL_INLINE static void SetTextureMagFilterNE(GlTargetTextureType target, GlTextureFilter filter) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetTextureMagFilterCE(
+        GlTargetTextureType target,
+        GlTextureFilter filter) noexcept;
+    KLGL_OGL_INLINE static void SetTextureMagFilter(GlTargetTextureType target, GlTextureFilter filter);
+
+    KLGL_OGL_INLINE static void TexImage2dNE(
+        GlTargetTextureType target,
+        size_t level_of_detail,
+        GLint internal_format,
+        size_t width,
+        size_t height,
+        GLint data_format,
+        GLenum pixel_data_type,
+        const void* pixels) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> TexImage2dCE(
+        GlTargetTextureType target,
+        size_t level_of_detail,
+        GLint internal_format,
+        size_t width,
+        size_t height,
+        GLint data_format,
+        GLenum pixel_data_type,
+        const void* pixels) noexcept;
+    KLGL_OGL_INLINE static void TexImage2d(
+        GlTargetTextureType target,
+        size_t level_of_detail,
+        GLint internal_format,
+        size_t width,
+        size_t height,
+        GLint data_format,
+        GLenum pixel_data_type,
+        const void* pixels);
+
+    /************************************************** Shaders *******************************************************/
 
     [[nodiscard]] KLGL_OGL_INLINE static GlShaderId CreateShaderNE(GlShaderType type) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlShaderId, OpenGlError> CreateShaderCE(
         GlShaderType type) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static GlShaderId CreateShader(GlShaderType type);
-
-    KLGL_OGL_INLINE static void DeleteShaderNE(GlShaderId shader) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteShaderCE(GlShaderId shader) noexcept;
-    KLGL_OGL_INLINE static void DeleteShader(GlShaderId shader);
 
     KLGL_OGL_INLINE static void ShaderSourceNE(GlShaderId shader, std::span<const std::string_view> sources) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> ShaderSourceCE(
@@ -125,6 +268,12 @@ public:
     [[nodiscard]] KLGL_OGL_INLINE static std::expected<std::string, OpenGlError> GetShaderLogCE(
         GlShaderId shader) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::string GetShaderLog(GlShaderId shader);
+
+    KLGL_OGL_INLINE static void DeleteShaderNE(GlShaderId shader) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteShaderCE(GlShaderId shader) noexcept;
+    KLGL_OGL_INLINE static void DeleteShader(GlShaderId shader);
+
+    /************************************************** Program *******************************************************/
 
     [[nodiscard]] KLGL_OGL_INLINE static GlProgramId CreateProgramNE() noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlProgramId, OpenGlError> CreateProgramCE() noexcept;
@@ -160,9 +309,66 @@ public:
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> UseProgramCE(GlProgramId program) noexcept;
     KLGL_OGL_INLINE static void UseProgram(GlProgramId program);
 
+    [[nodiscard]] KLGL_OGL_INLINE static GLint GetUniformLocationNE(GlProgramId program, const char* name) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GLint, OpenGlError> GetUniformLocationCE(
+        GlProgramId program,
+        const char* name) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static GLint GetUniformLocation(GlProgramId program, const char* name);
+
+    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const float& f) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
+        uint32_t location,
+        const float& f) noexcept;
+    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const float& f);
+
+    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Vec2f& v) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
+        uint32_t location,
+        const Vec2f& v) noexcept;
+    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Vec2f& v);
+
+    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Vec3f& v) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
+        uint32_t location,
+        const Vec3f& v) noexcept;
+    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Vec3f& v);
+
+    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Vec4f& v) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
+        uint32_t location,
+        const Vec4f& v) noexcept;
+    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Vec4f& v);
+
+    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Mat3f& m, bool transpose = false) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    SetUniformCE(uint32_t location, const Mat3f& m, bool transpose = false) noexcept;
+    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Mat3f& m, bool transpose = false);
+
+    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Mat4f& m, bool transpose = false) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    SetUniformCE(uint32_t location, const Mat4f& m, bool transpose = false) noexcept;
+    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Mat4f& m, bool transpose = false);
+
     KLGL_OGL_INLINE static void DeleteProgramNE(GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteProgramCE(GlProgramId program) noexcept;
     KLGL_OGL_INLINE static void DeleteProgram(GlProgramId program);
+
+    /*************************************************** Clear ********************************************************/
+
+    KLGL_OGL_INLINE static void SetClearColorNE(GLfloat r, GLfloat g, GLfloat b, GLfloat a) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    SetClearColorCE(GLfloat r, GLfloat g, GLfloat b, GLfloat a) noexcept;
+    KLGL_OGL_INLINE static void SetClearColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+
+    KLGL_OGL_INLINE static void SetClearColorNE(const Vec4f& color) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetClearColorCE(const Vec4f& color) noexcept;
+    KLGL_OGL_INLINE static void SetClearColor(const Vec4f& color);
+
+    KLGL_OGL_INLINE static void ClearNE(GLbitfield mask) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> ClearCE(GLbitfield mask) noexcept;
+    KLGL_OGL_INLINE static void Clear(GLbitfield mask) noexcept;
+
+    /******************************************************************************************************************/
 
     KLGL_OGL_INLINE static void VertexAttribPointerNE(
         GLuint index,
@@ -203,19 +409,6 @@ public:
     ViewportCE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept;
     KLGL_OGL_INLINE static void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
-    KLGL_OGL_INLINE static void SetClearColorNE(GLfloat r, GLfloat g, GLfloat b, GLfloat a) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
-    SetClearColorCE(GLfloat r, GLfloat g, GLfloat b, GLfloat a) noexcept;
-    KLGL_OGL_INLINE static void SetClearColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
-
-    KLGL_OGL_INLINE static void SetClearColorNE(const Vec4f& color) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetClearColorCE(const Vec4f& color) noexcept;
-    KLGL_OGL_INLINE static void SetClearColor(const Vec4f& color);
-
-    KLGL_OGL_INLINE static void ClearNE(GLbitfield mask) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> ClearCE(GLbitfield mask) noexcept;
-    KLGL_OGL_INLINE static void Clear(GLbitfield mask) noexcept;
-
     KLGL_OGL_INLINE static void DrawElementsNE(
         GlPrimitiveType mode,
         size_t num,
@@ -248,152 +441,8 @@ public:
         const void* indices,
         size_t num_instances);
 
-    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const float& f) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
-        uint32_t location,
-        const float& f) noexcept;
-    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const float& f);
-
-    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Vec2f& v) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
-        uint32_t location,
-        const Vec2f& v) noexcept;
-    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Vec2f& v);
-
-    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Vec3f& v) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
-        uint32_t location,
-        const Vec3f& v) noexcept;
-    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Vec3f& v);
-
-    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Vec4f& v) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
-        uint32_t location,
-        const Vec4f& v) noexcept;
-    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Vec4f& v);
-
-    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Mat3f& m, bool transpose = false) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
-    SetUniformCE(uint32_t location, const Mat3f& m, bool transpose = false) noexcept;
-    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Mat3f& m, bool transpose = false);
-
-    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const Mat4f& m, bool transpose = false) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
-    SetUniformCE(uint32_t location, const Mat4f& m, bool transpose = false) noexcept;
-    KLGL_OGL_INLINE static void SetUniform(uint32_t location, const Mat4f& m, bool transpose = false);
-
-    // Specifies the texture comparison mode for currently bound depth textures.
-    // (a texture whose internal format is GL_DEPTH_COMPONENT_*)
-    KLGL_OGL_INLINE static void SetDepthTextureCompareModeNE(
-        GlTextureParameterTarget target,
-        GlDepthTextureCompareMode mode) noexcept;
-    KLGL_OGL_INLINE static void SetDepthTextureCompareMode(
-        GlTextureParameterTarget target,
-        GlDepthTextureCompareMode mode);
-
-    KLGL_OGL_INLINE static void SetDepthTextureCompareFunctionNE(
-        GlTextureParameterTarget target,
-        GlDepthTextureCompareFunction function) noexcept;
-    KLGL_OGL_INLINE static void SetDepthTextureCompareFunction(
-        GlTextureParameterTarget target,
-        GlDepthTextureCompareFunction function);
-
-    KLGL_OGL_INLINE static void
-    SetTextureParameterNE(GlTextureParameterTarget target, GLenum pname, const GLfloat* value) noexcept;
-    KLGL_OGL_INLINE static void
-    SetTextureParameter(GlTextureParameterTarget target, GLenum pname, const GLfloat* value);
-
-    KLGL_OGL_INLINE static void
-    SetTextureParameterNE(GlTextureParameterTarget target, GLenum name, GLint param) noexcept;
-    KLGL_OGL_INLINE static void SetTextureParameter(GlTextureParameterTarget target, GLenum name, GLint param);
-
-    // Specifies the index of the lowest defined mipmap level. The initial value is 0.
-    KLGL_OGL_INLINE static void SetTextureBaseLevelNE(GlTextureParameterTarget target, size_t level) noexcept;
-    KLGL_OGL_INLINE static void SetTextureBaseLevel(GlTextureParameterTarget target, size_t level);
-
-    // The data in params specifies four values that define the border values that should be used for border texels. If
-    // a texel is sampled from the border of the texture, the values of GL_TEXTURE_BORDER_COLOR are interpreted as an
-    // RGBA color to match the texture's internal format and substituted for the non-existent texel data. If the texture
-    // contains depth components, the first component of GL_TEXTURE_BORDER_COLOR is interpreted as a depth value. The
-    // initial value is (0.0,0.0,0.0,0.0).
-    // If the values are specified with store_as_integer = true the values are stored unmodified with an internal data
-    // type of integer. Otherwise, they are converted to floating point with the following equation: f=2c+1/2^b−1.
-    KLGL_OGL_INLINE static void SetTextureBorderColorNE(
-        GlTextureParameterTarget target,
-        std::span<const GLint, 4> color,
-        bool store_as_integer) noexcept;
-    KLGL_OGL_INLINE static void
-    SetTextureBorderColor(GlTextureParameterTarget target, std::span<const GLint, 4> color, bool store_as_integer);
-    KLGL_OGL_INLINE static void SetTextureBorderColorNE(
-        GlTextureParameterTarget target,
-        std::span<const GLuint, 4> color) noexcept;
-    KLGL_OGL_INLINE static void SetTextureBorderColor(
-        GlTextureParameterTarget target,
-        std::span<const GLuint, 4> color);
-    KLGL_OGL_INLINE static void SetTextureBorderColorNE(
-        GlTextureParameterTarget target,
-        std::span<const GLfloat, 4> color) noexcept;
-    KLGL_OGL_INLINE static void SetTextureBorderColor(
-        GlTextureParameterTarget target,
-        std::span<const GLfloat, 4> color);
-
-    // Specifies a fixed bias value that is to be added to the level-of-detail parameter for the texture before texture
-    // sampling. The specified value is added to the shader-supplied bias value (if any) and subsequently clamped into
-    // the implementation-defined range [−biasmax,biasmax], where biasmax is the value of the implementation defined
-    // constant GL_MAX_TEXTURE_LOD_BIAS. The initial value is 0.0.
-    KLGL_OGL_INLINE static void SetTextureLODBiasNE(GlTextureParameterTarget target, float bias) noexcept;
-    KLGL_OGL_INLINE static void SetTextureLODBias(GlTextureParameterTarget target, float bias);
-
-    KLGL_OGL_INLINE static void
-    SetTextureWrapNE(GlTextureParameterTarget target, GlTextureWrapAxis wrap, GlTextureWrapMode mode) noexcept;
-    KLGL_OGL_INLINE static void
-    SetTextureWrap(GlTextureParameterTarget target, GlTextureWrapAxis wrap, GlTextureWrapMode mode);
-
-    KLGL_OGL_INLINE static void SetTextureMinFilterNE(GlTextureParameterTarget target, GlTextureFilter filter) noexcept;
-    KLGL_OGL_INLINE static void SetTextureMinFilter(GlTextureParameterTarget target, GlTextureFilter filter);
-
-    KLGL_OGL_INLINE static void SetTextureMagFilterNE(GlTextureParameterTarget target, GlTextureFilter filter) noexcept;
-    KLGL_OGL_INLINE static void SetTextureMagFilter(GlTextureParameterTarget target, GlTextureFilter filter);
-
-    KLGL_OGL_INLINE static void BindTextureNE(GLenum target, GLuint texture) noexcept;
-    KLGL_OGL_INLINE static void BindTexture(GLenum target, GLuint texture);
-
-    KLGL_OGL_INLINE static void BindTexture2dNE(GLuint texture) noexcept;
-    KLGL_OGL_INLINE static void BindTexture2d(GLuint texture);
-
-    KLGL_OGL_INLINE static void TexImage2dNE(
-        GLenum target,
-        size_t level_of_detail,
-        GLint internal_format,
-        size_t width,
-        size_t height,
-        GLint data_format,
-        GLenum pixel_data_type,
-        const void* pixels) noexcept;
-    KLGL_OGL_INLINE static void TexImage2d(
-        GLenum target,
-        size_t level_of_detail,
-        GLint internal_format,
-        size_t width,
-        size_t height,
-        GLint data_format,
-        GLenum pixel_data_type,
-        const void* pixels);
-
     KLGL_OGL_INLINE static void GenerateMipmapNE(GLenum target) noexcept;
     KLGL_OGL_INLINE static void GenerateMipmap(GLenum target);
-
-    KLGL_OGL_INLINE static void GenerateMipmap2dNE() noexcept;
-    KLGL_OGL_INLINE static void GenerateMipmap2d();
-
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<uint32_t> FindUniformLocationNE(
-        GLuint shader_program,
-        const char* name) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<uint32_t> FindUniformLocation(
-        GLuint shader_program,
-        const char* name);
-
-    [[nodiscard]] KLGL_OGL_INLINE static uint32_t GetUniformLocation(GLuint shader_program, const char* name);
 
     KLGL_OGL_INLINE static void PolygonModeNE(GlPolygonMode mode) noexcept;
     KLGL_OGL_INLINE static void PolygonMode(GlPolygonMode mode);

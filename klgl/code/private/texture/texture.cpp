@@ -5,8 +5,10 @@
 #include "klgl/error_handling.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/pixel_buffer_channel_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/pixel_buffer_layout.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/target_texture_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_internal_format.hpp"
 #include "klgl/opengl/gl_api.hpp"
+
 
 namespace klgl
 {
@@ -50,12 +52,12 @@ std::unique_ptr<Texture> Texture::CreateEmpty(const Vec2<size_t>& resolution, co
 
     auto tex = std::make_unique<Texture>();
     tex->texture_ = OpenGl::GenTexture();
-    tex->type_ = GL_TEXTURE_2D;
+    tex->type_ = GlTargetTextureType::Texture2d;
     tex->resolution_ = resolution;
     tex->format_ = format;
     tex->Bind();
 
-    assert(tex->type_ == GL_TEXTURE_2D);
+    assert(tex->type_ == GlTargetTextureType::Texture2d);
     OpenGl::TexImage2d(
         tex->type_,
         0,
@@ -67,18 +69,18 @@ std::unique_ptr<Texture> Texture::CreateEmpty(const Vec2<size_t>& resolution, co
         nullptr);
     klgl::ErrorHandling::CheckOpenGlError("OpenGl::TexImage2d");
 
-    OpenGl::SetTextureWrap(GlTextureParameterTarget::Texture2d, GlTextureWrapAxis::R, GlTextureWrapMode::Repeat);
-    OpenGl::SetTextureWrap(GlTextureParameterTarget::Texture2d, GlTextureWrapAxis::S, GlTextureWrapMode::Repeat);
-    OpenGl::SetTextureWrap(GlTextureParameterTarget::Texture2d, GlTextureWrapAxis::T, GlTextureWrapMode::Repeat);
-    OpenGl::SetTextureMagFilter(GlTextureParameterTarget::Texture2d, GlTextureFilter::Nearest);
-    OpenGl::SetTextureMinFilter(GlTextureParameterTarget::Texture2d, GlTextureFilter::Nearest);
+    OpenGl::SetTextureWrap(GlTargetTextureType::Texture2d, GlTextureWrapAxis::R, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureWrap(GlTargetTextureType::Texture2d, GlTextureWrapAxis::S, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureWrap(GlTargetTextureType::Texture2d, GlTextureWrapAxis::T, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureMagFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
+    OpenGl::SetTextureMinFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
 
     return tex;
 }
 
 void Texture::Bind() const
 {
-    OpenGl::BindTexture(type_, *texture_);
+    OpenGl::BindTexture(type_, texture_);
 }
 
 void Texture::SetPixels(const PixelBufferFormat& format, std::span<const uint8_t> data)
@@ -86,11 +88,11 @@ void Texture::SetPixels(const PixelBufferFormat& format, std::span<const uint8_t
     format.ValidateBufferSize(resolution_, data.size_bytes());
     format.EnsureCompatibleWithInternalTextureFormat(format_);
 
-    assert(type_ == GL_TEXTURE_2D);
+    assert(type_ == GlTargetTextureType::Texture2d);
     Bind();
     constexpr GLint x_offset = 0, y_offset = 0;
     glTexSubImage2D(
-        type_,
+        ToGlValue(type_),
         0,
         x_offset,
         y_offset,
@@ -120,9 +122,9 @@ void Texture::SetPixels(const PixelBufferFormat& format, std::span<const uint8_t
 
 Texture::~Texture()
 {
-    if (texture_)
+    if (texture_.IsValid())
     {
-        glDeleteTextures(1, &*texture_);
+        glDeleteTextures(1, &texture_.GetValue());
     }
 }
 

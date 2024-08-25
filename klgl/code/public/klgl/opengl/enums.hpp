@@ -223,7 +223,7 @@ enum class GlVertexAttribComponentType
     UnsignedInt_10F_11F_11F_Rev,
 };
 
-enum class GlTextureParameterTarget
+enum class GlTargetTextureType
 {
     Texture1d,
     Texture1dArray,
@@ -270,6 +270,29 @@ enum class GlShaderType
     Fragment,
 };
 
+enum class GlTextureParameterType
+{
+    DepthStencilMode,
+    BaseLevel,
+    ComapreFunction,
+    CompareMode,
+    LoadBias,
+    MinificationFilter,
+    MagnificationFilter,
+    MinLOD,
+    MaxLOD,
+    MaxLevel,
+    SwizzleR,
+    SwizzleG,
+    SwizzleB,
+    SwizzleA,
+    WrapS,
+    WrapT,
+    WrapR,
+    BorderColor,
+    SwizzleRGBA,
+};
+
 }  // namespace klgl
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlError);
@@ -311,8 +334,8 @@ KLGL_MAKE_ENUM_FORMATTER(GlIndexBufferElementType);
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlVertexAttribComponentType);
 KLGL_MAKE_ENUM_FORMATTER(GlVertexAttribComponentType);
 
-KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlTextureParameterTarget);
-KLGL_MAKE_ENUM_FORMATTER(GlTextureParameterTarget);
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlTargetTextureType);
+KLGL_MAKE_ENUM_FORMATTER(GlTargetTextureType);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlDepthTextureCompareMode);
 KLGL_MAKE_ENUM_FORMATTER(GlDepthTextureCompareMode);
@@ -322,3 +345,6 @@ KLGL_MAKE_ENUM_FORMATTER(GlDepthTextureCompareFunction);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlShaderType);
 KLGL_MAKE_ENUM_FORMATTER(GlShaderType);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlTextureParameterType);
+KLGL_MAKE_ENUM_FORMATTER(GlTextureParameterType);

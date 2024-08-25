@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
-#include "klgl/opengl/gl_api.hpp"
+#include "klgl/opengl/identifiers.hpp"
 
 namespace klgl
 {
@@ -10,7 +10,7 @@ class SamplerUniform
 {
 public:
     uint8_t sampler_index;
-    GLuint texture;
+    GlTextureId texture;
 };
 
 }  // namespace klgl

@@ -65,10 +65,8 @@ class TexturedQuadApp : public klgl::Application
             texture_ = klgl::Texture::CreateEmpty(size, klgl::GlTextureInternalFormat::R8);
             const auto pixels = klgl::ProceduralTextureGenerator::CircleMask(size, 2);
             texture_->SetPixels<klgl::GlPixelBufferLayout::R>(std::span{pixels});
-            klgl::OpenGl::SetTextureMinFilter(
-                klgl::GlTextureParameterTarget::Texture2d,
-                klgl::GlTextureFilter::Nearest);
-            klgl::OpenGl::SetTextureMagFilter(klgl::GlTextureParameterTarget::Texture2d, klgl::GlTextureFilter::Linear);
+            klgl::OpenGl::SetTextureMinFilter(klgl::GlTargetTextureType::Texture2d, klgl::GlTextureFilter::Nearest);
+            klgl::OpenGl::SetTextureMagFilter(klgl::GlTargetTextureType::Texture2d, klgl::GlTextureFilter::Linear);
         }
 
         // Set initial uniform parameters of the shader
