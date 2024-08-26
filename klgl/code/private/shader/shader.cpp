@@ -38,17 +38,17 @@ struct Shader::Internal
         std::span<const std::string_view> sources,
         std::string* out_error)
     {
-        OpenGl::ShaderSource(shader.GetId(), sources);
-        OpenGl::CompileShader(shader.GetId());
+        OpenGl::ShaderSource(shader, sources);
+        OpenGl::CompileShader(shader);
 
-        if (OpenGl::GetShaderCompileStatus(shader.GetId()))
+        if (OpenGl::GetShaderCompileStatus(shader))
         {
             return true;
         }
 
         if (out_error)
         {
-            if (auto maybe_log = OpenGl::GetShaderLogCE(shader.GetId()))
+            if (auto maybe_log = OpenGl::GetShaderLogCE(shader))
             {
                 *out_error = std::move(maybe_log.value());
             }
@@ -62,13 +62,13 @@ struct Shader::Internal
     }
 
     [[nodiscard]] static bool TryLinkShaderProgram(
-        GlProgramId program,
+        const GlObject<GlProgramId>& program,
         const std::span<const GlObject<GlShaderId>>& shaders,
         std::string* out_error)
     {
         for (auto& shader : shaders)
         {
-            OpenGl::AttachShader(program, shader.GetId());
+            OpenGl::AttachShader(program, shader);
         }
 
         OpenGl::LinkProgram(program);
@@ -111,12 +111,12 @@ Shader::~Shader() = default;
 
 void Shader::Use()
 {
-    OpenGl::UseProgram(program_.GetId());
+    OpenGl::UseProgram(program_);
 }
 
 std::optional<uint32_t> Shader::FindUniformLocation(const char* name) const noexcept
 {
-    if (GLint location = OpenGl::GetUniformLocation(program_.GetId(), name); location >= 0)
+    if (GLint location = OpenGl::GetUniformLocation(program_, name); location >= 0)
     {
         return static_cast<uint32_t>(location);
     }
@@ -181,7 +181,7 @@ void Shader::Compile(std::string& buffer)
             return;
         }
 
-        shaders[num_compiled] = GlObject{OpenGl::CreateShader(type)};
+        shaders[num_compiled] = GlObject<GlShaderId>::CreateFrom(OpenGl::CreateShader(type));
         const auto& shader = shaders[num_compiled];
         num_compiled++;
 
@@ -205,13 +205,10 @@ void Shader::Compile(std::string& buffer)
     add_one(GlShaderType::Vertex, "vertex");
     add_one(GlShaderType::Fragment, "fragment");
 
-    GlObject<GlProgramId> program(OpenGl::CreateProgram());
+    auto program = GlObject<GlProgramId>::CreateFrom(OpenGl::CreateProgram());
 
     std::string link_log;
-    [[unlikely]] if (!Internal::TryLinkShaderProgram(
-                         program.GetId(),
-                         std::span(shaders).subspan(0, num_compiled),
-                         &link_log))
+    [[unlikely]] if (!Internal::TryLinkShaderProgram(program, std::span(shaders).subspan(0, num_compiled), &link_log))
     {
         throw klgl::ErrorHandling::RuntimeErrorWithMessage("Failed to link shader {}. {}", path_, link_log);
     }

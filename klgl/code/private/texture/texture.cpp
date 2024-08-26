@@ -9,7 +9,6 @@
 #include "klgl/opengl/detail/maps/to_gl_value/texture_internal_format.hpp"
 #include "klgl/opengl/gl_api.hpp"
 
-
 namespace klgl
 {
 
@@ -43,6 +42,8 @@ void PixelBufferFormat::EnsureCompatibleWithInternalTextureFormat(const GlTextur
         num_channels);
 }
 
+Texture::~Texture() = default;
+
 std::unique_ptr<Texture> Texture::CreateEmpty(const Vec2<size_t>& resolution, const GlTextureInternalFormat format)
 {
     ErrorHandling::Ensure(resolution != Vec2<size_t>{}, "Empty texture size!");
@@ -51,7 +52,7 @@ std::unique_ptr<Texture> Texture::CreateEmpty(const Vec2<size_t>& resolution, co
     klgl::ErrorHandling::Ensure(!texture_format_info.base, "Do not use base internal formats.");
 
     auto tex = std::make_unique<Texture>();
-    tex->texture_ = OpenGl::GenTexture();
+    tex->texture_ = GlObject<GlTextureId>::CreateFrom(OpenGl::GenTexture());
     tex->type_ = GlTargetTextureType::Texture2d;
     tex->resolution_ = resolution;
     tex->format_ = format;
@@ -118,14 +119,6 @@ void Texture::SetPixels(const PixelBufferFormat& format, std::span<const uint8_t
     //     }
     // }
     // assert(different_indices.empty());
-}
-
-Texture::~Texture()
-{
-    if (texture_.IsValid())
-    {
-        glDeleteTextures(1, &texture_.GetValue());
-    }
 }
 
 }  // namespace klgl

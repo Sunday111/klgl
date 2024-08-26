@@ -4,7 +4,7 @@
 #include <span>
 #include <vector>
 
-#include "klgl/opengl/gl_api.hpp"
+#include "klgl/opengl/object.hpp"
 
 namespace klgl
 {
@@ -32,8 +32,8 @@ public:
         auto mesh = std::make_unique<MeshOpenGL>();
 
         mesh->vao = OpenGl::GenVertexArray();
-        mesh->vbo = OpenGl::GenBuffer();
-        mesh->ebo = OpenGl::GenBuffer();
+        mesh->vbo = GlObject<GlBufferId>::CreateFrom(OpenGl::GenBuffer());
+        mesh->ebo = GlObject<GlBufferId>::CreateFrom(OpenGl::GenBuffer());
 
         mesh->Bind();
         OpenGl::BindBuffer(GlBufferType::Array, mesh->vbo);
@@ -55,8 +55,8 @@ public:
     void DrawInstanced(const size_t num_instances);
 
     GlVertexArrayId vao{};
-    GlBufferId vbo{};
-    GlBufferId ebo{};
+    GlObject<GlBufferId> vbo{};
+    GlObject<GlBufferId> ebo{};
     GlPrimitiveType topology = GlPrimitiveType::Triangles;
     size_t elements_count = 0;
 };

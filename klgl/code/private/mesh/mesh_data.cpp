@@ -59,8 +59,6 @@ void MeshOpenGL::BindAndDraw() const
 
 MeshOpenGL::~MeshOpenGL()
 {
-    glDeleteBuffers(1, &vbo.GetValue());
-    glDeleteBuffers(1, &ebo.GetValue());
     glDeleteVertexArrays(1, &vao.GetValue());
 }
 }  // namespace klgl

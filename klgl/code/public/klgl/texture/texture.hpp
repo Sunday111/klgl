@@ -5,6 +5,7 @@
 
 #include "klgl/opengl/detail/maps/gl_pixel_buffer_layout_to_num_channels.hpp"
 #include "klgl/opengl/identifiers.hpp"
+#include "klgl/opengl/object.hpp"
 #include "klgl/texture/texture_format_helper.hpp"
 
 namespace klgl
@@ -58,7 +59,7 @@ private:
     void SetPixels(const PixelBufferFormat& format, std::span<const uint8_t> data);
 
 private:
-    GlTextureId texture_;
+    GlObject<GlTextureId> texture_;
     Vec2<size_t> resolution_;
     GlTargetTextureType type_ = GlTargetTextureType::Texture2d;
     GlTextureInternalFormat format_ = GlTextureInternalFormat::RGBA8;

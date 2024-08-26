@@ -15,7 +15,6 @@ class GlObject
 {
 public:
     GlObject() noexcept = default;
-    explicit GlObject(Identifier id) : id_(id) {}
     explicit GlObject(const GlObject&) = delete;
     GlObject(GlObject&& other) noexcept { MoveFrom(other); }
     GlObject& operator=(const GlObject&) = delete;
@@ -37,6 +36,18 @@ public:
         }
 
         return std::nullopt;
+    }
+
+    [[nodiscard]] static GlObject CreateFrom(Identifier id)
+    {
+        GlObject r;
+        r.id_ = id;
+        return r;
+    }
+
+    operator Identifier() const  // NOLINT
+    {
+        return id_;
     }
 
 protected:
