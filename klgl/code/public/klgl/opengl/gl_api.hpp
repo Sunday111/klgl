@@ -27,9 +27,9 @@ using namespace edt::lazy_matrix_aliases;  // NOLINT
 
 class OpenGl
 {
-public:
     struct Internal;
 
+public:
     [[nodiscard]] KLGL_OGL_INLINE static GlError GetError() noexcept;
 
     /************************************************** Buffers *******************************************************/
@@ -83,6 +83,10 @@ public:
         std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
         return BufferData(target, bytes, usage);
     }
+
+    KLGL_OGL_INLINE static void DeleteBufferNE(GlBufferId buffer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteBufferCE(GlBufferId buffer) noexcept;
+    KLGL_OGL_INLINE static void DeleteBuffer(GlBufferId buffer);
 
     /*********************************************** Vertex Arrays ****************************************************/
 
@@ -233,6 +237,10 @@ public:
         GLint data_format,
         GLenum pixel_data_type,
         const void* pixels);
+
+    KLGL_OGL_INLINE static void DeleteTextureNE(GlTextureId texture) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteTextureCE(GlTextureId texture) noexcept;
+    KLGL_OGL_INLINE static void DeleteTexture(GlTextureId texture);
 
     /************************************************** Shaders *******************************************************/
 

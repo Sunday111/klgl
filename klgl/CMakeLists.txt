@@ -74,6 +74,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_types_reflection.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/identifiers.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/object.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/object_deleter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/open_gl_error.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp

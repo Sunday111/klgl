@@ -22,11 +22,9 @@
 #include "klgl/shader/shader.hpp"
 #include "klgl/shader/shader_define.hpp"
 #include "klgl/shader/shader_uniform.hpp"
-#include "klgl/template/on_scope_leave.hpp"
 #include "klgl/texture/texture.hpp"
 #include "klgl/ui/type_id_widget.hpp"
 #include "nlohmann/json.hpp"
-
 
 namespace klgl
 {
@@ -35,20 +33,22 @@ std::filesystem::path Shader::shaders_dir_;
 
 struct Shader::Internal
 {
-    [[nodiscard]] static bool
-    TryCompileShader(GlShaderId shader, std::span<const std::string_view> sources, std::string* out_error)
+    [[nodiscard]] static bool TryCompileShader(
+        const GlObject<GlShaderId>& shader,
+        std::span<const std::string_view> sources,
+        std::string* out_error)
     {
-        OpenGl::ShaderSource(shader, sources);
-        OpenGl::CompileShader(shader);
+        OpenGl::ShaderSource(shader.GetId(), sources);
+        OpenGl::CompileShader(shader.GetId());
 
-        if (OpenGl::GetShaderCompileStatus(shader))
+        if (OpenGl::GetShaderCompileStatus(shader.GetId()))
         {
             return true;
         }
 
         if (out_error)
         {
-            if (auto maybe_log = OpenGl::GetShaderLogCE(shader))
+            if (auto maybe_log = OpenGl::GetShaderLogCE(shader.GetId()))
             {
                 *out_error = std::move(maybe_log.value());
             }
@@ -61,10 +61,15 @@ struct Shader::Internal
         return false;
     }
 
-    [[nodiscard]] static bool
-    TryLinkShaderProgram(GlProgramId program, const std::span<const GlShaderId>& shaders, std::string* out_error)
+    [[nodiscard]] static bool TryLinkShaderProgram(
+        GlProgramId program,
+        const std::span<const GlObject<GlShaderId>>& shaders,
+        std::string* out_error)
     {
-        std::ranges::for_each(shaders, std::bind_front(OpenGl::AttachShader, program));
+        for (auto& shader : shaders)
+        {
+            OpenGl::AttachShader(program, shader.GetId());
+        }
 
         OpenGl::LinkProgram(program);
         if (OpenGl::GetProgramLinkStatus(program))
@@ -102,19 +107,16 @@ Shader::Shader(std::filesystem::path path) : path_(std::move(path))
         std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(d));
 }
 
-Shader::~Shader()
-{
-    Destroy();
-}
+Shader::~Shader() = default;
 
 void Shader::Use()
 {
-    OpenGl::UseProgram(program_);
+    OpenGl::UseProgram(program_.GetId());
 }
 
 std::optional<uint32_t> Shader::FindUniformLocation(const char* name) const noexcept
 {
-    if (GLint location = OpenGl::GetUniformLocation(program_, name); location >= 0)
+    if (GLint location = OpenGl::GetUniformLocation(program_.GetId(), name); location >= 0)
     {
         return static_cast<uint32_t>(location);
     }
@@ -137,7 +139,7 @@ uint32_t Shader::GetUniformLocation(const char* name) const
 
 void Shader::Compile(std::string& buffer)
 {
-    Destroy();
+    program_ = {};
 
     // Reuse the buffer to read JSON file
     Filesystem::ReadFile(shaders_dir_ / path_, buffer);
@@ -145,15 +147,7 @@ void Shader::Compile(std::string& buffer)
     buffer.clear();
 
     size_t num_compiled = 0;
-    std::array<GlShaderId, 2> shaders{};
-    auto deleter = OnScopeLeave(
-        [&]()
-        {
-            for (size_t i = 0; i < num_compiled; ++i)
-            {
-                OpenGl::DeleteShader(shaders[i]);
-            }
-        });
+    std::array<GlObject<GlShaderId>, 2> shaders{};
 
     {
         const std::string& version = shader_json.at("glsl_version");
@@ -187,8 +181,9 @@ void Shader::Compile(std::string& buffer)
             return;
         }
 
-        auto shader = OpenGl::CreateShader(type);
-        shaders[num_compiled++] = shader;
+        shaders[num_compiled] = GlObject{OpenGl::CreateShader(type)};
+        const auto& shader = shaders[num_compiled];
+        num_compiled++;
 
         const std::string& src_name = shader_json[json_name];
         Filesystem::AppendFileContentToBuffer(shaders_sources_path / src_name, buffer);
@@ -210,25 +205,18 @@ void Shader::Compile(std::string& buffer)
     add_one(GlShaderType::Vertex, "vertex");
     add_one(GlShaderType::Fragment, "fragment");
 
-    GlProgramId program = OpenGl::CreateProgram();
-
-    auto program_deleter = klgl::OnScopeLeave(
-        [&]
-        {
-            if (program.IsValid())
-            {
-                OpenGl::DeleteProgram(program);
-            }
-        });
+    GlObject<GlProgramId> program(OpenGl::CreateProgram());
 
     std::string link_log;
-    [[unlikely]] if (!Internal::TryLinkShaderProgram(program, std::span(shaders).subspan(0, num_compiled), &link_log))
+    [[unlikely]] if (!Internal::TryLinkShaderProgram(
+                         program.GetId(),
+                         std::span(shaders).subspan(0, num_compiled),
+                         &link_log))
     {
         throw klgl::ErrorHandling::RuntimeErrorWithMessage("Failed to link shader {}. {}", path_, link_log);
     }
 
-    program_ = program;
-    program = {};
+    program_ = std::move(program);
     need_recompile_ = false;
     UpdateUniforms();
 }
@@ -442,15 +430,6 @@ void Shader::SendUniform(UniformHandle& handle)
     uniform.SendValue();
 }
 
-void Shader::Destroy()
-{
-    if (program_.IsValid())
-    {
-        OpenGl::DeleteProgram(program_);
-        program_ = {};
-    }
-}
-
 static std::optional<edt::GUID> ConvertGlType(GLenum gl_type)
 {
     switch (gl_type)
@@ -493,7 +472,7 @@ void Shader::UpdateUniforms()
 
     {
         GLint num_uniforms_{};
-        glGetProgramiv(program_.GetValue(), GL_ACTIVE_UNIFORMS, &num_uniforms_);
+        glGetProgramiv(program_.GetId().GetValue(), GL_ACTIVE_UNIFORMS, &num_uniforms_);
         [[unlikely]] if (num_uniforms_ < 1)
         {
             return;
@@ -502,7 +481,7 @@ void Shader::UpdateUniforms()
     }
 
     GLint max_name_legth = 0;
-    glGetProgramiv(program_.GetValue(), GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_name_legth);
+    glGetProgramiv(program_.GetId().GetValue(), GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_name_legth);
 
     std::string name_buffer_heap;
     constexpr GLsizei name_buffer_size_stack = 64;
@@ -531,7 +510,7 @@ void Shader::UpdateUniforms()
         GLenum glsl_type = 0;
         GLsizei actual_name_length = 0;
         glGetActiveUniform(
-            program_.GetValue(),
+            program_.GetId().GetValue(),
             i,
             name_buffer_size,
             &actual_name_length,
@@ -568,7 +547,7 @@ void Shader::UpdateUniforms()
                 uniform.SetType(*cpp_type);
             }
 
-            const GLint location = glGetUniformLocation(program_.GetValue(), name.data());
+            const GLint location = glGetUniformLocation(program_.GetId().GetValue(), name.data());
             uniforms.back().SetLocation(static_cast<uint32_t>(location));
         };
 

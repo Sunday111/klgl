@@ -281,6 +281,24 @@ void OpenGl::BufferData(GlBufferType target, std::span<const uint8_t> data, GlUs
     Internal::ThrowIfError(BufferDataCE(target, data, usage));
 }
 
+// Delete
+
+void OpenGl::DeleteBufferNE(GlBufferId buffer) noexcept
+{
+    glDeleteBuffers(1, &buffer.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::DeleteBufferCE(GlBufferId buffer) noexcept
+{
+    DeleteBufferNE(buffer);
+    return Internal::ConsumeError("glDeleteBuffers(buffer: {})", buffer.GetValue());
+}
+
+void OpenGl::DeleteBuffer(GlBufferId buffer)
+{
+    Internal::ThrowIfError(DeleteBufferCE(buffer));
+}
+
 /*********************************************** Vertex Arrays ****************************************************/
 
 // Gen many
@@ -690,6 +708,24 @@ void OpenGl::TexImage2d(
 {
     return Internal::ThrowIfError(
         TexImage2dCE(target, level_of_detail, internal_format, width, height, data_format, pixel_data_type, pixels));
+}
+
+// Delete
+
+void OpenGl::DeleteTextureNE(GlTextureId texture) noexcept
+{
+    glDeleteTextures(1, &texture.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::DeleteTextureCE(GlTextureId texture) noexcept
+{
+    DeleteTextureNE(texture);
+    return Internal::ConsumeError("glDeleteTextures(texture: {})", texture.GetValue());
+}
+
+void OpenGl::DeleteTexture(GlTextureId texture)
+{
+    Internal::ThrowIfError(DeleteTextureCE(texture));
 }
 
 /************************************************** Shaders *******************************************************/
