@@ -25,12 +25,6 @@ bool Camera3d::Widget()
     updated |= SimpleTypeWidget("far", far_);
     updated |= SimpleTypeWidget("fov", fov_);
 
-    if (ImGui::Button("Reset"))
-    {
-        Reset();
-        updated = true;
-    }
-
     return updated;
 }
 }  // namespace klgl

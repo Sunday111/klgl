@@ -42,23 +42,30 @@ class CubeApp : public klgl::Application
 
         // Load shader
         shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
-        shader_->Use();
 
-        // Set initial uniform parameters of the shader
-        shader_->SetUniform(u_model_, edt::Math::ScaleMatrix(edt::Vec3f{} + 0.5f));
-
-        camera_.Reset();
-        UpdateViewUniform();
-        UpdateProjectionUniform();
+        {
+            const auto m = edt::Math::RotationMatrix3dZ(edt::Math::DegToRad(135.f))
+                               .MatMul(edt::Math::RotationMatrix3dX(edt::Math::DegToRad(-45.f)));
+            camera_.eye_ = edt::Vec3f{3, 3, 4};
+            camera_.dir_ = edt::Math::TransformVector(m, edt::Vec3f{0.f, 1.f, 0.f});
+            camera_.right_ = edt::Math::TransformVector(m, edt::Vec3f{1.f, 0.f, 0.f});
+        }
 
         klgl::OpenGl::EnableFaceCulling(true);
         klgl::OpenGl::CullFace(klgl::GlCullFaceMode::Back);
-        klgl::OpenGl::PolygonMode(klgl::GlPolygonMode::Line);
+        // klgl::OpenGl::PolygonMode(klgl::GlPolygonMode::Line);
     }
 
     void RenderWorld()
     {
         shader_->Use();
+
+        const float cube_rot = GetTimeSeconds();
+        const edt::Mat4f model =
+            edt::Math::RotationMatrix3dZ(cube_rot).MatMul(edt::Math::ScaleMatrix(edt::Vec3f{} + 0.5f));
+        shader_->SetUniform(u_model_, model);
+        shader_->SetUniform(u_view_, camera_.GetViewMatrix());
+        shader_->SetUniform(u_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
         shader_->SetUniform(u_color_, edt::Math::GetRainbowColorsA(GetTimeSeconds()).Cast<float>() / 255.f);
         shader_->SendUniforms();
         mesh_->BindAndDraw();
@@ -68,11 +75,7 @@ class CubeApp : public klgl::Application
     {
         if (ImGui::Begin("Settings"))
         {
-            if (camera_.Widget())
-            {
-                UpdateViewUniform();
-                UpdateProjectionUniform();
-            }
+            camera_.Widget();
 
             ImGui::Separator();
             klgl::SimpleTypeWidget("move_speed", move_speed_);
@@ -107,15 +110,7 @@ class CubeApp : public klgl::Application
             camera_.eye_ += camera_.dir_ * k * static_cast<float>(forward);
             camera_.eye_ += camera_.right_ * k * static_cast<float>(right);
             camera_.eye_ += camera_.GetUp() * k * static_cast<float>(up);
-            UpdateViewUniform();
         }
-    }
-
-    void UpdateViewUniform() { shader_->SetUniform(u_view_, camera_.GetViewMatrix()); }
-
-    void UpdateProjectionUniform()
-    {
-        shader_->SetUniform(u_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
     }
 
     klgl::Camera3d camera_{};

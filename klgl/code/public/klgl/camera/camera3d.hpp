@@ -49,19 +49,7 @@ public:
         return r;
     }
 
-    constexpr Camera3d() noexcept { Reset(); }
-
     bool Widget();
-
-    constexpr void Reset()
-    {
-        eye_ = {0.f, -3.f, 0.f};
-        dir_ = {0.f, 1.f, 0.f};
-        right_ = {1.f, 0.f, 0.f};
-        fov_ = 45.f;
-        near_ = 0.1f;
-        far_ = 10.f;
-    }
 
     constexpr edt::Mat4f GetProjectionMatrix(float aspect) const
     {
@@ -70,11 +58,11 @@ public:
 
     constexpr edt::Mat4f GetViewMatrix() const { return LookAt(eye_, eye_ + dir_, GetUp()); }
 
-    constexpr edt::Vec3f GetUp() const noexcept { return -dir_.Cross(right_); }
+    constexpr edt::Vec3f GetUp() const noexcept { return dir_.Cross(-right_); }
 
-    edt::Vec3f eye_;
-    edt::Vec3f dir_;
-    edt::Vec3f right_;
+    edt::Vec3f eye_ = {0.f, 3.f, 0.f};
+    edt::Vec3f dir_ = {0.f, -1.f, 0.f};
+    edt::Vec3f right_ = {-1.f, 0.f, 0.f};
     float fov_ = 45;
     float near_ = 0.1f;
     float far_ = 10.f;
