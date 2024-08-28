@@ -2,6 +2,7 @@
 
 #include "klgl/application.hpp"
 #include "klgl/error_handling.hpp"
+#include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep

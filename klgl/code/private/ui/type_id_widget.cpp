@@ -1,5 +1,3 @@
-#include "klgl/ui/type_id_widget.hpp"
-
 #include <imgui.h>
 
 #include <limits>
@@ -7,6 +5,8 @@
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "CppReflection/TypeRegistry.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
+#include "klgl/ui/type_id_widget_minimal.hpp"
+
 
 namespace klgl
 {

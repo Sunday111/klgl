@@ -2,6 +2,7 @@
 
 #include "klgl/application.hpp"
 #include "klgl/error_handling.hpp"
+#include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
@@ -13,7 +14,7 @@
 
 struct MeshVertex
 {
-    static MeshVertex FromMeshData(const klgl::MeshData& data, const size_t index);
+    static MeshVertex FromMeshData(const klgl::GeneratedMeshData2d& data, const size_t index);
     edt::Vec2f position{};
     edt::Vec2f texture_coordinates{};
 };

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/application.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/camera/camera3d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/error_handling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/events/event_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/filesystem/filesystem.cpp
@@ -25,6 +26,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ui/type_id_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/application.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/camera/camera3d.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/error_handling.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/detail.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/event_listener.hpp
@@ -51,6 +53,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_pixel_buffer_layout_to_num_channels.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/gl_value_to_gl_error.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/buffer_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/cull_face_mode.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_function.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_mode.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/index_buffer_element_type.hpp
@@ -98,7 +101,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/procedural_texture_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture_format_helper.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/type_id_widget.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/simple_type_widget.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/type_id_widget_minimal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/window.hpp)
 add_library(klgl STATIC ${module_source_files})
 set_generic_compiler_options(klgl PRIVATE)

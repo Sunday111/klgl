@@ -293,6 +293,13 @@ enum class GlTextureParameterType
     SwizzleRGBA,
 };
 
+enum class GlCullFaceMode
+{
+    Front,
+    Back,
+    Both
+};
+
 }  // namespace klgl
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlError);
@@ -348,3 +355,6 @@ KLGL_MAKE_ENUM_FORMATTER(GlShaderType);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlTextureParameterType);
 KLGL_MAKE_ENUM_FORMATTER(GlTextureParameterType);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlCullFaceMode);
+KLGL_MAKE_ENUM_FORMATTER(GlCullFaceMode);

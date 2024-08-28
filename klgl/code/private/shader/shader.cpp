@@ -23,7 +23,7 @@
 #include "klgl/shader/shader_define.hpp"
 #include "klgl/shader/shader_uniform.hpp"
 #include "klgl/texture/texture.hpp"
-#include "klgl/ui/type_id_widget.hpp"
+#include "klgl/ui/type_id_widget_minimal.hpp"
 #include "nlohmann/json.hpp"
 
 namespace klgl
@@ -95,16 +95,8 @@ struct Shader::Internal
 
 Shader::Shader(std::filesystem::path path) : path_(std::move(path))
 {
-    using Clock = std::chrono::high_resolution_clock;
-    auto t0 = Clock::now();
     std::string compile_buffer;
     Compile(compile_buffer);
-    auto t1 = Clock::now();
-    auto d = t1 - t0;
-    fmt::println(
-        "Compile {} duration: {}",
-        path_,
-        std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(d));
 }
 
 Shader::~Shader() = default;

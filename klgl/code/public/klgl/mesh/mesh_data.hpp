@@ -2,21 +2,11 @@
 
 #include <memory>
 #include <span>
-#include <vector>
 
 #include "klgl/opengl/object.hpp"
 
 namespace klgl
 {
-
-class MeshData
-{
-public:
-    std::vector<Vec2f> vertices;
-    std::vector<Vec2f> texture_coordinates;
-    std::vector<uint32_t> indices;
-    GlPrimitiveType topology = GlPrimitiveType::Triangles;
-};
 
 class MeshOpenGL
 {

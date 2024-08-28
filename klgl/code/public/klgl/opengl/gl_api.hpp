@@ -376,6 +376,16 @@ public:
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> ClearCE(GLbitfield mask) noexcept;
     KLGL_OGL_INLINE static void Clear(GLbitfield mask) noexcept;
 
+    /************************************************ Face Culling ****************************************************/
+
+    KLGL_OGL_INLINE static void EnableFaceCullingNE(bool value) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableFaceCullingCE(bool value) noexcept;
+    KLGL_OGL_INLINE static void EnableFaceCulling(bool value);
+
+    KLGL_OGL_INLINE static void CullFaceNE(GlCullFaceMode mode) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> CullFaceCE(GlCullFaceMode mode) noexcept;
+    KLGL_OGL_INLINE static void CullFace(GlCullFaceMode mode);
+
     /******************************************************************************************************************/
 
     KLGL_OGL_INLINE static void VertexAttribPointerNE(

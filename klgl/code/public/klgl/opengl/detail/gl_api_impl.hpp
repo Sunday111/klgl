@@ -4,6 +4,7 @@
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/detail/maps/gl_value_to_gl_error.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/buffer_type.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/cull_face_mode.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_function.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_mode.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/index_buffer_element_type.hpp"
@@ -1255,6 +1256,51 @@ std::optional<OpenGlError> OpenGl::ClearCE(GLbitfield mask) noexcept
 void OpenGl::Clear(GLbitfield mask) noexcept
 {
     Internal::ThrowIfError(ClearCE(mask));
+}
+
+/************************************************ Face Culling ****************************************************/
+
+// Enable
+
+void OpenGl::EnableFaceCullingNE(bool value) noexcept
+{
+    if (value)
+    {
+        glEnable(GL_CULL_FACE);
+    }
+    else
+    {
+        glDisable(GL_CULL_FACE);
+    }
+}
+
+std::optional<OpenGlError> OpenGl::EnableFaceCullingCE(bool value) noexcept
+{
+    EnableFaceCullingNE(value);
+    return Internal::ConsumeError("{}", value ? "glEnable(GL_CULL_FACE)" : "glDisable(GL_CULL_FACE)");
+}
+
+void OpenGl::EnableFaceCulling(bool value)
+{
+    Internal::ThrowIfError(EnableFaceCullingCE(value));
+}
+
+// Set mode
+
+void OpenGl::CullFaceNE(GlCullFaceMode mode) noexcept
+{
+    glCullFace(ToGlValue(mode));
+}
+
+std::optional<OpenGlError> OpenGl::CullFaceCE(GlCullFaceMode mode) noexcept
+{
+    CullFaceNE(mode);
+    return Internal::ConsumeError("glCullFace", mode);
+}
+
+void OpenGl::CullFace(GlCullFaceMode mode)
+{
+    Internal::ThrowIfError(CullFaceCE(mode));
 }
 
 /******************************************************************************************************************/
