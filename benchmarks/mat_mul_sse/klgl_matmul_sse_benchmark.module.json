@@ -1,0 +1,11 @@
+{
+    "ModuleType": "Executable",
+    "EnableTesting": false,
+    "Dependencies": {
+        "Public": [
+            "klgl",
+            "gbench_main"
+        ],
+        "Private": []
+    }
+}

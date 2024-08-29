@@ -40,6 +40,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/ensure_enum_size.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/enum_as_index.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/warning_suppress.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/math/axis.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/math/rotator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array_adapter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/mesh/mesh_data.hpp

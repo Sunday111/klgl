@@ -1,6 +1,8 @@
 #include <imgui.h>
 
 #include <EverydayTools/Math/Math.hpp>
+#include <ass/enum_map.hpp>
+#include <ass/enum_set.hpp>
 
 #include "klgl/application.hpp"
 #include "klgl/camera/camera3d.hpp"
