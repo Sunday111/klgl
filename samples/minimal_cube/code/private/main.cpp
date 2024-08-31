@@ -7,6 +7,7 @@
 #include "klgl/application.hpp"
 #include "klgl/camera/camera3d.hpp"
 #include "klgl/error_handling.hpp"
+#include "klgl/math/rotator.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/opengl/gl_api.hpp"
@@ -46,11 +47,10 @@ class CubeApp : public klgl::Application
         shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
 
         {
-            const auto m = edt::Math::RotationMatrix3dZ(edt::Math::DegToRad(135.f))
-                               .MatMul(edt::Math::RotationMatrix3dX(edt::Math::DegToRad(-45.f)));
+            const auto m = klgl::Rotator{.yaw = -135, .pitch = 45}.ToMatrix();
             camera_.eye_ = edt::Vec3f{3, 3, 4};
-            camera_.dir_ = edt::Math::TransformVector(m, edt::Vec3f{0.f, 1.f, 0.f});
-            camera_.right_ = edt::Math::TransformVector(m, edt::Vec3f{1.f, 0.f, 0.f});
+            edt::Math::ToBasisVectors(m, &camera_.dir_, &camera_.right_);
+            camera_.right_ = -camera_.right_;
         }
 
         klgl::OpenGl::EnableFaceCulling(true);
