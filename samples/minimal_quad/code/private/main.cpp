@@ -40,14 +40,6 @@ class QuadApp : public klgl::Application
         // Load shader
         shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
         shader_->Use();
-
-        // Set initial uniform parameters of the shader
-        shader_->SetUniform(u_color_, edt::Vec4f{1.f, 0.f, 0.f, 1.f});
-        shader_->SetUniform(u_scale_, edt::Vec2f{0.5f, 0.5f});
-        shader_->SetUniform(u_translation_, edt::Vec2f{0.0f, 0.0f});
-
-        // Uniform parameters saved in shader objects and will be sent to driver only after this call
-        shader_->SendUniforms();
     }
 
     void Tick() override
@@ -55,15 +47,19 @@ class QuadApp : public klgl::Application
         klgl::Application::Tick();
 
         shader_->Use();
+        auto m = edt::Math::ScaleMatrix(edt::Vec2f{} + 0.5f);
+        m = edt::Math::RotationMatrix2d(GetTimeSeconds()).MatMul(m);
+        m = edt::Math::TranslationMatrix(edt::Vec2f{0.5, 0}).MatMul(m);
+        m = m.Transposed();
+        shader_->SetUniform(u_transform_, m);
         shader_->SetUniform(u_color_, edt::Math::GetRainbowColorsA(GetTimeSeconds()).Cast<float>() / 255.f);
-        shader_->SendUniform(u_color_);
+        shader_->SendUniforms();
 
         mesh_->BindAndDraw();
     }
 
     klgl::UniformHandle u_color_ = klgl::UniformHandle("u_color");
-    klgl::UniformHandle u_scale_ = klgl::UniformHandle("u_scale");
-    klgl::UniformHandle u_translation_ = klgl::UniformHandle("u_translation");
+    klgl::UniformHandle u_transform_ = klgl::UniformHandle("u_transform");
     std::shared_ptr<klgl::Shader> shader_;
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
 };

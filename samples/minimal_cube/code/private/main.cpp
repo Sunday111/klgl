@@ -46,13 +46,6 @@ class CubeApp : public klgl::Application
         // Load shader
         shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
 
-        {
-            const auto m = klgl::Rotator{.yaw = -135, .pitch = 45}.ToMatrix();
-            camera_.eye_ = edt::Vec3f{3, 3, 4};
-            edt::Math::ToBasisVectors(m, &camera_.dir_, &camera_.right_);
-            camera_.right_ = -camera_.right_;
-        }
-
         klgl::OpenGl::EnableFaceCulling(true);
         klgl::OpenGl::CullFace(klgl::GlCullFaceMode::Back);
         // klgl::OpenGl::PolygonMode(klgl::GlPolygonMode::Line);
@@ -62,12 +55,14 @@ class CubeApp : public klgl::Application
     {
         shader_->Use();
 
-        const float cube_rot = GetTimeSeconds();
-        const edt::Mat4f model =
-            edt::Math::RotationMatrix3dZ(cube_rot).MatMul(edt::Math::ScaleMatrix(edt::Vec3f{} + 0.5f));
-        shader_->SetUniform(u_model_, model);
-        shader_->SetUniform(u_view_, camera_.GetViewMatrix());
-        shader_->SetUniform(u_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
+        auto model = edt::Math::TranslationMatrix({5, 0, 0}).MatMul(edt::Math::ScaleMatrix(edt::Vec3f{} + 0.5f));
+        shader_->SetUniform(u_model_, model.Transposed());
+
+        edt::Vec3f f, u;
+        edt::Math::ToBasisVectors(rotator_.ToMatrix(), &f, nullptr, &u);
+
+        shader_->SetUniform(u_view_, klgl::Camera3d::MakeOpenGLViewMatrix(eye_, f, u));
+        shader_->SetUniform(u_projection_, klgl::Camera3d{}.GetProjectionMatrix(GetWindow().GetAspect()));
         shader_->SetUniform(u_color_, edt::Math::GetRainbowColorsA(GetTimeSeconds()).Cast<float>() / 255.f);
         shader_->SendUniforms();
         mesh_->BindAndDraw();
@@ -77,7 +72,10 @@ class CubeApp : public klgl::Application
     {
         if (ImGui::Begin("Settings"))
         {
-            camera_.Widget();
+            klgl::SimpleTypeWidget("eye", eye_);
+            klgl::SimpleTypeWidget("yaw", rotator_.yaw);
+            klgl::SimpleTypeWidget("pitch", rotator_.pitch);
+            klgl::SimpleTypeWidget("roll", rotator_.roll);
 
             ImGui::Separator();
             klgl::SimpleTypeWidget("move_speed", move_speed_);
@@ -101,22 +99,23 @@ class CubeApp : public klgl::Application
         int forward = 0;
         int up = 0;
         if (ImGui::IsKeyDown(ImGuiKey_W)) forward += 1;
-        if (ImGui::IsKeyDown(ImGuiKey_A)) right -= 1;
         if (ImGui::IsKeyDown(ImGuiKey_S)) forward -= 1;
         if (ImGui::IsKeyDown(ImGuiKey_D)) right += 1;
+        if (ImGui::IsKeyDown(ImGuiKey_A)) right -= 1;
         if (ImGui::IsKeyDown(ImGuiKey_E)) up += 1;
         if (ImGui::IsKeyDown(ImGuiKey_Q)) up -= 1;
         if (right + forward + up)
         {
-            const float k = move_speed_ * GetLastFrameDurationSeconds();
-            camera_.eye_ += camera_.dir_ * k * static_cast<float>(forward);
-            camera_.eye_ += camera_.right_ * k * static_cast<float>(right);
-            camera_.eye_ += camera_.GetUp() * k * static_cast<float>(up);
+            edt::Vec3f f, r, u;
+            edt::Math::ToBasisVectors(rotator_.ToMatrix(), &f, &r, &u);
+            eye_ += (static_cast<float>(forward) * f + static_cast<float>(right) * r + static_cast<float>(up) * u) *
+                    move_speed_ * GetLastFrameDurationSeconds();
         }
     }
 
-    klgl::Camera3d camera_{};
     float move_speed_ = 5.f;
+    edt::Vec3f eye_ = {};
+    klgl::Rotator rotator_ = {};
 
     klgl::UniformHandle u_color_ = klgl::UniformHandle("u_color");
     klgl::UniformHandle u_model_ = klgl::UniformHandle("u_model");

@@ -59,6 +59,14 @@ public:
         return r;
     }
 
+    [[nodiscard]] static constexpr edt::Mat4f
+    MakeOpenGLViewMatrix(const edt::Vec3f& eye, const edt::Vec3f& dir, const edt::Vec3f& up) noexcept
+    {
+        auto r = LookAtRH(eye, dir, up);
+        r.SetColumn(0, -r.GetColumn(0));
+        return r;
+    }
+
     [[nodiscard]] static constexpr edt::Mat4f PerspectiveLH(float fovy, float aspect, float zNear, float zFar) noexcept
     {
         // https://github.com/g-truc/glm/blob/33b4a621a697a305bc3a7610d290677b96beb181/glm/ext/matrix_clip_space.inl#L281
