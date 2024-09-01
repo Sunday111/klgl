@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "EverydayTools/Math/Math.hpp"
+#include "klgl/math/rotator.hpp"
 
 namespace klgl
 {
@@ -91,20 +92,72 @@ public:
 
     bool Widget();
 
+    /****************************************************** View ******************************************************/
+
+    [[nodiscard]] const Rotator& GetRotation() const noexcept { return rotation_; }
+    void SetRotation(const Rotator& rotator) noexcept
+    {
+        rotation_ = rotator;
+        view_cache_.reset();
+    }
+
+    [[nodiscard]] const Vec3f& GetEye() const noexcept { return eye_; }
+    void SetEye(const Vec3f& eye) noexcept
+    {
+        eye_ = eye;
+        view_cache_.reset();
+    }
+
+    [[nodiscard]] const Vec3f& GetForwardAxis() const noexcept { return GetViewCache().forward; }
+    [[nodiscard]] const Vec3f& GetRightAxis() const noexcept { return GetViewCache().right; }
+    [[nodiscard]] const Vec3f& GetUpAxis() const noexcept { return GetViewCache().up; }
+    [[nodiscard]] const Mat4f& GetViewMatrix() const noexcept { return GetViewCache().view_matrix; }
+
+    /*************************************************** Projection ***************************************************/
+
     constexpr edt::Mat4f GetProjectionMatrix(float aspect) const noexcept
     {
         return PerspectiveRH(edt::Math::DegToRad(fov_), aspect, near_, far_);
     }
 
-    constexpr edt::Mat4f GetViewMatrix() const { return LookAtRH(eye_, dir_, GetUp()); }
+    [[nodiscard]] constexpr float GetNear() const noexcept { return near_; }
+    constexpr void SetNear(float near) noexcept { near_ = near; }
 
-    constexpr edt::Vec3f GetUp() const noexcept { return dir_.Cross(-right_); }
+    [[nodiscard]] constexpr float GetFar() const noexcept { return far_; }
+    constexpr void SetFar(float far) noexcept { far_ = far; }
 
-    edt::Vec3f eye_ = {0.f, 3.f, 0.f};
-    edt::Vec3f dir_ = {0.f, -1.f, 0.f};
-    edt::Vec3f right_ = {-1.f, 0.f, 0.f};
-    float fov_ = 45;
+    [[nodiscard]] constexpr float GetFOV() const noexcept { return fov_; }
+    constexpr void SetFOV(float fov) noexcept { fov_ = fov; }
+
+private:
+    struct ViewCache
+    {
+        Vec3f forward;
+        Vec3f right;
+        Vec3f up;
+        Mat4f rotator_matrix;
+        Mat4f view_matrix;
+    };
+
+    const ViewCache& GetViewCache() const noexcept
+    {
+        if (!view_cache_.has_value())
+        {
+            view_cache_ = ViewCache{};
+            auto& vc = view_cache_.value();
+            vc.rotator_matrix = rotation_.ToMatrix();
+            edt::Math::ToBasisVectors(vc.rotator_matrix, &vc.forward, &vc.right, &vc.up);
+            vc.view_matrix = MakeOpenGLViewMatrix(eye_, vc.forward, vc.up);
+        }
+
+        return view_cache_.value();
+    }
+
+    mutable std::optional<ViewCache> view_cache_;
     float near_ = 0.1f;
-    float far_ = 10.f;
+    float far_ = 100.f;
+    float fov_ = 45.f;
+    Rotator rotation_;
+    Vec3f eye_;
 };
 }  // namespace klgl

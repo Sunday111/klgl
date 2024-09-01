@@ -7,7 +7,6 @@
 #include "klgl/application.hpp"
 #include "klgl/camera/camera3d.hpp"
 #include "klgl/error_handling.hpp"
-#include "klgl/math/rotator.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/opengl/gl_api.hpp"
@@ -46,23 +45,23 @@ class CubeApp : public klgl::Application
         // Load shader
         shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
 
+        // Camera at position (3, 3, 4) looks the cube at  (6, 6, 0).
+        camera_.SetEye({3, 3, 4});
+        camera_.SetRotation(klgl::Rotator{.yaw = 45, .pitch = 45});
+        cube_pos_ = {6, 6, 0};
+
         klgl::OpenGl::EnableFaceCulling(true);
         klgl::OpenGl::CullFace(klgl::GlCullFaceMode::Back);
-        // klgl::OpenGl::PolygonMode(klgl::GlPolygonMode::Line);
     }
 
     void RenderWorld()
     {
         shader_->Use();
-
-        auto model = edt::Math::TranslationMatrix({5, 0, 0}).MatMul(edt::Math::ScaleMatrix(edt::Vec3f{} + 0.5f));
-        shader_->SetUniform(u_model_, model.Transposed());
-
-        edt::Vec3f f, u;
-        edt::Math::ToBasisVectors(rotator_.ToMatrix(), &f, nullptr, &u);
-
-        shader_->SetUniform(u_view_, klgl::Camera3d::MakeOpenGLViewMatrix(eye_, f, u));
-        shader_->SetUniform(u_projection_, klgl::Camera3d{}.GetProjectionMatrix(GetWindow().GetAspect()));
+        shader_->SetUniform(
+            u_model_,
+            edt::Math::TranslationMatrix(cube_pos_).MatMul(edt::Math::ScaleMatrix(edt::Vec3f{} + 0.5f)).Transposed());
+        shader_->SetUniform(u_view_, camera_.GetViewMatrix());
+        shader_->SetUniform(u_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
         shader_->SetUniform(u_color_, edt::Math::GetRainbowColorsA(GetTimeSeconds()).Cast<float>() / 255.f);
         shader_->SendUniforms();
         mesh_->BindAndDraw();
@@ -72,13 +71,11 @@ class CubeApp : public klgl::Application
     {
         if (ImGui::Begin("Settings"))
         {
-            klgl::SimpleTypeWidget("eye", eye_);
-            klgl::SimpleTypeWidget("yaw", rotator_.yaw);
-            klgl::SimpleTypeWidget("pitch", rotator_.pitch);
-            klgl::SimpleTypeWidget("roll", rotator_.roll);
+            camera_.Widget();
 
             ImGui::Separator();
             klgl::SimpleTypeWidget("move_speed", move_speed_);
+            klgl::SimpleTypeWidget("cube", cube_pos_);
         }
         ImGui::End();
     }
@@ -106,16 +103,12 @@ class CubeApp : public klgl::Application
         if (ImGui::IsKeyDown(ImGuiKey_Q)) up -= 1;
         if (right + forward + up)
         {
-            edt::Vec3f f, r, u;
-            edt::Math::ToBasisVectors(rotator_.ToMatrix(), &f, &r, &u);
-            eye_ += (static_cast<float>(forward) * f + static_cast<float>(right) * r + static_cast<float>(up) * u) *
-                    move_speed_ * GetLastFrameDurationSeconds();
+            edt::Vec3f delta = static_cast<float>(forward) * camera_.GetForwardAxis();
+            delta += static_cast<float>(right) * camera_.GetRightAxis();
+            delta += static_cast<float>(up) * camera_.GetUpAxis();
+            camera_.SetEye(camera_.GetEye() + delta * move_speed_ * GetLastFrameDurationSeconds());
         }
     }
-
-    float move_speed_ = 5.f;
-    edt::Vec3f eye_ = {};
-    klgl::Rotator rotator_ = {};
 
     klgl::UniformHandle u_color_ = klgl::UniformHandle("u_color");
     klgl::UniformHandle u_model_ = klgl::UniformHandle("u_model");
@@ -124,6 +117,10 @@ class CubeApp : public klgl::Application
 
     std::shared_ptr<klgl::Shader> shader_;
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
+
+    float move_speed_ = 5.f;
+    edt::Vec3f cube_pos_;
+    klgl::Camera3d camera_;
 };
 
 void Main()

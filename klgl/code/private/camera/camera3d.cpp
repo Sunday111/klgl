@@ -10,21 +10,32 @@ namespace klgl
 
 bool Camera3d::Widget()
 {
-    bool updated = false;
-    if (!ImGui::CollapsingHeader("Camera")) return updated;
+    if (!ImGui::CollapsingHeader("Camera")) return false;
 
-    updated |= SimpleTypeWidget("eye", eye_);
-    updated |= SimpleTypeWidget("dir", dir_);
-    updated |= SimpleTypeWidget("right", right_);
+    bool update_view = false;
+    update_view |= SimpleTypeWidget("eye", eye_);
+    update_view |= SimpleTypeWidget("yaw", rotation_.yaw);
+    update_view |= SimpleTypeWidget("pitch", rotation_.pitch);
+    update_view |= SimpleTypeWidget("roll", rotation_.roll);
 
-    auto up = GetUp();
+    auto forward = GetViewCache().forward;
+    auto right = GetViewCache().right;
+    auto up = GetViewCache().up;
+    SimpleTypeWidget("forward", forward);
+    SimpleTypeWidget("right", right);
     SimpleTypeWidget("up", up);
 
-    ImGui::Separator();
-    updated |= SimpleTypeWidget("near", near_);
-    updated |= SimpleTypeWidget("far", far_);
-    updated |= SimpleTypeWidget("fov", fov_);
+    if (update_view)
+    {
+        view_cache_.reset();
+    }
 
-    return updated;
+    ImGui::Separator();
+    bool update_projection = false;
+    update_projection |= SimpleTypeWidget("near", near_);
+    update_projection |= SimpleTypeWidget("far", far_);
+    update_projection |= SimpleTypeWidget("fov", fov_);
+
+    return update_view || update_projection;
 }
 }  // namespace klgl
