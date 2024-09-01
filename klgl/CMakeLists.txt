@@ -6,6 +6,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/error_handling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/events/event_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/filesystem/filesystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/math/transform.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/memory/type_erased_array.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh/mesh_data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh/procedural_mesh_generator.cpp
@@ -42,6 +43,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/warning_suppress.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/math/axis.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/math/rotator.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/math/transform.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array_adapter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/mesh/mesh_data.hpp

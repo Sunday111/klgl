@@ -7,12 +7,15 @@
 #include "klgl/application.hpp"
 #include "klgl/camera/camera3d.hpp"
 #include "klgl/error_handling.hpp"
+#include "klgl/math/transform.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/shader/shader.hpp"
 #include "klgl/ui/simple_type_widget.hpp"
 #include "klgl/window.hpp"
+
+using namespace edt::lazy_matrix_aliases;  // NOLINT
 
 class CubeApp : public klgl::Application
 {
@@ -36,19 +39,14 @@ class CubeApp : public klgl::Application
         klgl::OpenGl::EnableVertexAttribArray(0);
         klgl::OpenGl::VertexAttribPointer(
             0,
-            edt::Vec3f::Size(),
+            Vec3f::Size(),
             klgl::GlVertexAttribComponentType::Float,
             false,
-            sizeof(edt::Vec3f),
+            sizeof(Vec3f),
             nullptr);
 
         // Load shader
         shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
-
-        // Camera at position (3, 3, 4) looks the cube at  (6, 6, 0).
-        camera_.SetEye({3, 3, 4});
-        camera_.SetRotation(klgl::Rotator{.yaw = 45, .pitch = 45});
-        cube_pos_ = {6, 6, 0};
 
         klgl::OpenGl::EnableFaceCulling(true);
         klgl::OpenGl::CullFace(klgl::GlCullFaceMode::Back);
@@ -57,9 +55,7 @@ class CubeApp : public klgl::Application
     void RenderWorld()
     {
         shader_->Use();
-        shader_->SetUniform(
-            u_model_,
-            edt::Math::TranslationMatrix(cube_pos_).MatMul(edt::Math::ScaleMatrix(edt::Vec3f{} + 0.5f)).Transposed());
+        shader_->SetUniform(u_model_, cube_transform_.Matrix().Transposed());
         shader_->SetUniform(u_view_, camera_.GetViewMatrix());
         shader_->SetUniform(u_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
         shader_->SetUniform(u_color_, edt::Math::GetRainbowColorsA(GetTimeSeconds()).Cast<float>() / 255.f);
@@ -72,10 +68,13 @@ class CubeApp : public klgl::Application
         if (ImGui::Begin("Settings"))
         {
             camera_.Widget();
-
             ImGui::Separator();
             klgl::SimpleTypeWidget("move_speed", move_speed_);
-            klgl::SimpleTypeWidget("cube", cube_pos_);
+
+            if (ImGui::CollapsingHeader("cube"))
+            {
+                cube_transform_.Widget();
+            }
         }
         ImGui::End();
     }
@@ -103,7 +102,7 @@ class CubeApp : public klgl::Application
         if (ImGui::IsKeyDown(ImGuiKey_Q)) up -= 1;
         if (right + forward + up)
         {
-            edt::Vec3f delta = static_cast<float>(forward) * camera_.GetForwardAxis();
+            Vec3f delta = static_cast<float>(forward) * camera_.GetForwardAxis();
             delta += static_cast<float>(right) * camera_.GetRightAxis();
             delta += static_cast<float>(up) * camera_.GetUpAxis();
             camera_.SetEye(camera_.GetEye() + delta * move_speed_ * GetLastFrameDurationSeconds());
@@ -118,9 +117,10 @@ class CubeApp : public klgl::Application
     std::shared_ptr<klgl::Shader> shader_;
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
 
+    // Camera (3, 3, 4) looks at the cube (6, 6, 0).
     float move_speed_ = 5.f;
-    edt::Vec3f cube_pos_;
-    klgl::Camera3d camera_;
+    klgl::Transform cube_transform_{.translation = {6, 6, 0}};
+    klgl::Camera3d camera_{Vec3f{3, 3, 4}, {.yaw = 45, .pitch = 45}};
 };
 
 void Main()

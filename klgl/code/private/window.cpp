@@ -10,7 +10,6 @@
 #include "klgl/events/mouse_events.hpp"
 #include "klgl/events/window_events.hpp"
 
-
 namespace klgl
 {
 
@@ -85,7 +84,7 @@ void Window::FrameBufferSizeCallback(GLFWwindow* glfw_window, int width, int hei
 
 void Window::MouseCallback(GLFWwindow* glfw_window, double x, double y)
 {
-    CallWndMethod<&Window::OnMouseMove>(glfw_window, Vec2f{{static_cast<float>(x), static_cast<float>(y)}});
+    CallWndMethod<&Window::OnMouseMove>(glfw_window, Vec2<double>{x, y}.Cast<float>());
 }
 
 void Window::MouseButtonCallback(GLFWwindow* glfw_window, int button, int action, int mods)

@@ -90,6 +90,13 @@ public:
         return r;
     }
 
+    constexpr Camera3d() noexcept = default;
+    constexpr Camera3d(const Camera3d&) noexcept = default;
+    constexpr Camera3d(Camera3d&&) noexcept = default;
+    constexpr Camera3d& operator=(const Camera3d&) noexcept = default;
+    constexpr Camera3d& operator=(Camera3d&&) noexcept = default;
+    constexpr Camera3d(const Vec3f& eye, const Rotator& r) noexcept : rotation_(r), eye_(eye) {}
+
     bool Widget();
 
     /****************************************************** View ******************************************************/
@@ -111,10 +118,15 @@ public:
     [[nodiscard]] const Vec3f& GetForwardAxis() const noexcept { return GetViewCache().forward; }
     [[nodiscard]] const Vec3f& GetRightAxis() const noexcept { return GetViewCache().right; }
     [[nodiscard]] const Vec3f& GetUpAxis() const noexcept { return GetViewCache().up; }
+
+    // Returns matrix that can be used as view matrix in OpenGL shader.
+    // It is already transposed so can be used as is
     [[nodiscard]] const Mat4f& GetViewMatrix() const noexcept { return GetViewCache().view_matrix; }
 
     /*************************************************** Projection ***************************************************/
 
+    // Projection matrix for OpenGL.
+    // Already transposed so can be used as is.
     constexpr edt::Mat4f GetProjectionMatrix(float aspect) const noexcept
     {
         return PerspectiveRH(edt::Math::DegToRad(fov_), aspect, near_, far_);
