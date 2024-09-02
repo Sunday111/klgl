@@ -89,23 +89,37 @@ class CubeApp : public klgl::Application
 
     void HandleInput()
     {
-        if (ImGui::GetIO().WantCaptureKeyboard) return;
-
-        int right = 0;
-        int forward = 0;
-        int up = 0;
-        if (ImGui::IsKeyDown(ImGuiKey_W)) forward += 1;
-        if (ImGui::IsKeyDown(ImGuiKey_S)) forward -= 1;
-        if (ImGui::IsKeyDown(ImGuiKey_D)) right += 1;
-        if (ImGui::IsKeyDown(ImGuiKey_A)) right -= 1;
-        if (ImGui::IsKeyDown(ImGuiKey_E)) up += 1;
-        if (ImGui::IsKeyDown(ImGuiKey_Q)) up -= 1;
-        if (right + forward + up)
+        if (!ImGui::GetIO().WantCaptureKeyboard)
         {
-            Vec3f delta = static_cast<float>(forward) * camera_.GetForwardAxis();
-            delta += static_cast<float>(right) * camera_.GetRightAxis();
-            delta += static_cast<float>(up) * camera_.GetUpAxis();
-            camera_.SetEye(camera_.GetEye() + delta * move_speed_ * GetLastFrameDurationSeconds());
+            int right = 0;
+            int forward = 0;
+            int up = 0;
+            if (ImGui::IsKeyDown(ImGuiKey_W)) forward += 1;
+            if (ImGui::IsKeyDown(ImGuiKey_S)) forward -= 1;
+            if (ImGui::IsKeyDown(ImGuiKey_D)) right += 1;
+            if (ImGui::IsKeyDown(ImGuiKey_A)) right -= 1;
+            if (ImGui::IsKeyDown(ImGuiKey_E)) up += 1;
+            if (ImGui::IsKeyDown(ImGuiKey_Q)) up -= 1;
+            if (right + forward + up)
+            {
+                Vec3f delta = static_cast<float>(forward) * camera_.GetForwardAxis();
+                delta += static_cast<float>(right) * camera_.GetRightAxis();
+                delta += static_cast<float>(up) * camera_.GetUpAxis();
+                camera_.SetEye(camera_.GetEye() + delta * move_speed_ * GetLastFrameDurationSeconds());
+            }
+        }
+
+        constexpr float sensitivity = 0.001f;
+        const bool focused = GetWindow().IsFocused();
+        if (focused && GetWindow().IsInInputMode() && !ImGui::GetIO().WantCaptureMouse)
+        {
+            auto delta = GetWindow().GetCursorPos();
+            fmt::println("{}, {}", delta.x(), delta.y());
+            delta *= sensitivity;
+            float pitch = camera_.GetRotation().pitch + delta.y();
+            float yaw = camera_.GetRotation().yaw + delta.x();
+            float roll = camera_.GetRotation().roll;
+            camera_.SetRotation({yaw, pitch, roll});
         }
     }
 

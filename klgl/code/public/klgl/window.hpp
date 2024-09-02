@@ -24,6 +24,10 @@ public:
     [[nodiscard]] bool ShouldClose() const noexcept;
     [[nodiscard]] uint32_t GetWidth() const noexcept { return width_; }
     [[nodiscard]] uint32_t GetHeight() const noexcept { return height_; }
+    [[nodiscard]] bool IsFocused() const noexcept;
+    [[nodiscard]] bool IsHovered() const noexcept;
+    [[nodiscard]] Vec2f GetCursorPos() const noexcept { return cursor_; }
+    [[nodiscard]] bool IsInInputMode() const noexcept { return input_mode_; }
 
     Vec2<uint32_t> GetSize() const { return {width_, height_}; }
     Vec2f GetSize2f() const { return GetSize().Cast<float>(); }

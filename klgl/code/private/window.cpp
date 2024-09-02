@@ -101,10 +101,7 @@ void Window::Create()
 {
     window_ = glfwCreateWindow(static_cast<int>(width_), static_cast<int>(height_), "KLGL", nullptr, nullptr);
 
-    if (!window_)
-    {
-        throw std::runtime_error(fmt::format("Failed to create window"));
-    }
+    if (!window_) throw std::runtime_error(fmt::format("Failed to create window"));
 
     glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSetWindowUserPointer(window_, this);
@@ -167,6 +164,16 @@ void Window::OnMouseButton(int button, int action, [[maybe_unused]] int mods)
 void Window::OnMouseScroll(float dx, float dy)
 {
     app_->GetEventManager().Emit(events::OnMouseScroll{.value = {dx, dy}});
+}
+
+bool Window::IsFocused() const noexcept
+{
+    return glfwGetWindowAttrib(window_, GLFW_FOCUSED);
+}
+
+bool Window::IsHovered() const noexcept
+{
+    return glfwGetWindowAttrib(window_, GLFW_HOVERED);
 }
 
 }  // namespace klgl
