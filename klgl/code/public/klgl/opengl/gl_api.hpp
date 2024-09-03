@@ -323,6 +323,16 @@ public:
         const char* name) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static GLint GetUniformLocation(GlProgramId program, const char* name);
 
+    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, int32_t v) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(uint32_t location, int32_t v) noexcept;
+    KLGL_OGL_INLINE static void SetUniform(uint32_t location, int32_t v);
+
+    KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, uint32_t v) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
+        uint32_t location,
+        uint32_t v) noexcept;
+    KLGL_OGL_INLINE static void SetUniform(uint32_t location, uint32_t v);
+
     KLGL_OGL_INLINE static void SetUniformNE(uint32_t location, const float& f) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetUniformCE(
         uint32_t location,

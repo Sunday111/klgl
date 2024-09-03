@@ -87,7 +87,9 @@ void ShaderUniform::SendValue() const
 
     sent_ = true;
 
-    const bool type_found = SendActualValue<float>(type_guid_, location_, value_) ||
+    const bool type_found = SendActualValue<int32_t>(type_guid_, location_, value_) ||
+                            SendActualValue<uint32_t>(type_guid_, location_, value_) ||
+                            SendActualValue<float>(type_guid_, location_, value_) ||
                             SendActualValue<Vec2f>(type_guid_, location_, value_) ||
                             SendActualValue<Vec3f>(type_guid_, location_, value_) ||
                             SendActualValue<Vec4f>(type_guid_, location_, value_) ||

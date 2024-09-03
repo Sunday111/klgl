@@ -15,5 +15,8 @@
             "magic_enum"
         ],
         "Private": []
-    }
+    },
+    "CopyDirectoriesAfterBuild": [
+        "content"
+    ]
 }

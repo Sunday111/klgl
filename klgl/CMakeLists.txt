@@ -18,6 +18,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/glfw/glfw_state.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/os/os.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/reflection/reflection_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/rendering/painter2d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_define.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_uniform.cpp
@@ -88,6 +89,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/reflection_utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/register_types.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/rendering/painter2d.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/define_handle.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/sampler_uniform.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/shader.hpp
@@ -123,3 +125,7 @@ target_link_libraries(klgl PUBLIC ass
                                   magic_enum)
 target_include_directories(klgl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(klgl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)
+add_custom_command(TARGET klgl
+    POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/content"
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content)

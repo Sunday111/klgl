@@ -423,6 +423,14 @@ static std::optional<edt::GUID> ConvertGlType(GLenum gl_type)
 {
     switch (gl_type)
     {
+    case GL_INT:
+        return cppreflection::GetStaticTypeInfo<int32_t>().guid;
+        break;
+
+    case GL_UNSIGNED_INT:
+        return cppreflection::GetStaticTypeInfo<uint32_t>().guid;
+        break;
+
     case GL_FLOAT:
         return cppreflection::GetStaticTypeInfo<float>().guid;
         break;

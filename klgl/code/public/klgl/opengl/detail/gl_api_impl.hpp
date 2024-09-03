@@ -876,6 +876,38 @@ std::string OpenGl::GetShaderLog(GlShaderId shader)
 
 // Set uniform: float
 
+void OpenGl::SetUniformNE(uint32_t location, int32_t v) noexcept
+{
+    glUniform1i(static_cast<GLint>(location), v);
+}
+
+std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, int32_t v) noexcept
+{
+    SetUniformNE(location, v);
+    return Internal::ConsumeError("glUniform1i(location: {}, value: {})", location, v);
+}
+
+void OpenGl::SetUniform(uint32_t location, int32_t v)
+{
+    Internal::ThrowIfError(SetUniformCE(location, v));
+}
+
+void OpenGl::SetUniformNE(uint32_t location, uint32_t v) noexcept
+{
+    glUniform1ui(static_cast<GLint>(location), v);
+}
+
+std::optional<OpenGlError> OpenGl::SetUniformCE(uint32_t location, uint32_t v) noexcept
+{
+    SetUniformNE(location, v);
+    return Internal::ConsumeError("glUniform1ui(location: {}, value: {})", location, v);
+}
+
+void OpenGl::SetUniform(uint32_t location, uint32_t v)
+{
+    Internal::ThrowIfError(SetUniformCE(location, v));
+}
+
 void OpenGl::SetUniformNE(uint32_t location, const float& f) noexcept
 {
     glUniform1f(static_cast<GLint>(location), f);
