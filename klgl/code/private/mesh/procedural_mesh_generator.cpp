@@ -10,21 +10,22 @@ GeneratedMeshData2d ProceduralMeshGenerator::GenerateQuadMesh()
 {
     return {
         .vertices{
-            {1.0f, 1.0f},    // right top
-            {1.0f, -1.0f},   // right bottom
-            {-1.0f, -1.0f},  // left bottom
-            {-1.0f, 1.0f},   // left top
+            {-1, +1},
+            {+1, +1},
+            {-1, -1},
+            {+1, -1},
         },
         .texture_coordinates{
-            {1.f, 1.f},
-            {1.f, 0.f},
-            {0.f, 0.f},
-            {0.f, 1.f},
+            {0, 1},
+            {1, 1},
+            {0, 0},
+            {1, 0},
         },
-        .indices = {0, 1, 3, 1, 2, 3},
+        .indices = {3, 0, 2, 3, 1, 0},
         .topology = GlPrimitiveType::Triangles,
     };
 }
+
 GeneratedMeshData3d ProceduralMeshGenerator::GenerateCubeMesh()
 {
     // This mesh has separate set of vertices for each face
@@ -92,8 +93,7 @@ std::optional<GeneratedMeshData2d> ProceduralMeshGenerator::GenerateCircleMesh(c
     std::vector<edt::Vec2f> vertices(triangles_count + 1);
     std::vector<uint32_t> indices(triangles_count + 2);
 
-    const edt::Mat2f rotation =
-        edt::Math::MakeRotationMatrix(2 * edt::kPi<float> / static_cast<float>(triangles_count));
+    const edt::Mat3f rotation = edt::Math::RotationMatrix2d(2 * edt::kPi<float> / static_cast<float>(triangles_count));
 
     // circle center
     vertices[0] = {};
@@ -103,7 +103,7 @@ std::optional<GeneratedMeshData2d> ProceduralMeshGenerator::GenerateCircleMesh(c
 
     for (size_t i = 2; i != vertices.size(); ++i)
     {
-        vertices[i] = rotation.MatMul(vertices[i - 1]);
+        vertices[i] = edt::Math::TransformVector(rotation, vertices[i - 1]);
     }
 
     for (uint32_t i = 0; i != indices.size(); ++i)

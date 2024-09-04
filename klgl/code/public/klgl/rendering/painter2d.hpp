@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "EverydayTools/Math/Matrix.hpp"
-#include "klgl/shader/uniform_handle.hpp"
 
 namespace klgl
 {
@@ -19,8 +18,7 @@ class MeshOpenGL;
 class Painter2d
 {
 public:
-    struct MeshVertex;
-    struct Internal;
+    class Impl;
 
     explicit Painter2d(Application& app);
     ~Painter2d();
@@ -41,15 +39,19 @@ public:
         float rotation_degrees = 0.f;
     };
 
+    struct Triangle2d
+    {
+        Vec2f a{};
+        Vec2f b{};
+        Vec2f c{};
+        Vec4f color{1, 1, 1, 1};
+    };
+
     void DrawRect(const Rect2d& rect);
     void DrawCircle(const Circle2d& circle);
+    void DrawTriangle(const Triangle2d& triangle);
 
 private:
-    Application* app_;
-    std::unique_ptr<Shader> shader_;
-    std::shared_ptr<MeshOpenGL> mesh_;
-    UniformHandle u_type = klgl::UniformHandle("u_type");
-    UniformHandle u_color_ = klgl::UniformHandle("u_color");
-    UniformHandle u_transform_ = klgl::UniformHandle("u_transform");
+    std::unique_ptr<Impl> self;
 };
 }  // namespace klgl

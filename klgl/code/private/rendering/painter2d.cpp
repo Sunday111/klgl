@@ -6,53 +6,56 @@
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
-#include "klgl/template/register_attribute.hpp"
+#include "klgl/template/type_to_gl_type.hpp"
 
 namespace klgl
 {
 
-struct Painter2d::MeshVertex
+class Painter2d::Impl
 {
-    edt::Vec2f position{};
-    edt::Vec2f texture_coordinates{};
+public:
+    Application* app_ = nullptr;
+    std::unique_ptr<Shader> shader_;
+    std::shared_ptr<MeshOpenGL> mesh_;
+    UniformHandle u_type = klgl::UniformHandle("u_type");
+    UniformHandle u_color_ = klgl::UniformHandle("u_color");
+    UniformHandle u_transform_ = klgl::UniformHandle("u_transform");
 };
 
-struct Painter2d::Internal
+Painter2d::Painter2d(Application& app) : self(std::make_unique<Impl>())
 {
-};
-
-Painter2d::Painter2d(Application& app) : app_(&app)
-{
-    shader_ = std::make_unique<klgl::Shader>("klgl/painter2d.shader.json");
+    self->app_ = &app;
+    self->shader_ = std::make_unique<klgl::Shader>("klgl/painter2d.shader.json");
     // Create quad mesh
     const auto mesh_data = klgl::ProceduralMeshGenerator::GenerateQuadMesh();
 
-    std::vector<MeshVertex> vertices;
-    vertices.reserve(mesh_data.vertices.size());
-    for (size_t i = 0; i != mesh_data.vertices.size(); ++i)
-    {
-        vertices.emplace_back(MeshVertex{
-            .position = mesh_data.vertices[i],
-            .texture_coordinates = mesh_data.texture_coordinates[i],
-        });
-    }
-
-    mesh_ = klgl::MeshOpenGL::MakeFromData(std::span{vertices}, std::span{mesh_data.indices}, mesh_data.topology);
-    mesh_->Bind();
+    self->mesh_ =
+        klgl::MeshOpenGL::MakeFromData(std::span{mesh_data.vertices}, std::span{mesh_data.indices}, mesh_data.topology);
+    self->mesh_->Bind();
 
     // Vertex buffer attributes
     OpenGl::EnableVertexAttribArray(0);
-    RegisterAttribute<&MeshVertex::position>(0, false);
-    RegisterAttribute<&MeshVertex::texture_coordinates>(1, false);
+    klgl::OpenGl::EnableVertexAttribArray(0);
+    using GlTypeTraits = klgl::TypeToGlType<edt::Vec2f>;
+    klgl::OpenGl::VertexAttribPointer(
+        0,
+        GlTypeTraits::Size,
+        GlTypeTraits::AttribComponentType,
+        false,
+        sizeof(edt::Vec2f),
+        nullptr);  // NOLINT
 }
 
 Painter2d::~Painter2d() = default;
 
 void Painter2d::DrawRect(const Rect2d& rect)
 {
-    shader_->Use();
+    self->shader_->Use();
 
-    auto m = edt::Math::ScaleMatrix(rect.size);
+    klgl::OpenGl::EnableBlending();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    auto m = edt::Math::ScaleMatrix(rect.size / 2);
     if (rect.rotation_degrees != 0.f)
     {
         const float radians = edt::Math::DegToRad(rect.rotation_degrees);
@@ -60,22 +63,22 @@ void Painter2d::DrawRect(const Rect2d& rect)
     }
 
     m = edt::Math::TranslationMatrix(rect.center).MatMul(m);
-    shader_->SetUniform(u_type, 0);
-    shader_->SetUniform(u_transform_, m.Transposed());
-    shader_->SetUniform(u_color_, rect.color);
+    self->shader_->SetUniform(self->u_type, 0);
+    self->shader_->SetUniform(self->u_transform_, m.Transposed());
+    self->shader_->SetUniform(self->u_color_, rect.color);
 
-    shader_->SendUniforms();
-    mesh_->BindAndDraw();
+    self->shader_->SendUniforms();
+    self->mesh_->BindAndDraw();
 }
 
 void Painter2d::DrawCircle(const Circle2d& circle)
 {
-    shader_->Use();
+    self->shader_->Use();
 
     klgl::OpenGl::EnableBlending();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    auto m = edt::Math::ScaleMatrix(circle.size);
+    auto m = edt::Math::ScaleMatrix(circle.size / 2.f);
     if (circle.rotation_degrees != 0.f)
     {
         const float radians = edt::Math::DegToRad(circle.rotation_degrees);
@@ -83,12 +86,46 @@ void Painter2d::DrawCircle(const Circle2d& circle)
     }
 
     m = edt::Math::TranslationMatrix(circle.center).MatMul(m);
-    shader_->SetUniform(u_type, 1);
-    shader_->SetUniform(u_transform_, m.Transposed());
-    shader_->SetUniform(u_color_, circle.color);
+    self->shader_->SetUniform(self->u_type, 1);
+    self->shader_->SetUniform(self->u_transform_, m.Transposed());
+    self->shader_->SetUniform(self->u_color_, circle.color);
 
-    shader_->SendUniforms();
-    mesh_->BindAndDraw();
+    self->shader_->SendUniforms();
+    self->mesh_->BindAndDraw();
+}
+
+void Painter2d::DrawTriangle(const Triangle2d& triangle)
+{
+    self->shader_->Use();
+
+    klgl::OpenGl::EnableBlending();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // The transformation below is an inlined version of the following algorithm:
+    // 1. Translate by 1 so that bottom left corner in screen space (point A) becomes 0, 0
+    // 2. Transform the quad space so that x axis becomes AB and y axis becomes AC
+    // 3. Move point a to bottom left corner of screen space
+    // Mat3f basis;
+    // basis.SetColumn(0, Vec3f{i, 0});
+    // basis.SetColumn(1, Vec3f{j, 0});
+    // basis.SetColumn(2, Vec3f{0, 0, 1});
+    // m = edt::Math::TranslationMatrix(triangle.a).MatMul(basis.MatMul(edt::Math::TranslationMatrix(Vec2f{} + 1)));
+
+    const Vec2f i = (triangle.b - triangle.a) / 2;
+    const Vec2f j = (triangle.c - triangle.a) / 2;
+    const Vec2f t = (triangle.b + triangle.c) / 2;
+
+    Mat3f m;
+    m.SetColumn(0, Vec3f{i, 0});
+    m.SetColumn(1, Vec3f{j, 0});
+    m.SetColumn(2, Vec3f(t, 1));
+
+    self->shader_->SetUniform(self->u_type, 2);
+    self->shader_->SetUniform(self->u_transform_, m.Transposed());
+    self->shader_->SetUniform(self->u_color_, triangle.color);
+
+    self->shader_->SendUniforms();
+    self->mesh_->BindAndDraw();
 }
 
 }  // namespace klgl
