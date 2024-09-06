@@ -1,4 +1,4 @@
-flat in int shape_type;
+flat in uint shape_type;
 flat in vec4 shape_color;
 in vec2 tex_coord;
 
@@ -9,18 +9,18 @@ void main()
     switch (shape_type)
     {
     // Rectangle
-    case 0:
+    case 0u:
         FragColor = shape_color;
         break;
 
     // Circle (ellipse)
-    case 1:
+    case 1u:
         vec2 cc = tex_coord * 2 - 1;
         FragColor = dot(cc, cc) <= 1 ? shape_color : vec4(0, 0, 0, 0);
         break;
 
     // Triangle
-    case 2:
+    case 2u:
         FragColor = shape_color;
         break;
 

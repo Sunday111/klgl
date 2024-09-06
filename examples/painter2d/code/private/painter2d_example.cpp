@@ -22,13 +22,20 @@ class Painter2dApp : public klgl::Application
 
     void Tick() override
     {
-        painter_->DrawRect({.center = {}, .size = {1, 1}, .color = {1, 0, 0, 1}});
-        painter_->DrawCircle({.center = {-0.3f, 0.3f}, .size = {.2f, .2f}, .color = {0, 1, 0, 1}});
-        painter_->DrawCircle({.center = {0.3f, 0.3f}, .size = {.2f, .2f}, .color = {0, 1, 0, 1}});
-        painter_->DrawCircle({.center = {0, -0.25f}, .size = {.8f, .2f}, .color = {0, 1, 0, 1}});
-        painter_->DrawTriangle({.a = {-0.5, 0.5}, .b = {-0.3f, 0.6f}, .c = {-0.2f, 0.5}, .color = {1, 0, 0, 1}});
-        painter_->DrawTriangle({.a = {0.5, 0.5}, .b = {0.3f, 0.6f}, .c = {0.2f, 0.5}, .color = {1, 0, 0, 1}});
-        painter_->DrawTriangle({.a = a, .b = b, .c = c, .color = {0, 0, 1, 1}});
+        constexpr edt::Vec4u8 red{255, 0, 0, 255};
+        constexpr edt::Vec4u8 green{0, 255, 0, 255};
+        constexpr edt::Vec4u8 blue{0, 0, 255, 255};
+
+        painter_->BeginDraw();
+        painter_->DrawRect({.center = {}, .size = {1, 1}, .color = red});
+        painter_->DrawCircle({.center = {-0.3f, 0.3f}, .size = {.2f, .2f}, .color = green});
+        painter_->DrawCircle({.center = {0.3f, 0.3f}, .size = {.2f, .2f}, .color = green});
+        painter_->DrawCircle({.center = {0, -0.25f}, .size = {.8f, .2f}, .color = green});
+        painter_->DrawTriangle({.a = {-0.5, 0.5}, .b = {-0.3f, 0.6f}, .c = {-0.2f, 0.5}, .color = red});
+        painter_->DrawTriangle({.a = {0.5, 0.5}, .b = {0.3f, 0.6f}, .c = {0.2f, 0.5}, .color = red});
+        painter_->DrawTriangle({.a = a, .b = b, .c = c, .color = blue});
+
+        painter_->EndDraw();
 
         if (ImGui::CollapsingHeader("Triangle"))
         {
@@ -39,7 +46,7 @@ class Painter2dApp : public klgl::Application
     }
 
     std::unique_ptr<klgl::Painter2d> painter_;
-    edt::Vec2f a{-1, -1}, b{1, -1}, c{-1, 1};
+    edt::Vec2f a{-1, -1}, b{0.2f, -1}, c{-1, 1};
 };
 
 void Main()

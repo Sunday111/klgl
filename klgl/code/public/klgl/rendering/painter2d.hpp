@@ -27,7 +27,7 @@ public:
     {
         Vec2f center;
         Vec2f size;
-        Vec4f color = Vec4f(1, 1, 1, 1);
+        Vec4u8 color = Vec4u8{} + 255;
         float rotation_degrees = 0.f;
     };
 
@@ -35,7 +35,7 @@ public:
     {
         Vec2f center;
         Vec2f size;
-        Vec4f color = Vec4f(1, 1, 1, 1);
+        Vec4u8 color = Vec4u8{} + 255;
         float rotation_degrees = 0.f;
     };
 
@@ -44,8 +44,11 @@ public:
         Vec2f a{};
         Vec2f b{};
         Vec2f c{};
-        Vec4f color{1, 1, 1, 1};
+        Vec4u8 color = Vec4u8{} + 255;
     };
+
+    void BeginDraw();
+    void EndDraw();
 
     void DrawRect(const Rect2d& rect);
     void DrawCircle(const Circle2d& circle);

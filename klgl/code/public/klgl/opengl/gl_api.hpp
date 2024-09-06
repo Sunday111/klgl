@@ -49,6 +49,12 @@ public:
         GlBufferId buffer) noexcept;
     KLGL_OGL_INLINE static void BindBuffer(GlBufferType target, GlBufferId buffer);
 
+    // This overload allows you to initalize buffer without data
+    KLGL_OGL_INLINE static void BufferDataNE(GlBufferType target, size_t buffer_size, GlUsage usage) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    BufferDataCE(GlBufferType target, size_t buffer_size, GlUsage usage) noexcept;
+    KLGL_OGL_INLINE static void BufferData(GlBufferType target, size_t buffer_size, GlUsage usage);
+
     KLGL_OGL_INLINE static void
     BufferDataNE(GlBufferType target, std::span<const uint8_t> data, GlUsage usage) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
@@ -84,9 +90,54 @@ public:
         return BufferData(target, bytes, usage);
     }
 
+    // Redefine some or all of the data store for the specified buffer object. Data starting at offset offset and
+    // extending for size bytes is copied to the data store from the memory pointed to by data. offset and size must
+    // define a range lying entirely within the buffer object's data store.
+    // When replacing the entire data store, consider using glBufferSubData rather than completely recreating the data
+    // store with glBufferData. This avoids the cost of reallocating the data store.
+    KLGL_OGL_INLINE static void
+    BufferSubDataNE(GlBufferType target, size_t offset_elements, std::span<const uint8_t> data) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    BufferSubDataCE(GlBufferType target, size_t offset_elements, std::span<const uint8_t> data) noexcept;
+    KLGL_OGL_INLINE static void
+    BufferSubData(GlBufferType target, size_t offset_elements, std::span<const uint8_t> data);
+
     KLGL_OGL_INLINE static void DeleteBufferNE(GlBufferId buffer) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteBufferCE(GlBufferId buffer) noexcept;
     KLGL_OGL_INLINE static void DeleteBuffer(GlBufferId buffer);
+
+    template <typename T, size_t Extent>
+        requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
+    KLGL_OGL_INLINE static void BufferSubDataNE(
+        GlBufferType target,
+        size_t offset_elements,
+        const std::span<T, Extent>& data) noexcept
+    {
+        std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
+        BufferSubDataNE(target, offset_elements * sizeof(T), bytes);
+    }
+
+    template <typename T, size_t Extent>
+        requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
+    KLGL_OGL_INLINE static std::optional<OpenGlError> BufferSubDataCE(
+        GlBufferType target,
+        size_t offset_elements,
+        const std::span<T, Extent>& data) noexcept
+    {
+        std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
+        return BufferSubDataCE(target, offset_elements * sizeof(T), bytes);
+    }
+
+    template <typename T, size_t Extent>
+        requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
+    KLGL_OGL_INLINE static void BufferSubData(
+        GlBufferType target,
+        size_t offset_elements,
+        const std::span<T, Extent>& data) noexcept
+    {
+        std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
+        BufferSubData(target, offset_elements * sizeof(T), bytes);
+    }
 
     /*********************************************** Vertex Arrays ****************************************************/
 
@@ -396,7 +447,7 @@ public:
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> CullFaceCE(GlCullFaceMode mode) noexcept;
     KLGL_OGL_INLINE static void CullFace(GlCullFaceMode mode);
 
-    /******************************************************************************************************************/
+    /****************************************** Vertex Attribute Pointer **********************************************/
 
     KLGL_OGL_INLINE static void VertexAttribPointerNE(
         GLuint index,
@@ -419,6 +470,27 @@ public:
         bool normalized,
         size_t stride,
         const void* pointer);
+
+    // This function binds integer buffers as is, without converting them to floats
+    KLGL_OGL_INLINE static void VertexAttribIPointerNE(
+        GLuint index,
+        size_t size,
+        GlVertexAttribComponentType type,
+        size_t stride,
+        const void* pointer) noexcept;
+    KLGL_OGL_INLINE static std::optional<OpenGlError> VertexAttribIPointerCE(
+        GLuint index,
+        size_t size,
+        GlVertexAttribComponentType type,
+        size_t stride,
+        const void* pointer) noexcept;
+    KLGL_OGL_INLINE static void VertexAttribIPointer(
+        GLuint index,
+        size_t size,
+        GlVertexAttribComponentType type,
+        size_t stride,
+        const void* pointer);
+    /******************************************************************************************************************/
 
     KLGL_OGL_INLINE static void EnableVertexAttribArrayNE(GLuint index) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableVertexAttribArrayCE(GLuint index) noexcept;

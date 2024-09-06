@@ -1,12 +1,14 @@
 #include "klgl/rendering/painter2d.hpp"
 
+#include "EverydayTools/Math/IntRange.hpp"
 #include "EverydayTools/Math/Math.hpp"
 #include "klgl/application.hpp"
+#include "klgl/error_handling.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
+#include "klgl/opengl/vertex_attribute_helper.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
-#include "klgl/template/type_to_gl_type.hpp"
 
 namespace klgl
 {
@@ -14,47 +16,177 @@ namespace klgl
 class Painter2d::Impl
 {
 public:
+    static constexpr size_t kBatchSize = 3;
+    static constexpr size_t kVertexAttrib = 0;
+    static constexpr size_t kTypeAttrib = 1;
+    static constexpr size_t kColorAttrib = 2;
+    static constexpr size_t kTransformAttrib = 4;
+
+    template <typename ValueType, bool to_float = true, bool normalize = false>
+    struct Batch
+    {
+        Batch()
+        {
+            vbo = GlObject<GlBufferId>::CreateFrom(OpenGl::GenBuffer());
+            OpenGl::BindBuffer(GlBufferType::Array, vbo);
+            OpenGl::BufferData(GlBufferType::Array, std::span{values}.size_bytes(), GlUsage::DynamicDraw);
+        }
+
+        static void AssignVertexAttributes(GLuint location)
+        {
+            using Helper = TightlyPackedAttributeBufferStatic<ValueType, normalize, to_float>;
+            Helper::EnableVertexAttribArray(location);
+            Helper::AttributePointer(location);
+            Helper::AttributeDivisor(location, 1);
+        }
+
+        void SendBuffers(const GLuint location, const edt::IntRange<size_t> elements_to_update)
+        {
+            OpenGl::BindBuffer(GlBufferType::Array, vbo);
+            OpenGl::BufferSubData(
+                GlBufferType::Array,
+                elements_to_update.begin,
+                std::span{values}.subspan(elements_to_update.begin));
+            AssignVertexAttributes(location);
+        }
+
+        GlObject<GlBufferId> vbo{};
+        std::array<ValueType, kBatchSize> values{};
+    };
+
+    void BeginDraw()
+    {
+        ErrorHandling::Ensure(
+            !drawing,
+            "Trying to start drawing but previous drawing session was not paired with EndDraw call");
+        drawing = true;
+        num_primitives = 0;
+    }
+
+    void EndDraw()
+    {
+        ErrorHandling::Ensure(drawing, "Attempt to stop drawing twice or without previous BeginDraw call");
+        drawing = false;
+
+        shader_->Use();
+        OpenGl::EnableBlending();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        shader_->SendUniforms();
+        mesh_->Bind();
+
+        for (size_t batch_index = 0; batch_index != type_batches_.size(); ++batch_index)
+        {
+            if (num_primitives <= batch_index * kBatchSize) break;
+
+            // number of circles initialized for the current batch
+            const size_t num_locally_used = std::min(num_primitives - batch_index * kBatchSize, kBatchSize);
+            const edt::IntRange<size_t> update_range{.begin = 0, .end = num_locally_used};
+
+            type_batches_[batch_index].SendBuffers(kTypeAttrib, update_range);
+            color_batches_[batch_index].SendBuffers(kColorAttrib, update_range);
+            transform_batches_[batch_index].SendBuffers(kTransformAttrib, update_range);
+
+            mesh_->DrawInstanced(num_locally_used);
+        }
+    }
+
+    void EnsureBeganDrawing() { ErrorHandling::Ensure(drawing, "Did not start drawing session!"); }
+
+    void AddPrimitive(uint8_t shape, const Vec4u8& color, const Mat3f& transform)
+    {
+        EnsureBeganDrawing();
+
+        if (num_primitives == type_batches_.size() * kBatchSize)
+        {
+            type_batches_.emplace_back();
+            color_batches_.emplace_back();
+            transform_batches_.emplace_back();
+        }
+
+        const size_t index_in_batch = num_primitives % kBatchSize;
+        const size_t batch_index = num_primitives / kBatchSize;
+
+        num_primitives += 1;
+
+        auto& type_batch = type_batches_[batch_index];
+        type_batch.values[index_in_batch] = shape;
+
+        auto& color_batch = color_batches_[batch_index];
+        color_batch.values[index_in_batch] = color;
+
+        auto& transform_batch = transform_batches_[batch_index];
+        transform_batch.values[index_in_batch] = transform.Transposed();
+    }
+
+    std::vector<Batch<uint8_t, false>> type_batches_;
+    std::vector<Batch<Vec4u8, true, true>> color_batches_;
+    std::vector<Batch<Mat3f>> transform_batches_;
+
     Application* app_ = nullptr;
     std::unique_ptr<Shader> shader_;
     std::shared_ptr<MeshOpenGL> mesh_;
-    UniformHandle u_type = klgl::UniformHandle("u_type");
-    UniformHandle u_color_ = klgl::UniformHandle("u_color");
-    UniformHandle u_transform_ = klgl::UniformHandle("u_transform");
+
+    bool drawing = false;
+    size_t num_primitives = 0;
 };
 
 Painter2d::Painter2d(Application& app) : self(std::make_unique<Impl>())
 {
     self->app_ = &app;
-    self->shader_ = std::make_unique<klgl::Shader>("klgl/painter2d.shader.json");
+    self->shader_ = std::make_unique<Shader>("klgl/painter2d.shader.json");
+
+    GLuint program = self->shader_->GetProgramId().GetValue();
+    GLint numAttributes{};
+    glGetProgramiv(program, GL_ACTIVE_ATTRIBUTES, &numAttributes);
+
+    GLint maxNameLength{};
+    glGetProgramiv(
+        self->shader_->GetProgramId().GetValue(),
+        GL_ACTIVE_ATTRIBUTE_MAX_LENGTH,
+        &maxNameLength);  // Get max name length
+    std::string attributeName;
+    attributeName.resize(static_cast<size_t>(maxNameLength));
+
+    for (int i = 0; i < numAttributes; ++i)
+    {
+        GLint size{};
+        GLenum type{};
+        glGetActiveAttrib(program, i, maxNameLength, nullptr, &size, &type, attributeName.data());
+
+        // Get the attribute location
+        GLint location = glGetAttribLocation(program, attributeName.data());
+
+        // Print out the information
+        fmt::println("Attribute #{}: {}. Location: {}. Size: {}. Type: {}", i, attributeName, location, size, type);
+    }
+
     // Create quad mesh
-    const auto mesh_data = klgl::ProceduralMeshGenerator::GenerateQuadMesh();
+    const auto mesh_data = ProceduralMeshGenerator::GenerateQuadMesh();
 
     self->mesh_ =
-        klgl::MeshOpenGL::MakeFromData(std::span{mesh_data.vertices}, std::span{mesh_data.indices}, mesh_data.topology);
+        MeshOpenGL::MakeFromData(std::span{mesh_data.vertices}, std::span{mesh_data.indices}, mesh_data.topology);
     self->mesh_->Bind();
 
     // Vertex buffer attributes
-    OpenGl::EnableVertexAttribArray(0);
-    klgl::OpenGl::EnableVertexAttribArray(0);
-    using GlTypeTraits = klgl::TypeToGlType<edt::Vec2f>;
-    klgl::OpenGl::VertexAttribPointer(
-        0,
-        GlTypeTraits::Size,
-        GlTypeTraits::AttribComponentType,
-        false,
-        sizeof(edt::Vec2f),
-        nullptr);  // NOLINT
+    OpenGl::EnableVertexAttribArray(Impl::kVertexAttrib);
+    TightlyPackedAttributeBufferStatic<edt::Vec2f, false, true>::AttributePointer(Impl::kVertexAttrib);
 }
 
 Painter2d::~Painter2d() = default;
 
+void Painter2d::BeginDraw()
+{
+    self->BeginDraw();
+}
+
+void Painter2d::EndDraw()
+{
+    self->EndDraw();
+}
+
 void Painter2d::DrawRect(const Rect2d& rect)
 {
-    self->shader_->Use();
-
-    klgl::OpenGl::EnableBlending();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     auto m = edt::Math::ScaleMatrix(rect.size / 2);
     if (rect.rotation_degrees != 0.f)
     {
@@ -63,21 +195,13 @@ void Painter2d::DrawRect(const Rect2d& rect)
     }
 
     m = edt::Math::TranslationMatrix(rect.center).MatMul(m);
-    self->shader_->SetUniform(self->u_type, 0);
-    self->shader_->SetUniform(self->u_transform_, m.Transposed());
-    self->shader_->SetUniform(self->u_color_, rect.color);
+    self->AddPrimitive(0, rect.color, m);
 
-    self->shader_->SendUniforms();
-    self->mesh_->BindAndDraw();
+    // self->AddPrimitive(0, rect.color, edt::Mat3f::Identity());
 }
 
 void Painter2d::DrawCircle(const Circle2d& circle)
 {
-    self->shader_->Use();
-
-    klgl::OpenGl::EnableBlending();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     auto m = edt::Math::ScaleMatrix(circle.size / 2.f);
     if (circle.rotation_degrees != 0.f)
     {
@@ -86,21 +210,12 @@ void Painter2d::DrawCircle(const Circle2d& circle)
     }
 
     m = edt::Math::TranslationMatrix(circle.center).MatMul(m);
-    self->shader_->SetUniform(self->u_type, 1);
-    self->shader_->SetUniform(self->u_transform_, m.Transposed());
-    self->shader_->SetUniform(self->u_color_, circle.color);
 
-    self->shader_->SendUniforms();
-    self->mesh_->BindAndDraw();
+    self->AddPrimitive(1, circle.color, m);
 }
 
 void Painter2d::DrawTriangle(const Triangle2d& triangle)
 {
-    self->shader_->Use();
-
-    klgl::OpenGl::EnableBlending();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     // The transformation below is an inlined version of the following algorithm:
     // 1. Translate by 1 so that bottom left corner in screen space (point A) becomes 0, 0
     // 2. Transform the quad space so that x axis becomes AB and y axis becomes AC
@@ -120,12 +235,7 @@ void Painter2d::DrawTriangle(const Triangle2d& triangle)
     m.SetColumn(1, Vec3f{j, 0});
     m.SetColumn(2, Vec3f(t, 1));
 
-    self->shader_->SetUniform(self->u_type, 2);
-    self->shader_->SetUniform(self->u_transform_, m.Transposed());
-    self->shader_->SetUniform(self->u_color_, triangle.color);
-
-    self->shader_->SendUniforms();
-    self->mesh_->BindAndDraw();
+    self->AddPrimitive(2, triangle.color, m);
 }
 
 }  // namespace klgl

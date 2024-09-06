@@ -99,7 +99,9 @@ struct OpenGl::Internal
     {
         if (GlError e = OpenGl::GetError(); e != GlError::NoError)
         {
-            return OpenGlError(e, fmt::format(format, std::forward<Args>(args)...), cpptrace::generate_raw_trace(1));
+            std::string message = fmt::format("OpenGL error: {}. Context: ", e);
+            fmt::format_to(std::back_inserter(message), format, std::forward<Args>(args)...);
+            return OpenGlError(e, std::move(message), cpptrace::generate_raw_trace(1));
         }
 
         return std::nullopt;
@@ -258,7 +260,7 @@ void OpenGl::BindBuffer(GlBufferType target, GlBufferId buffer)
     Internal::ThrowIfError(BindBufferCE(target, buffer));
 }
 
-// Buffer Data
+// Buffer Data (with data)
 
 void OpenGl::BufferDataNE(GlBufferType target, std::span<const uint8_t> data, GlUsage usage) noexcept
 {
@@ -280,6 +282,56 @@ OpenGl::BufferDataCE(GlBufferType target, std::span<const uint8_t> data, GlUsage
 void OpenGl::BufferData(GlBufferType target, std::span<const uint8_t> data, GlUsage usage)
 {
     Internal::ThrowIfError(BufferDataCE(target, data, usage));
+}
+
+// Buffer data (just size)
+
+void OpenGl::BufferDataNE(GlBufferType target, size_t buffer_size, GlUsage usage) noexcept
+{
+    glBufferData(ToGlValue(target), static_cast<GLsizei>(buffer_size), nullptr, ToGlValue(usage));
+}
+
+std::optional<OpenGlError> OpenGl::BufferDataCE(GlBufferType target, size_t buffer_size, GlUsage usage) noexcept
+{
+    BufferDataNE(target, buffer_size, usage);
+    return Internal::ConsumeError(
+        "glBufferData(target: {}, size: {}, data: nullptr, usage: {})",
+        target,
+        buffer_size,
+        usage);
+}
+
+void OpenGl::BufferData(GlBufferType target, size_t buffer_size, GlUsage usage)
+{
+    Internal::ThrowIfError(BufferDataCE(target, buffer_size, usage));
+}
+
+// Buffer sub data
+
+void OpenGl::BufferSubDataNE(GlBufferType target, size_t offset_elements, std::span<const uint8_t> data) noexcept
+{
+    glBufferSubData(
+        ToGlValue(target),
+        static_cast<GLintptr>(offset_elements),
+        static_cast<GLsizeiptr>(data.size()),
+        data.data());
+}
+
+std::optional<OpenGlError>
+OpenGl::BufferSubDataCE(GlBufferType target, size_t offset_elements, std::span<const uint8_t> data) noexcept
+{
+    BufferSubDataNE(target, offset_elements, data);
+    return Internal::ConsumeError(
+        "glBufferSubData(target: {}, offset: {}, size: {}, data: {})",
+        target,
+        offset_elements,
+        data.size(),
+        static_cast<const void*>(data.data()));
+}
+
+void OpenGl::BufferSubData(GlBufferType target, size_t offset_elements, std::span<const uint8_t> data)
+{
+    Internal::ThrowIfError(BufferSubDataCE(target, offset_elements, data));
 }
 
 // Delete
@@ -1335,7 +1387,7 @@ void OpenGl::CullFace(GlCullFaceMode mode)
     Internal::ThrowIfError(CullFaceCE(mode));
 }
 
-/******************************************************************************************************************/
+/****************************************** Vertex Attribute Pointer **********************************************/
 
 void OpenGl::VertexAttribPointerNE(
     GLuint index,
@@ -1383,6 +1435,47 @@ void OpenGl::VertexAttribPointer(
 {
     Internal::ThrowIfError(VertexAttribPointerCE(index, size, type, normalized, stride, pointer));
 }
+
+// Integer version
+
+void OpenGl::VertexAttribIPointerNE(
+    GLuint index,
+    size_t size,
+    GlVertexAttribComponentType type,
+    size_t stride,
+    const void* pointer) noexcept
+{
+    glVertexAttribIPointer(index, static_cast<GLint>(size), ToGlValue(type), static_cast<GLsizei>(stride), pointer);
+}
+
+std::optional<OpenGlError> OpenGl::VertexAttribIPointerCE(
+    GLuint index,
+    size_t size,
+    GlVertexAttribComponentType type,
+    size_t stride,
+    const void* pointer) noexcept
+{
+    VertexAttribIPointerNE(index, size, type, stride, pointer);
+    return Internal::ConsumeError(
+        "glVertexAttribIPointer(index: {}, size: {}, type: {}, stride: {}, pointer: {})",
+        index,
+        size,
+        type,
+        stride,
+        pointer);
+}
+
+void OpenGl::VertexAttribIPointer(
+    GLuint index,
+    size_t size,
+    GlVertexAttribComponentType type,
+    size_t stride,
+    const void* pointer)
+{
+    Internal::ThrowIfError(VertexAttribIPointerCE(index, size, type, stride, pointer));
+}
+
+/******************************************************************************************************************/
 
 void OpenGl::EnableVertexAttribArrayNE(GLuint index) noexcept
 {
