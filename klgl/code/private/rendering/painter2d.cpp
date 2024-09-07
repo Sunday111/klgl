@@ -136,15 +136,12 @@ Painter2d::Painter2d(Application& app) : self(std::make_unique<Impl>())
     self->app_ = &app;
     self->shader_ = std::make_unique<Shader>("klgl/painter2d.shader.json");
 
-    GLuint program = self->shader_->GetProgramId().GetValue();
-    GLint numAttributes{};
-    glGetProgramiv(program, GL_ACTIVE_ATTRIBUTES, &numAttributes);
+    auto program_id = self->shader_->GetProgramId();
+    GLuint program = program_id.GetValue();
+    const GLint numAttributes = OpenGl::GetProgramIntParameter(program_id, GlProgramIntParameter::ActiveAttributes);
 
-    GLint maxNameLength{};
-    glGetProgramiv(
-        self->shader_->GetProgramId().GetValue(),
-        GL_ACTIVE_ATTRIBUTE_MAX_LENGTH,
-        &maxNameLength);  // Get max name length
+    const GLint maxNameLength =
+        OpenGl::GetProgramIntParameter(program_id, GlProgramIntParameter::ActiveAttributeMaxLength);
     std::string attributeName;
     attributeName.resize(static_cast<size_t>(maxNameLength));
 
@@ -196,8 +193,6 @@ void Painter2d::DrawRect(const Rect2d& rect)
 
     m = edt::Math::TranslationMatrix(rect.center).MatMul(m);
     self->AddPrimitive(0, rect.color, m);
-
-    // self->AddPrimitive(0, rect.color, edt::Mat3f::Identity());
 }
 
 void Painter2d::DrawCircle(const Circle2d& circle)

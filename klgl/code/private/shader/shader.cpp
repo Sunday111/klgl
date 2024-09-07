@@ -351,7 +351,6 @@ UniformHandle Shader::GetUniform(Name name) const
         return *maybe_handle;
     }
 
-    fmt::print("Uniform is not found: \"{}\"\n", name.GetView());
     throw std::runtime_error(fmt::format("Uniform is not found: \"{}\"", name.GetView()));
 }
 
@@ -468,8 +467,7 @@ void Shader::UpdateUniforms()
     GLuint num_uniforms{};
 
     {
-        GLint num_uniforms_{};
-        glGetProgramiv(program_.GetId().GetValue(), GL_ACTIVE_UNIFORMS, &num_uniforms_);
+        GLint num_uniforms_ = OpenGl::GetProgramIntParameter(program_.GetId(), GlProgramIntParameter::ActiveUniforms);
         [[unlikely]] if (num_uniforms_ < 1)
         {
             return;
@@ -477,8 +475,8 @@ void Shader::UpdateUniforms()
         num_uniforms = static_cast<GLuint>(num_uniforms_);
     }
 
-    GLint max_name_legth = 0;
-    glGetProgramiv(program_.GetId().GetValue(), GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_name_legth);
+    GLint max_name_legth =
+        OpenGl::GetProgramIntParameter(program_.GetId(), GlProgramIntParameter::ActiveUniformMaxLength);
 
     std::string name_buffer_heap;
     constexpr GLsizei name_buffer_size_stack = 64;

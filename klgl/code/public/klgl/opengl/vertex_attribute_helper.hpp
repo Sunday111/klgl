@@ -131,9 +131,11 @@ struct TightlyPackedAttributeBuffer
             nullptr);
     }
 
-    // Source is the matrix of floats
+    // Source is a matrix of integers or floats that will be converted to matrix of floats
     static void TightlyPackedAttributePointerAsFloat(uint32_t location, bool normalize)
-        requires(edt::IsMatrix<T> && !T::IsVector() && std::floating_point<typename T::Component>)
+        requires(
+            edt::IsMatrix<T> && !T::IsVector() &&
+            (std::same_as<typename T::Component, float> || std::is_integral_v<typename T::Component>))
     {
         using Component = typename T::Component;
         static constexpr size_t rows = T::NumRows();
@@ -144,6 +146,23 @@ struct TightlyPackedAttributeBuffer
                 rows,
                 detail::GlComponentTraits<Component>::ComponentType,
                 normalize,
+                sizeof(T),
+                reinterpret_cast<const void*>(sizeof(Component) * i * rows));  // NOLINT
+        }
+    }
+
+    // Source is the matrix of integers
+    static void TightlyPackedAttributePointerAsInt(uint32_t location)
+        requires(edt::IsMatrix<T> && !T::IsVector() && std::is_integral_v<typename T::Component>)
+    {
+        using Component = typename T::Component;
+        static constexpr size_t rows = T::NumRows();
+        for (GLuint i = 0; i != T::NumRows(); ++i)
+        {
+            klgl::OpenGl::VertexAttribIPointer(
+                location + i,
+                rows,
+                detail::GlComponentTraits<Component>::ComponentType,
                 sizeof(T),
                 reinterpret_cast<const void*>(sizeof(Component) * i * rows));  // NOLINT
         }
@@ -219,5 +238,4 @@ struct TightlyPackedAttributeBufferStatic
     }
 };
 
-// TODO: Matrices of integers
 }  // namespace klgl

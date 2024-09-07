@@ -10,6 +10,7 @@
 #include "klgl/opengl/detail/maps/to_gl_value/index_buffer_element_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/polygon_mode.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/primitive_type.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/program_int_parameter.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/shader_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/target_texture_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_filter.hpp"
@@ -1152,9 +1153,7 @@ void OpenGl::LinkProgram(GlProgramId program)
 
 bool OpenGl::GetProgramLinkStatusNE(GlProgramId program) noexcept
 {
-    GLint link_status = GL_FALSE;
-    glGetProgramiv(program.GetValue(), GL_LINK_STATUS, &link_status);
-    return link_status == GL_TRUE;
+    return GetProgramIntParameterNE(program, GlProgramIntParameter::LinkStatus) == GL_TRUE;
 }
 
 std::expected<bool, OpenGlError> OpenGl::GetProgramLinkStatusCE(GlProgramId program) noexcept
@@ -1168,6 +1167,31 @@ std::expected<bool, OpenGlError> OpenGl::GetProgramLinkStatusCE(GlProgramId prog
 bool OpenGl::GetProgramLinkStatus(GlProgramId program)
 {
     return Internal::TryTakeValue(GetProgramLinkStatusCE(program));
+}
+
+// Program int parameter
+
+int32_t OpenGl::GetProgramIntParameterNE(GlProgramId program, GlProgramIntParameter parameter) noexcept
+{
+    int32_t value{};
+    glGetProgramiv(program.GetValue(), ToGlValue(parameter), &value);
+    return value;
+}
+
+std::expected<int32_t, OpenGlError> OpenGl::GetProgramIntParameterCE(
+    GlProgramId program,
+    GlProgramIntParameter parameter) noexcept
+{
+    return Internal::ValueOrError(
+        GetProgramIntParameterNE(program, parameter),
+        "glGetProgramiv(program: {}, pname: {})",
+        program.GetValue(),
+        parameter);
+}
+
+int32_t OpenGl::GetProgramIntParameter(GlProgramId program, GlProgramIntParameter parameter)
+{
+    return Internal::TryTakeValue(GetProgramIntParameterCE(program, parameter));
 }
 
 // Log length

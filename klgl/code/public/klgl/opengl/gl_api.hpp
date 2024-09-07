@@ -354,6 +354,16 @@ public:
         GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static bool GetProgramLinkStatus(GlProgramId program);
 
+    [[nodiscard]] KLGL_OGL_INLINE static int32_t GetProgramIntParameterNE(
+        GlProgramId program,
+        GlProgramIntParameter parameter) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<int32_t, OpenGlError> GetProgramIntParameterCE(
+        GlProgramId program,
+        GlProgramIntParameter parameter) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static int32_t GetProgramIntParameter(
+        GlProgramId program,
+        GlProgramIntParameter parameter);
+
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramLogLengthNE(GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramLogLengthCE(
         GlProgramId program) noexcept;

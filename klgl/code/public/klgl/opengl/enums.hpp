@@ -300,6 +300,30 @@ enum class GlCullFaceMode
     Both
 };
 
+enum class GlProgramIntParameter
+{
+    DeleteStatus,
+    LinkStatus,
+    ValidateStatus,
+    InfoLogLength,
+    AttachedShaders,
+    ActiveAtomicCounterBuffers,
+    ActiveAttributes,
+    ActiveAttributeMaxLength,
+    ActiveUniforms,
+    ActiveUniformBlocks,
+    ActiveUniformBlockMaxNameLength,
+    ActiveUniformMaxLength,
+    ComputeWorkGroupSize,
+    ProgramBinaryLength,
+    TransformFeedbackBufferMode,
+    TransformFeedbackVaryings,
+    TransformFeedbackVaryingMaxLength,
+    GeometryVerticesOut,
+    GeometryInputType,
+    GeometryOutputType
+};
+
 }  // namespace klgl
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlError);
@@ -358,3 +382,6 @@ KLGL_MAKE_ENUM_FORMATTER(GlTextureParameterType);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlCullFaceMode);
 KLGL_MAKE_ENUM_FORMATTER(GlCullFaceMode);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlProgramIntParameter);
+KLGL_MAKE_ENUM_FORMATTER(GlProgramIntParameter);
