@@ -25,29 +25,24 @@ public:
     template <typename ValueType, bool to_float = true, bool normalize = false>
     struct Batch
     {
-        Batch()
+        using AttribHelper = TightlyPackedAttributeBufferStatic<ValueType, normalize, to_float>;
+
+        Batch() : vbo(GlObject<GlBufferId>::CreateFrom(OpenGl::GenBuffer()))
         {
-            vbo = GlObject<GlBufferId>::CreateFrom(OpenGl::GenBuffer());
             OpenGl::BindBuffer(GlBufferType::Array, vbo);
             OpenGl::BufferData(GlBufferType::Array, std::span{values}.size_bytes(), GlUsage::DynamicDraw);
         }
 
-        static void AssignVertexAttributes(GLuint location)
-        {
-            using Helper = TightlyPackedAttributeBufferStatic<ValueType, normalize, to_float>;
-            Helper::EnableVertexAttribArray(location);
-            Helper::AttributePointer(location);
-            Helper::AttributeDivisor(location, 1);
-        }
-
-        void SendBuffers(const GLuint location, const edt::IntRange<size_t> elements_to_update)
+        void Send(const GLuint location, const edt::IntRange<size_t> elements_to_update)
         {
             OpenGl::BindBuffer(GlBufferType::Array, vbo);
             OpenGl::BufferSubData(
                 GlBufferType::Array,
                 elements_to_update.begin,
                 std::span{values}.subspan(elements_to_update.begin));
-            AssignVertexAttributes(location);
+            AttribHelper::EnableVertexAttribArray(location);
+            AttribHelper::AttributePointer(location);
+            AttribHelper::AttributeDivisor(location, 1);
         }
 
         GlObject<GlBufferId> vbo{};
@@ -83,9 +78,9 @@ public:
             const size_t num_locally_used = std::min(num_primitives - batch_index * kBatchSize, kBatchSize);
             const edt::IntRange<size_t> update_range{.begin = 0, .end = num_locally_used};
 
-            type_batches_[batch_index].SendBuffers(kTypeAttrib, update_range);
-            color_batches_[batch_index].SendBuffers(kColorAttrib, update_range);
-            transform_batches_[batch_index].SendBuffers(kTransformAttrib, update_range);
+            type_batches_[batch_index].Send(kTypeAttrib, update_range);
+            color_batches_[batch_index].Send(kColorAttrib, update_range);
+            transform_batches_[batch_index].Send(kTransformAttrib, update_range);
 
             mesh_->DrawInstanced(num_locally_used);
         }
@@ -131,31 +126,61 @@ public:
     size_t num_primitives = 0;
 };
 
+struct GlVertexAttributeInfo
+{
+    std::string name;
+    size_t index{};
+    size_t location{};
+    size_t size{};
+    GlVertexAttributeType type{};
+};
+
+[[nodiscard]] static std::vector<GlVertexAttributeInfo> GetVertexAttributesInfo(GlProgramId program)
+{
+    const size_t num_attributes = OpenGl::GetProgramActiveAttributesCount(program);
+
+    std::string attribute_name_buffer;
+    attribute_name_buffer.resize(OpenGl::GetProgramActiveAttributeMaxNameLength(program));
+
+    std::vector<GlVertexAttributeInfo> attributes;
+    attributes.resize(num_attributes);
+
+    for (const size_t attribute_index : std::views::iota(size_t{0}, num_attributes))
+    {
+        auto& attribute = attributes[attribute_index];
+
+        size_t attribute_name_length = 0;
+        OpenGl::GetActiveAttribute(
+            program,
+            attribute_index,
+            attribute_name_buffer.size(),
+            attribute_name_length,
+            attribute.size,
+            attribute.type,
+            attribute_name_buffer.data());
+
+        attribute.index = attribute_index;
+        attribute.name = std::string_view{attribute_name_buffer}.substr(0, static_cast<size_t>(attribute_name_length));
+        attribute.location = OpenGl::GetAttributeLocation(program, attribute.name);
+    }
+
+    return attributes;
+}
+
 Painter2d::Painter2d(Application& app) : self(std::make_unique<Impl>())
 {
     self->app_ = &app;
     self->shader_ = std::make_unique<Shader>("klgl/painter2d.shader.json");
 
-    auto program_id = self->shader_->GetProgramId();
-    GLuint program = program_id.GetValue();
-    const GLint numAttributes = OpenGl::GetProgramIntParameter(program_id, GlProgramIntParameter::ActiveAttributes);
-
-    const GLint maxNameLength =
-        OpenGl::GetProgramIntParameter(program_id, GlProgramIntParameter::ActiveAttributeMaxLength);
-    std::string attributeName;
-    attributeName.resize(static_cast<size_t>(maxNameLength));
-
-    for (int i = 0; i < numAttributes; ++i)
+    for (const auto& attribute : GetVertexAttributesInfo(self->shader_->GetProgramId()))
     {
-        GLint size{};
-        GLenum type{};
-        glGetActiveAttrib(program, i, maxNameLength, nullptr, &size, &type, attributeName.data());
-
-        // Get the attribute location
-        GLint location = glGetAttribLocation(program, attributeName.data());
-
-        // Print out the information
-        fmt::println("Attribute #{}: {}. Location: {}. Size: {}. Type: {}", i, attributeName, location, size, type);
+        fmt::println(
+            "Attribute #{}: {}. Location: {}. Size: {}. Type: {}",
+            attribute.index,
+            attribute.name,
+            attribute.location,
+            attribute.size,
+            attribute.type);
     }
 
     // Create quad mesh

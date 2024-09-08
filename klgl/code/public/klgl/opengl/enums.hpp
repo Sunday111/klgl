@@ -324,6 +324,44 @@ enum class GlProgramIntParameter
     GeometryOutputType
 };
 
+enum class GlVertexAttributeType
+{
+    Float,
+    FloatVec2,
+    FloatVec3,
+    FloatVec4,
+    FloatMat2,
+    FloatMat3,
+    FloatMat4,
+    FloatMat2x3,
+    FloatMat2x4,
+    FloatMat3x2,
+    FloatMat3x4,
+    FloatMat4x2,
+    FloatMat4x3,
+    Int,
+    IntVec2,
+    IntVec3,
+    IntVec4,
+    UnsigneInt,
+    UnsigneIntVec2,
+    UnsigneIntVec3,
+    UnsigneIntVec4,
+    Double,
+    DoubleVec2,
+    DoubleVec3,
+    DoubleVec4,
+    DoubleMat2,
+    DoubleMat3,
+    DoubleMat4,
+    DoubleMat2x3,
+    DoubleMat2x4,
+    DoubleMat3x2,
+    DoubleMat3x4,
+    DoubleMat4x2,
+    DoubleMat4x3
+};
+
 }  // namespace klgl
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlError);
@@ -385,3 +423,6 @@ KLGL_MAKE_ENUM_FORMATTER(GlCullFaceMode);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlProgramIntParameter);
 KLGL_MAKE_ENUM_FORMATTER(GlProgramIntParameter);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlVertexAttributeType);
+KLGL_MAKE_ENUM_FORMATTER(GlVertexAttributeType);

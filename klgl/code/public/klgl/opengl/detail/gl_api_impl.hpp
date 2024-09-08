@@ -19,6 +19,7 @@
 #include "klgl/opengl/detail/maps/to_gl_value/texture_wrap_mode.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/usage.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/vertex_attrib_component_type.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/vertex_attribute_type.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/opengl/open_gl_error.hpp"
 
@@ -93,6 +94,11 @@ struct OpenGl::Internal
         }
 
         throw std::move(expected.error());
+    }
+
+    [[nodiscard]] inline static std::expected<size_t, OpenGlError> CastToSizeT(int32_t v)
+    {
+        return static_cast<size_t>(v);
     }
 
     template <typename... Args>
@@ -1192,6 +1198,138 @@ std::expected<int32_t, OpenGlError> OpenGl::GetProgramIntParameterCE(
 int32_t OpenGl::GetProgramIntParameter(GlProgramId program, GlProgramIntParameter parameter)
 {
     return Internal::TryTakeValue(GetProgramIntParameterCE(program, parameter));
+}
+
+// Active attributes count
+
+size_t OpenGl::GetProgramActiveAttributesCountNE(GlProgramId program) noexcept
+{
+    return static_cast<size_t>(GetProgramIntParameterNE(program, GlProgramIntParameter::ActiveAttributes));
+}
+
+std::expected<size_t, OpenGlError> OpenGl::GetProgramActiveAttributesCountCE(GlProgramId program) noexcept
+{
+    return Internal::ChainIfValue(
+        GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveAttributes),
+        Internal::CastToSizeT);
+}
+
+size_t OpenGl::GetProgramActiveAttributesCount(GlProgramId program)
+{
+    return Internal::TryTakeValue(GetProgramActiveAttributesCountCE(program));
+}
+
+// Max attribute name length
+
+size_t OpenGl::GetProgramActiveAttributeMaxNameLengthNE(GlProgramId program) noexcept
+{
+    return static_cast<size_t>(GetProgramIntParameterNE(program, GlProgramIntParameter::ActiveAttributeMaxLength));
+}
+
+std::expected<size_t, OpenGlError> OpenGl::GetProgramActiveAttributeMaxNameLengthCE(GlProgramId program) noexcept
+{
+    return Internal::ChainIfValue(
+        GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveAttributeMaxLength),
+        Internal::CastToSizeT);
+}
+
+size_t OpenGl::GetProgramActiveAttributeMaxNameLength(GlProgramId program)
+{
+    return Internal::TryTakeValue(GetProgramActiveAttributeMaxNameLengthCE(program));
+}
+
+// Get attribute info
+
+void OpenGl::GetActiveAttributeNE(
+    GlProgramId program,
+    size_t attribute_index,
+    size_t name_buffer_size,
+    size_t& out_written_to_name_buffer,
+    size_t& out_attribute_size,
+    GlVertexAttributeType& out_attribute_type,
+    char* out_name_buffer) noexcept
+{
+    GLint size = 0;
+    GLenum type = ToGlValue(GlVertexAttributeType::Float);
+    GLint written = 0;
+    glGetActiveAttrib(
+        program.GetValue(),
+        static_cast<GLuint>(attribute_index),
+        static_cast<GLsizei>(name_buffer_size),
+        &written,
+        &size,
+        &type,
+        out_name_buffer);
+
+    out_written_to_name_buffer = static_cast<size_t>(std::max<GLint>(0, written));
+    out_attribute_size = static_cast<size_t>(std::max<GLint>(0, written));
+    out_attribute_type = FromGlValue(type);
+}
+
+std::optional<OpenGlError> OpenGl::GetActiveAttributeCE(
+    GlProgramId program,
+    size_t attribute_index,
+    size_t name_buffer_size,
+    size_t& out_written_to_name_buffer,
+    size_t& out_attribute_size,
+    GlVertexAttributeType& out_attribute_type,
+    char* out_name_buffer) noexcept
+{
+    GetActiveAttributeNE(
+        program,
+        attribute_index,
+        name_buffer_size,
+        out_written_to_name_buffer,
+        out_attribute_size,
+        out_attribute_type,
+        out_name_buffer);
+    return Internal::ConsumeError(
+        "glGetActiveAttrib(program: {}, index: {}, bufSize: {})",
+        program.GetValue(),
+        attribute_index,
+        name_buffer_size);
+}
+
+void OpenGl::GetActiveAttribute(
+    GlProgramId program,
+    size_t attribute_index,
+    size_t name_buffer_size,
+    size_t& out_written_to_name_buffer,
+    size_t& out_attribute_size,
+    GlVertexAttributeType& out_attribute_type,
+    char* out_name_buffer) noexcept
+{
+    Internal::ThrowIfError(GetActiveAttributeCE(
+        program,
+        attribute_index,
+        name_buffer_size,
+        out_written_to_name_buffer,
+        out_attribute_size,
+        out_attribute_type,
+        out_name_buffer));
+}
+
+// Get attribute location by name
+int32_t OpenGl::GetAttributeLocationNE(GlProgramId program, std::string_view attribute_name) noexcept
+{
+    return glGetAttribLocation(program.GetValue(), attribute_name.data());
+}
+
+std::expected<size_t, OpenGlError> OpenGl::GetAttributeLocationCE(
+    GlProgramId program,
+    std::string_view attribute_name) noexcept
+{
+    int32_t location = GetAttributeLocationNE(program, attribute_name);
+    return Internal::ValueOrError(
+        static_cast<size_t>(location),
+        "glGetAttribLocation(program: {}, name: {})",
+        program.GetValue(),
+        attribute_name);
+}
+
+size_t OpenGl::GetAttributeLocation(GlProgramId program, std::string_view attribute_name)
+{
+    return Internal::TryTakeValue(GetAttributeLocationCE(program, attribute_name));
 }
 
 // Log length

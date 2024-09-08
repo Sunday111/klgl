@@ -364,6 +364,51 @@ public:
         GlProgramId program,
         GlProgramIntParameter parameter);
 
+    [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveAttributesCountNE(GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramActiveAttributesCountCE(
+        GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveAttributesCount(GlProgramId program);
+
+    [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveAttributeMaxNameLengthNE(GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramActiveAttributeMaxNameLengthCE(
+        GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveAttributeMaxNameLength(GlProgramId program);
+
+    KLGL_OGL_INLINE static void GetActiveAttributeNE(
+        GlProgramId program,
+        size_t attribute_index,
+        size_t name_buffer_size,
+        size_t& out_written_to_name_buffer,
+        size_t& out_attribute_size,
+        GlVertexAttributeType& out_attribute_type,
+        char* out_name_buffer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> GetActiveAttributeCE(
+        GlProgramId program,
+        size_t attribute_index,
+        size_t name_buffer_size,
+        size_t& out_written_to_name_buffer,
+        size_t& out_attribute_size,
+        GlVertexAttributeType& out_attribute_type,
+        char* out_name_buffer) noexcept;
+    KLGL_OGL_INLINE static void GetActiveAttribute(
+        GlProgramId program,
+        size_t attribute_index,
+        size_t name_buffer_size,
+        size_t& out_written_to_name_buffer,
+        size_t& out_attribute_size,
+        GlVertexAttributeType& out_attribute_type,
+        char* out_name_buffer) noexcept;
+
+    [[nodiscard]] KLGL_OGL_INLINE static int32_t GetAttributeLocationNE(
+        GlProgramId program,
+        std::string_view attribute_name) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetAttributeLocationCE(
+        GlProgramId program,
+        std::string_view attribute_name) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static size_t GetAttributeLocation(
+        GlProgramId program,
+        std::string_view attribute_name);
+
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramLogLengthNE(GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramLogLengthCE(
         GlProgramId program) noexcept;
