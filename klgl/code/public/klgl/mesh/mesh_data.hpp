@@ -21,7 +21,7 @@ public:
 
         auto mesh = std::make_unique<MeshOpenGL>();
 
-        mesh->vao = OpenGl::GenVertexArray();
+        mesh->vao = GlObject<GlVertexArrayId>::CreateFrom(OpenGl::GenVertexArray());
         mesh->vbo = GlObject<GlBufferId>::CreateFrom(OpenGl::GenBuffer());
         mesh->ebo = GlObject<GlBufferId>::CreateFrom(OpenGl::GenBuffer());
 
@@ -37,14 +37,12 @@ public:
         return mesh;
     }
 
-    ~MeshOpenGL();
-
     void Bind() const;
     void BindAndDraw() const;
     void Draw() const;
     void DrawInstanced(const size_t num_instances);
 
-    GlVertexArrayId vao{};
+    GlObject<GlVertexArrayId> vao{};
     GlObject<GlBufferId> vbo{};
     GlObject<GlBufferId> ebo{};
     GlPrimitiveType topology = GlPrimitiveType::Triangles;

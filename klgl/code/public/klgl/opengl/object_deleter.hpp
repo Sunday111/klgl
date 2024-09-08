@@ -37,4 +37,9 @@ struct GlObjectDeleter<GlProgramId> : detail::GlObjectDeleterImpl<GlProgramId, O
 {
 };
 
+template <>
+struct GlObjectDeleter<GlVertexArrayId> : detail::GlObjectDeleterImpl<GlVertexArrayId, OpenGl::DeleteVertexArrayCE>
+{
+};
+
 }  // namespace klgl

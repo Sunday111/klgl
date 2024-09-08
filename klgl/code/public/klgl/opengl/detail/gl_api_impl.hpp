@@ -17,6 +17,7 @@
 #include "klgl/opengl/detail/maps/to_gl_value/texture_param_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_wrap_axis.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_wrap_mode.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/uniform_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/usage.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/vertex_attrib_component_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/vertex_attribute_type.hpp"
@@ -411,6 +412,24 @@ std::optional<OpenGlError> OpenGl::BindVertexArrayCE(GlVertexArrayId array) noex
 void OpenGl::BindVertexArray(GlVertexArrayId array)
 {
     Internal::ThrowIfError(BindVertexArrayCE(array));
+}
+
+/********************************************** Vertex Arrays ****************************************************/
+
+void OpenGl::DeleteVertexArrayNE(GlVertexArrayId array) noexcept
+{
+    glDeleteVertexArrays(1, &array.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::DeleteVertexArrayCE(GlVertexArrayId array) noexcept
+{
+    DeleteVertexArrayNE(array);
+    return Internal::ConsumeError("glDeleteVertexArrays(n: 1, array: {})", array.GetValue());
+}
+
+void OpenGl::DeleteVertexArray(GlVertexArrayId array)
+{
+    Internal::ThrowIfError(DeleteVertexArrayCE(array));
 }
 
 /************************************************* Textures *******************************************************/
@@ -1332,6 +1351,116 @@ size_t OpenGl::GetAttributeLocation(GlProgramId program, std::string_view attrib
     return Internal::TryTakeValue(GetAttributeLocationCE(program, attribute_name));
 }
 
+// Get uniforms count
+
+size_t OpenGl::GetProgramActiveUniformsCountNE(GlProgramId program) noexcept
+{
+    auto count = GetProgramIntParameterNE(program, GlProgramIntParameter::ActiveUniforms);
+    return static_cast<size_t>(std::max<int32_t>(0, count));
+}
+
+std::expected<size_t, OpenGlError> OpenGl::GetProgramActiveUniformsCountCE(GlProgramId program) noexcept
+{
+    return Internal::ChainIfValue(
+        GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveUniforms),
+        Internal::CastToSizeT);
+}
+
+size_t OpenGl::GetProgramActiveUniformsCount(GlProgramId program)
+{
+    return Internal::TryTakeValue(GetProgramActiveUniformsCountCE(program));
+}
+
+// Uniform max name length
+
+size_t OpenGl::GetProgramActiveUniformMaxNameLengthNE(GlProgramId program) noexcept
+{
+    return static_cast<size_t>(GetProgramIntParameterNE(program, GlProgramIntParameter::ActiveUniformMaxLength));
+}
+
+std::expected<size_t, OpenGlError> OpenGl::GetProgramActiveUniformMaxNameLengthCE(GlProgramId program) noexcept
+{
+    return Internal::ChainIfValue(
+        GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveUniformMaxLength),
+        Internal::CastToSizeT);
+}
+
+size_t OpenGl::GetProgramActiveUniformMaxNameLength(GlProgramId program)
+{
+    return Internal::TryTakeValue(GetProgramActiveUniformMaxNameLengthCE(program));
+}
+
+// Get active uniform
+
+void OpenGl::GetActiveUniformNE(
+    GlProgramId program,
+    size_t uniform_index,
+    size_t name_buffer_size,
+    size_t& out_written_to_name_buffer,
+    size_t& out_uniform_size,
+    GlUniformType& out_uniform_type,
+    char* out_name_buffer) noexcept
+{
+    GLint size = 0;
+    GLenum type = ToGlValue(GlUniformType::Float);
+    GLint written = 0;
+    glGetActiveUniform(
+        program.GetValue(),
+        static_cast<GLuint>(uniform_index),
+        static_cast<GLsizei>(name_buffer_size),
+        &written,
+        &size,
+        &type,
+        out_name_buffer);
+
+    out_written_to_name_buffer = static_cast<size_t>(std::max<GLint>(0, written));
+    out_uniform_size = static_cast<size_t>(std::max<GLint>(0, size));
+    out_uniform_type = detail::kGlUniformTypeToGlValue.from_gl_enum.Get(type);
+}
+
+std::optional<OpenGlError> OpenGl::GetActiveUniformCE(
+    GlProgramId program,
+    size_t uniform_index,
+    size_t name_buffer_size,
+    size_t& out_written_to_name_buffer,
+    size_t& out_uniform_size,
+    GlUniformType& out_uniform_type,
+    char* out_name_buffer) noexcept
+{
+    GetActiveUniformNE(
+        program,
+        uniform_index,
+        name_buffer_size,
+        out_written_to_name_buffer,
+        out_uniform_size,
+        out_uniform_type,
+        out_name_buffer);
+    return Internal::ConsumeError(
+        "glGetActiveUniform(program: {}, index: {}, bufSize: {})",
+        program.GetValue(),
+        uniform_index,
+        name_buffer_size);
+}
+
+void OpenGl::GetActiveUniform(
+    GlProgramId program,
+    size_t uniform_index,
+    size_t name_buffer_size,
+    size_t& out_written_to_name_buffer,
+    size_t& out_uniform_size,
+    GlUniformType& out_uniform_type,
+    char* out_name_buffer) noexcept
+{
+    Internal::ThrowIfError(GetActiveUniformCE(
+        program,
+        uniform_index,
+        name_buffer_size,
+        out_written_to_name_buffer,
+        out_uniform_size,
+        out_uniform_type,
+        out_name_buffer));
+}
+
 // Log length
 
 size_t OpenGl::GetProgramLogLengthNE(GlProgramId program) noexcept
@@ -1552,7 +1681,7 @@ void OpenGl::CullFace(GlCullFaceMode mode)
 /****************************************** Vertex Attribute Pointer **********************************************/
 
 void OpenGl::VertexAttribPointerNE(
-    GLuint index,
+    size_t index,
     size_t size,
     GlVertexAttribComponentType type,
     bool normalized,
@@ -1569,7 +1698,7 @@ void OpenGl::VertexAttribPointerNE(
 }
 
 std::optional<OpenGlError> OpenGl::VertexAttribPointerCE(
-    GLuint index,
+    size_t index,
     size_t size,
     GlVertexAttribComponentType type,
     bool normalized,
@@ -1588,7 +1717,7 @@ std::optional<OpenGlError> OpenGl::VertexAttribPointerCE(
 }
 
 void OpenGl::VertexAttribPointer(
-    GLuint index,
+    size_t index,
     size_t size,
     GlVertexAttribComponentType type,
     bool normalized,
@@ -1601,7 +1730,7 @@ void OpenGl::VertexAttribPointer(
 // Integer version
 
 void OpenGl::VertexAttribIPointerNE(
-    GLuint index,
+    size_t index,
     size_t size,
     GlVertexAttribComponentType type,
     size_t stride,
@@ -1611,7 +1740,7 @@ void OpenGl::VertexAttribIPointerNE(
 }
 
 std::optional<OpenGlError> OpenGl::VertexAttribIPointerCE(
-    GLuint index,
+    size_t index,
     size_t size,
     GlVertexAttribComponentType type,
     size_t stride,
@@ -1628,7 +1757,7 @@ std::optional<OpenGlError> OpenGl::VertexAttribIPointerCE(
 }
 
 void OpenGl::VertexAttribIPointer(
-    GLuint index,
+    size_t index,
     size_t size,
     GlVertexAttribComponentType type,
     size_t stride,
@@ -1639,18 +1768,18 @@ void OpenGl::VertexAttribIPointer(
 
 /******************************************************************************************************************/
 
-void OpenGl::EnableVertexAttribArrayNE(GLuint index) noexcept
+void OpenGl::EnableVertexAttribArrayNE(size_t index) noexcept
 {
-    glEnableVertexAttribArray(index);
+    glEnableVertexAttribArray(static_cast<GLuint>(index));
 }
 
-std::optional<OpenGlError> OpenGl::EnableVertexAttribArrayCE(GLuint index) noexcept
+std::optional<OpenGlError> OpenGl::EnableVertexAttribArrayCE(size_t index) noexcept
 {
     EnableVertexAttribArrayNE(index);
     return Internal::ConsumeError("glEnableVertexAttribArray(index: {})", index);
 }
 
-void OpenGl::EnableVertexAttribArray(GLuint index)
+void OpenGl::EnableVertexAttribArray(size_t index)
 {
     Internal::ThrowIfError(EnableVertexAttribArrayCE(index));
 }

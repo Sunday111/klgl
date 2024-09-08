@@ -16,7 +16,9 @@
 #include "fmt/std.h"  // IWYU pragma: keep
 #include "klgl/error_handling.hpp"
 #include "klgl/filesystem/filesystem.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/uniform_type.hpp"
 #include "klgl/opengl/gl_api.hpp"
+#include "klgl/opengl/program_info.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep (provides reflection for matrices)
 #include "klgl/shader/sampler_uniform.hpp"
 #include "klgl/shader/shader.hpp"
@@ -208,6 +210,41 @@ void Shader::Compile(std::string& buffer)
     program_ = std::move(program);
     need_recompile_ = false;
     UpdateUniforms();
+
+    GlProgramInfo shader_info(program_);
+    shader_info.FetchVertexAttributes();
+
+    if (shader_info.vertex_attributes.size())
+    {
+        fmt::println("Vertex attributes:");
+        for (const auto& attribute : shader_info.vertex_attributes)
+        {
+            fmt::println(
+                "    {}: {}. Location: {}. Size: {}. Type: {}",
+                attribute.index,
+                attribute.name,
+                attribute.location,
+                attribute.size,
+                attribute.type);
+        }
+    }
+
+    shader_info.FetchUniforms();
+    if (shader_info.uniforms.size())
+    {
+        fmt::println("Uniforms:");
+        for (const auto& uniform : shader_info.uniforms)
+        {
+            if (uniform.size == 1)
+            {
+                fmt::println("    {}: {} {}", uniform.index, uniform.type, uniform.name);
+            }
+            else
+            {
+                fmt::println("    {}: {} {}[{}]", uniform.index, uniform.type, uniform.name, uniform.size);
+            }
+        }
+    }
 }
 
 void Shader::DrawDetails()
@@ -464,57 +501,49 @@ static std::optional<edt::GUID> ConvertGlType(GLenum gl_type)
 
 void Shader::UpdateUniforms()
 {
-    GLuint num_uniforms{};
+    const size_t num_uniforms = OpenGl::GetProgramActiveUniformsCount(program_);
 
-    {
-        GLint num_uniforms_ = OpenGl::GetProgramIntParameter(program_.GetId(), GlProgramIntParameter::ActiveUniforms);
-        [[unlikely]] if (num_uniforms_ < 1)
-        {
-            return;
-        }
-        num_uniforms = static_cast<GLuint>(num_uniforms_);
-    }
+    if (num_uniforms == 0) return;
 
-    GLint max_name_legth =
-        OpenGl::GetProgramIntParameter(program_.GetId(), GlProgramIntParameter::ActiveUniformMaxLength);
+    const size_t max_name_length = OpenGl::GetProgramActiveUniformMaxNameLength(program_);
 
     std::string name_buffer_heap;
-    constexpr GLsizei name_buffer_size_stack = 64;
-    std::array<GLchar, name_buffer_size_stack> name_buffer_stack{};
+    constexpr size_t name_buffer_size_stack = 64;
+    std::array<char, name_buffer_size_stack> name_buffer_stack{};
 
-    GLsizei name_buffer_size{};
+    size_t name_buffer_size{};
     char* name_buffer{};
 
-    if (max_name_legth < name_buffer_size_stack)
+    if (max_name_length < name_buffer_size_stack)
     {
         name_buffer = name_buffer_stack.data();
         name_buffer_size = name_buffer_size_stack;
     }
     else
     {
-        name_buffer_heap.resize(static_cast<size_t>(max_name_legth));
+        name_buffer_heap.resize(max_name_length);
         name_buffer = name_buffer_heap.data();
-        name_buffer_size = static_cast<GLsizei>(max_name_legth);
+        name_buffer_size = max_name_length;
     }
 
     std::vector<ShaderUniform> uniforms;
     uniforms.reserve(num_uniforms);
     for (GLuint i = 0; i != num_uniforms; ++i)
     {
-        GLint variable_size = 0;
-        GLenum glsl_type = 0;
-        GLsizei actual_name_length = 0;
-        glGetActiveUniform(
-            program_.GetId().GetValue(),
+        size_t uniform_name_length{};
+        size_t uniform_size{};
+        GlUniformType uniform_type{};
+        OpenGl::GetActiveUniform(
+            program_.GetId(),
             i,
             name_buffer_size,
-            &actual_name_length,
-            &variable_size,
-            &glsl_type,
+            uniform_name_length,
+            uniform_size,
+            uniform_type,
             name_buffer);
 
-        const std::string_view variable_name_view(name_buffer, static_cast<size_t>(actual_name_length));
-        const std::optional<edt::GUID> cpp_type = ConvertGlType(glsl_type);
+        const std::string_view variable_name_view(name_buffer, uniform_name_length);
+        const std::optional<edt::GUID> cpp_type = ConvertGlType(ToGlValue(uniform_type));
         if (!cpp_type)
         {
             fmt::print("Skip variable {} in \"{}\" - unsupported type", variable_name_view, path_.string());
@@ -546,7 +575,7 @@ void Shader::UpdateUniforms()
             uniforms.back().SetLocation(static_cast<uint32_t>(location));
         };
 
-        if (variable_size == 1)
+        if (uniform_size == 1)
         {
             get_or_add(variable_name_view);
         }
@@ -554,7 +583,7 @@ void Shader::UpdateUniforms()
         {
             std::string name_with_index(variable_name_view);
             const size_t name_no_index_size = name_with_index.find('[');
-            for (size_t element_index = 0; element_index != static_cast<size_t>(variable_size); ++element_index)
+            for (size_t element_index = 0; element_index != uniform_size; ++element_index)
             {
                 name_with_index.resize(name_no_index_size);
                 fmt::format_to(std::back_inserter(name_with_index), "[{}]", element_index);

@@ -57,8 +57,4 @@ void MeshOpenGL::BindAndDraw() const
     Draw();
 }
 
-MeshOpenGL::~MeshOpenGL()
-{
-    glDeleteVertexArrays(1, &vao.GetValue());
-}
 }  // namespace klgl

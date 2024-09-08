@@ -9,10 +9,6 @@ namespace klgl
 
 using namespace edt::lazy_matrix_aliases;  // NOLINT
 
-class Application;
-class Shader;
-class MeshOpenGL;
-
 // This class allows you to paint simple figures every frame.
 // It uses alpha channel but it will not sort entities by the distance to the camera automatically
 class Painter2d
@@ -20,7 +16,7 @@ class Painter2d
 public:
     class Impl;
 
-    explicit Painter2d(Application& app);
+    explicit Painter2d();
     ~Painter2d();
 
     struct Rect2d

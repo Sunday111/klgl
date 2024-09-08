@@ -6,6 +6,7 @@
 #include "klgl/error_handling.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
+#include "klgl/opengl/program_info.hpp"
 #include "klgl/opengl/vertex_attribute_helper.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
@@ -17,10 +18,6 @@ class Painter2d::Impl
 {
 public:
     static constexpr size_t kBatchSize = 3;
-    static constexpr size_t kVertexAttrib = 0;
-    static constexpr size_t kTypeAttrib = 1;
-    static constexpr size_t kColorAttrib = 2;
-    static constexpr size_t kTransformAttrib = 4;
 
     template <typename ValueType, bool to_float = true, bool normalize = false>
     struct Batch
@@ -33,7 +30,7 @@ public:
             OpenGl::BufferData(GlBufferType::Array, std::span{values}.size_bytes(), GlUsage::DynamicDraw);
         }
 
-        void Send(const GLuint location, const edt::IntRange<size_t> elements_to_update)
+        void Send(size_t location, edt::IntRange<size_t> elements_to_update)
         {
             OpenGl::BindBuffer(GlBufferType::Array, vbo);
             OpenGl::BufferSubData(
@@ -48,6 +45,29 @@ public:
         GlObject<GlBufferId> vbo{};
         std::array<ValueType, kBatchSize> values{};
     };
+
+    Impl()
+    {
+        shader_ = std::make_unique<Shader>("klgl/painter2d.shader.json");
+
+        // Create quad mesh
+        const auto mesh_data = ProceduralMeshGenerator::GenerateQuadMesh();
+
+        mesh_ =
+            MeshOpenGL::MakeFromData(std::span{mesh_data.vertices}, std::span{mesh_data.indices}, mesh_data.topology);
+        mesh_->Bind();
+
+        GlProgramInfo program_info(shader_->GetProgramId());
+        program_info.FetchVertexAttributes();
+        a_vertex_ = program_info.VerifyAndGetVertexAttributeLocation<Vec2f>("a_vertex");
+        a_type_ = program_info.VerifyAndGetVertexAttributeLocation<uint8_t>("a_type");
+        a_color_ = program_info.VerifyAndGetVertexAttributeLocation<Vec4f>("a_color");
+        a_transform_ = program_info.VerifyAndGetVertexAttributeLocation<Mat3f>("a_transform");
+
+        // Vertex buffer attributes
+        OpenGl::EnableVertexAttribArray(a_vertex_);
+        TightlyPackedAttributeBufferStatic<edt::Vec2f, false, true>::AttributePointer(a_vertex_);
+    }
 
     void BeginDraw()
     {
@@ -78,9 +98,9 @@ public:
             const size_t num_locally_used = std::min(num_primitives - batch_index * kBatchSize, kBatchSize);
             const edt::IntRange<size_t> update_range{.begin = 0, .end = num_locally_used};
 
-            type_batches_[batch_index].Send(kTypeAttrib, update_range);
-            color_batches_[batch_index].Send(kColorAttrib, update_range);
-            transform_batches_[batch_index].Send(kTransformAttrib, update_range);
+            type_batches_[batch_index].Send(a_type_, update_range);
+            color_batches_[batch_index].Send(a_color_, update_range);
+            transform_batches_[batch_index].Send(a_transform_, update_range);
 
             mesh_->DrawInstanced(num_locally_used);
         }
@@ -124,76 +144,13 @@ public:
 
     bool drawing = false;
     size_t num_primitives = 0;
+    size_t a_vertex_ = 0;
+    size_t a_type_ = 1;
+    size_t a_color_ = 2;
+    size_t a_transform_ = 3;
 };
 
-struct GlVertexAttributeInfo
-{
-    std::string name;
-    size_t index{};
-    size_t location{};
-    size_t size{};
-    GlVertexAttributeType type{};
-};
-
-[[nodiscard]] static std::vector<GlVertexAttributeInfo> GetVertexAttributesInfo(GlProgramId program)
-{
-    const size_t num_attributes = OpenGl::GetProgramActiveAttributesCount(program);
-
-    std::string attribute_name_buffer;
-    attribute_name_buffer.resize(OpenGl::GetProgramActiveAttributeMaxNameLength(program));
-
-    std::vector<GlVertexAttributeInfo> attributes;
-    attributes.resize(num_attributes);
-
-    for (const size_t attribute_index : std::views::iota(size_t{0}, num_attributes))
-    {
-        auto& attribute = attributes[attribute_index];
-
-        size_t attribute_name_length = 0;
-        OpenGl::GetActiveAttribute(
-            program,
-            attribute_index,
-            attribute_name_buffer.size(),
-            attribute_name_length,
-            attribute.size,
-            attribute.type,
-            attribute_name_buffer.data());
-
-        attribute.index = attribute_index;
-        attribute.name = std::string_view{attribute_name_buffer}.substr(0, static_cast<size_t>(attribute_name_length));
-        attribute.location = OpenGl::GetAttributeLocation(program, attribute.name);
-    }
-
-    return attributes;
-}
-
-Painter2d::Painter2d(Application& app) : self(std::make_unique<Impl>())
-{
-    self->app_ = &app;
-    self->shader_ = std::make_unique<Shader>("klgl/painter2d.shader.json");
-
-    for (const auto& attribute : GetVertexAttributesInfo(self->shader_->GetProgramId()))
-    {
-        fmt::println(
-            "Attribute #{}: {}. Location: {}. Size: {}. Type: {}",
-            attribute.index,
-            attribute.name,
-            attribute.location,
-            attribute.size,
-            attribute.type);
-    }
-
-    // Create quad mesh
-    const auto mesh_data = ProceduralMeshGenerator::GenerateQuadMesh();
-
-    self->mesh_ =
-        MeshOpenGL::MakeFromData(std::span{mesh_data.vertices}, std::span{mesh_data.indices}, mesh_data.topology);
-    self->mesh_->Bind();
-
-    // Vertex buffer attributes
-    OpenGl::EnableVertexAttribArray(Impl::kVertexAttrib);
-    TightlyPackedAttributeBufferStatic<edt::Vec2f, false, true>::AttributePointer(Impl::kVertexAttrib);
-}
+Painter2d::Painter2d() : self(std::make_unique<Impl>()) {}
 
 Painter2d::~Painter2d() = default;
 

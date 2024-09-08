@@ -154,6 +154,10 @@ public:
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BindVertexArrayCE(GlVertexArrayId array) noexcept;
     KLGL_OGL_INLINE static void BindVertexArray(GlVertexArrayId array);
 
+    KLGL_OGL_INLINE static void DeleteVertexArrayNE(GlVertexArrayId array) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteVertexArrayCE(GlVertexArrayId array) noexcept;
+    KLGL_OGL_INLINE static void DeleteVertexArray(GlVertexArrayId array);
+
     /************************************************* Textures *******************************************************/
 
     KLGL_OGL_INLINE static void GenTexturesNE(const std::span<GlTextureId>& textures) noexcept;
@@ -409,6 +413,41 @@ public:
         GlProgramId program,
         std::string_view attribute_name);
 
+    [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveUniformsCountNE(GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramActiveUniformsCountCE(
+        GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveUniformsCount(GlProgramId program);
+
+    [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveUniformMaxNameLengthNE(GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramActiveUniformMaxNameLengthCE(
+        GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveUniformMaxNameLength(GlProgramId program);
+
+    KLGL_OGL_INLINE static void GetActiveUniformNE(
+        GlProgramId program,
+        size_t uniform_index,
+        size_t name_buffer_size,
+        size_t& out_written_to_name_buffer,
+        size_t& out_uniform_size,
+        GlUniformType& out_uniform_type,
+        char* out_name_buffer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> GetActiveUniformCE(
+        GlProgramId program,
+        size_t uniform_index,
+        size_t name_buffer_size,
+        size_t& out_written_to_name_buffer,
+        size_t& out_uniform_size,
+        GlUniformType& out_uniform_type,
+        char* out_name_buffer) noexcept;
+    KLGL_OGL_INLINE static void GetActiveUniform(
+        GlProgramId program,
+        size_t uniform_index,
+        size_t name_buffer_size,
+        size_t& out_written_to_name_buffer,
+        size_t& out_uniform_size,
+        GlUniformType& out_uniform_type,
+        char* out_name_buffer) noexcept;
+
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramLogLengthNE(GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramLogLengthCE(
         GlProgramId program) noexcept;
@@ -505,21 +544,21 @@ public:
     /****************************************** Vertex Attribute Pointer **********************************************/
 
     KLGL_OGL_INLINE static void VertexAttribPointerNE(
-        GLuint index,
+        size_t index,
         size_t size,
         GlVertexAttribComponentType type,
         bool normalized,
         size_t stride,
         const void* pointer) noexcept;
     KLGL_OGL_INLINE static std::optional<OpenGlError> VertexAttribPointerCE(
-        GLuint index,
+        size_t index,
         size_t size,
         GlVertexAttribComponentType type,
         bool normalized,
         size_t stride,
         const void* pointer) noexcept;
     KLGL_OGL_INLINE static void VertexAttribPointer(
-        GLuint index,
+        size_t index,
         size_t size,
         GlVertexAttribComponentType type,
         bool normalized,
@@ -528,28 +567,28 @@ public:
 
     // This function binds integer buffers as is, without converting them to floats
     KLGL_OGL_INLINE static void VertexAttribIPointerNE(
-        GLuint index,
+        size_t index,
         size_t size,
         GlVertexAttribComponentType type,
         size_t stride,
         const void* pointer) noexcept;
     KLGL_OGL_INLINE static std::optional<OpenGlError> VertexAttribIPointerCE(
-        GLuint index,
+        size_t index,
         size_t size,
         GlVertexAttribComponentType type,
         size_t stride,
         const void* pointer) noexcept;
     KLGL_OGL_INLINE static void VertexAttribIPointer(
-        GLuint index,
+        size_t index,
         size_t size,
         GlVertexAttribComponentType type,
         size_t stride,
         const void* pointer);
     /******************************************************************************************************************/
 
-    KLGL_OGL_INLINE static void EnableVertexAttribArrayNE(GLuint index) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableVertexAttribArrayCE(GLuint index) noexcept;
-    KLGL_OGL_INLINE static void EnableVertexAttribArray(GLuint index);
+    KLGL_OGL_INLINE static void EnableVertexAttribArrayNE(size_t index) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableVertexAttribArrayCE(size_t index) noexcept;
+    KLGL_OGL_INLINE static void EnableVertexAttribArray(size_t index);
 
     KLGL_OGL_INLINE static void EnableDepthTestNE() noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableDepthTestCE() noexcept;

@@ -15,6 +15,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/opengl/debug/annotations.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/opengl/debug/gl_debug_messenger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/opengl/gl_api.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/opengl/program_info.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/glfw/glfw_state.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/os/os.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/reflection/reflection_utils.cpp
@@ -67,6 +68,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/pixel_buffer_layout.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/polygon_mode.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/primitive_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/program_int_parameter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/shader_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/target_texture_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_filter.hpp
@@ -74,8 +76,10 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_param_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_wrap_axis.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/texture_wrap_mode.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/uniform_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/usage.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/vertex_attrib_component_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/vertex_attribute_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/settings.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/enums.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp
@@ -85,6 +89,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/object.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/object_deleter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/open_gl_error.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/program_info.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/vertex_attribute_helper.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/reflection_utils.hpp

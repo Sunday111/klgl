@@ -17,7 +17,7 @@ class Painter2dApp : public klgl::Application
         klgl::OpenGl::SetClearColor({});
         GetWindow().SetSize(1000, 1000);
         GetWindow().SetTitle("Painter 2d");
-        painter_ = std::make_unique<klgl::Painter2d>(*this);
+        painter_ = std::make_unique<klgl::Painter2d>();
     }
 
     void Tick() override

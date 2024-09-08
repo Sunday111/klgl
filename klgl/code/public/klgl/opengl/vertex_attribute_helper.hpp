@@ -58,7 +58,7 @@ namespace klgl
 template <typename T>
 struct TightlyPackedAttributeBuffer
 {
-    static void TightlyPackedAttributePointerAsFloat(uint32_t location, bool normalize)
+    static void TightlyPackedAttributePointerAsFloat(size_t location, bool normalize)
         requires(std::same_as<T, float>)
     {
         klgl::OpenGl::VertexAttribPointer(
@@ -70,7 +70,7 @@ struct TightlyPackedAttributeBuffer
             nullptr);
     }
 
-    static void TightlyPackedAttributePointerAsFloat(uint32_t location, bool normalize)
+    static void TightlyPackedAttributePointerAsFloat(size_t location, bool normalize)
         requires(std::integral<T>)
     {
         klgl::OpenGl::VertexAttribPointer(
@@ -82,7 +82,7 @@ struct TightlyPackedAttributeBuffer
             nullptr);
     }
 
-    static void TightlyPackedAttributePointerAsInt(uint32_t location)
+    static void TightlyPackedAttributePointerAsInt(size_t location)
         requires(std::integral<T>)
     {
         klgl::OpenGl::VertexAttribIPointer(
@@ -94,7 +94,7 @@ struct TightlyPackedAttributeBuffer
     }
 
     // Source is the vector of floats
-    static void TightlyPackedAttributePointerAsFloat(uint32_t location, bool normalize)
+    static void TightlyPackedAttributePointerAsFloat(size_t location, bool normalize)
         requires(edt::IsMatrix<T> && T::IsVector() && std::same_as<typename T::Component, float>)
     {
         klgl::OpenGl::VertexAttribPointer(
@@ -107,7 +107,7 @@ struct TightlyPackedAttributeBuffer
     }
 
     // Source is the vector of integers converted to floats
-    static void TightlyPackedAttributePointerAsFloat(uint32_t location, bool normalize)
+    static void TightlyPackedAttributePointerAsFloat(size_t location, bool normalize)
         requires(edt::IsMatrix<T> && T::IsVector() && std::integral<typename T::Component>)
     {
         klgl::OpenGl::VertexAttribPointer(
@@ -120,7 +120,7 @@ struct TightlyPackedAttributeBuffer
     }
 
     // Source is the vector of integers that remain to be integers in the shader
-    static void TightlyPackedAttributePointerAsInt(uint32_t location)
+    static void TightlyPackedAttributePointerAsInt(size_t location)
         requires(edt::IsMatrix<T> && T::IsVector() && std::integral<typename T::Component>)
     {
         klgl::OpenGl::VertexAttribIPointer(
@@ -132,7 +132,7 @@ struct TightlyPackedAttributeBuffer
     }
 
     // Source is a matrix of integers or floats that will be converted to matrix of floats
-    static void TightlyPackedAttributePointerAsFloat(uint32_t location, bool normalize)
+    static void TightlyPackedAttributePointerAsFloat(size_t location, bool normalize)
         requires(
             edt::IsMatrix<T> && !T::IsVector() &&
             (std::same_as<typename T::Component, float> || std::is_integral_v<typename T::Component>))
@@ -152,7 +152,7 @@ struct TightlyPackedAttributeBuffer
     }
 
     // Source is the matrix of integers
-    static void TightlyPackedAttributePointerAsInt(uint32_t location)
+    static void TightlyPackedAttributePointerAsInt(size_t location)
         requires(edt::IsMatrix<T> && !T::IsVector() && std::is_integral_v<typename T::Component>)
     {
         using Component = typename T::Component;
@@ -181,7 +181,7 @@ struct TightlyPackedAttributeBuffer
         return 1;
     }();
 
-    static void AttributeDivisor(GLuint location, GLint divisor)
+    static void AttributeDivisor(size_t location, GLint divisor)
     {
         for (GLuint i = 0; i != kLocationsCount; ++i)
         {
@@ -189,7 +189,7 @@ struct TightlyPackedAttributeBuffer
         }
     }
 
-    static void EnableVertexAttribArray(GLuint location)
+    static void EnableVertexAttribArray(size_t location)
     {
         for (GLuint i = 0; i != kLocationsCount; ++i)
         {
@@ -197,7 +197,7 @@ struct TightlyPackedAttributeBuffer
         }
     }
 
-    static void EnableVertexArrayAttrib(GlVertexArrayId vao, GLuint location)
+    static void EnableVertexArrayAttrib(GlVertexArrayId vao, size_t location)
     {
         for (GLuint i = 0; i != kLocationsCount; ++i)
         {
@@ -210,7 +210,7 @@ struct TightlyPackedAttributeBuffer
 template <typename T, bool normalize, bool convert_to_float = true>
 struct TightlyPackedAttributeBufferStatic
 {
-    static void AttributePointer(uint32_t location)
+    static void AttributePointer(size_t location)
     {
         if constexpr (convert_to_float)
         {
@@ -222,17 +222,17 @@ struct TightlyPackedAttributeBufferStatic
         }
     }
 
-    static void AttributeDivisor(GLuint location, GLint divisor)
+    static void AttributeDivisor(size_t location, GLint divisor)
     {
         TightlyPackedAttributeBuffer<T>::AttributeDivisor(location, divisor);
     }
 
-    static void EnableVertexAttribArray(GLuint location)
+    static void EnableVertexAttribArray(size_t location)
     {
         TightlyPackedAttributeBuffer<T>::EnableVertexAttribArray(location);
     }
 
-    static void EnableVertexArrayAttrib(GlVertexArrayId vao, GLuint location)
+    static void EnableVertexArrayAttrib(GlVertexArrayId vao, size_t location)
     {
         TightlyPackedAttributeBuffer<T>::EnableVertexArrayAttrib(vao, location);
     }
