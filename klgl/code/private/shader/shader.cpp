@@ -211,37 +211,6 @@ void Shader::Compile(std::string& buffer)
     need_recompile_ = false;
     UpdateInfo();
     UpdateUniforms();
-
-    if (info_.vertex_attributes.size())
-    {
-        fmt::println("Vertex attributes:");
-        for (const auto& attribute : info_.vertex_attributes)
-        {
-            fmt::println(
-                "    {}: {}. Location: {}. Size: {}. Type: {}",
-                attribute.index,
-                attribute.name,
-                attribute.location,
-                attribute.size,
-                attribute.type);
-        }
-    }
-
-    if (info_.uniforms.size())
-    {
-        fmt::println("Uniforms:");
-        for (const auto& uniform : info_.uniforms)
-        {
-            if (uniform.size == 1)
-            {
-                fmt::println("    {}: {} {}", uniform.index, uniform.type, uniform.name);
-            }
-            else
-            {
-                fmt::println("    {}: {} {}[{}]", uniform.index, uniform.type, uniform.name, uniform.size);
-            }
-        }
-    }
 }
 
 void Shader::DrawDetails()
@@ -504,52 +473,16 @@ void Shader::UpdateInfo()
 
 void Shader::UpdateUniforms()
 {
-    const size_t num_uniforms = OpenGl::GetProgramActiveUniformsCount(program_);
-
-    if (num_uniforms == 0) return;
-
-    const size_t max_name_length = OpenGl::GetProgramActiveUniformMaxNameLength(program_);
-
-    std::string name_buffer_heap;
-    constexpr size_t name_buffer_size_stack = 64;
-    std::array<char, name_buffer_size_stack> name_buffer_stack{};
-
-    size_t name_buffer_size{};
-    char* name_buffer{};
-
-    if (max_name_length < name_buffer_size_stack)
-    {
-        name_buffer = name_buffer_stack.data();
-        name_buffer_size = name_buffer_size_stack;
-    }
-    else
-    {
-        name_buffer_heap.resize(max_name_length);
-        name_buffer = name_buffer_heap.data();
-        name_buffer_size = max_name_length;
-    }
-
     std::vector<ShaderUniform> uniforms;
-    uniforms.reserve(num_uniforms);
-    for (GLuint i = 0; i != num_uniforms; ++i)
+    uniforms.reserve(info_.uniforms.size());
+    for (size_t i = 0; i != info_.uniforms.size(); ++i)
     {
-        size_t uniform_name_length{};
-        size_t uniform_size{};
-        GlUniformType uniform_type{};
-        OpenGl::GetActiveUniform(
-            program_.GetId(),
-            i,
-            name_buffer_size,
-            uniform_name_length,
-            uniform_size,
-            uniform_type,
-            name_buffer);
+        const auto& uniform_info = info_.uniforms[i];
 
-        const std::string_view variable_name_view(name_buffer, uniform_name_length);
-        const std::optional<edt::GUID> cpp_type = ConvertGlType(ToGlValue(uniform_type));
+        const std::optional<edt::GUID> cpp_type = ConvertGlType(ToGlValue(uniform_info.type));
         if (!cpp_type)
         {
-            fmt::print("Skip variable {} in \"{}\" - unsupported type", variable_name_view, path_.string());
+            fmt::print("Skip variable {} in \"{}\" - unsupported type", uniform_info.name, path_.string());
             continue;
         }
 
@@ -578,15 +511,15 @@ void Shader::UpdateUniforms()
             uniforms.back().SetLocation(static_cast<uint32_t>(location));
         };
 
-        if (uniform_size == 1)
+        if (uniform_info.size == 1)
         {
-            get_or_add(variable_name_view);
+            get_or_add(uniform_info.name);
         }
         else
         {
-            std::string name_with_index(variable_name_view);
+            std::string name_with_index(uniform_info.name);
             const size_t name_no_index_size = name_with_index.find('[');
-            for (size_t element_index = 0; element_index != uniform_size; ++element_index)
+            for (size_t element_index = 0; element_index != uniform_info.size; ++element_index)
             {
                 name_with_index.resize(name_no_index_size);
                 fmt::format_to(std::back_inserter(name_with_index), "[{}]", element_index);
@@ -597,11 +530,11 @@ void Shader::UpdateUniforms()
 
     std::swap(uniforms, uniforms_);
 
+    // Update index for sampler uniforms
     for (size_t i = 0; i < uniforms_.size(); ++i)
     {
         ShaderUniform& uniform = uniforms_[i];
-        constexpr edt::GUID sampler_uniform_guid = cppreflection::GetStaticTypeInfo<SamplerUniform>().guid;
-        if (uniform.GetTypeGUID() == sampler_uniform_guid)
+        if (uniform.GetTypeGUID() == cppreflection::GetStaticTypeInfo<SamplerUniform>().guid)
         {
             UniformHandle handle(static_cast<uint32_t>(i), uniform.GetName());
             auto sampler = GetUniformValue<SamplerUniform>(handle);

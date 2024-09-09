@@ -61,6 +61,9 @@ void GlProgramInfo::FetchUniforms(GlProgramId program)
 
         uniform.index = index;
         uniform.name = std::string_view{name_buffer}.substr(0, name_length);
+        int32_t location = OpenGl::GetUniformLocation(program, uniform.name.data());
+        klgl::ErrorHandling::Ensure(location >= 0, "Unexpected negative location");
+        uniform.location = static_cast<size_t>(location);
     }
 }
 

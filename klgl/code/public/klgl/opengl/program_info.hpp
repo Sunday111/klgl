@@ -21,6 +21,7 @@ struct GlUniformInfo
 {
     std::string name;
     size_t index{};
+    size_t location{};
     size_t size{};
     GlUniformType type{};
 };
