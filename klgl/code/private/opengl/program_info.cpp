@@ -8,7 +8,7 @@
 
 namespace klgl
 {
-void GlProgramInfo::FetchVertexAttributes()
+void GlProgramInfo::FetchVertexAttributes(GlProgramId program)
 {
     const size_t num_attributes = OpenGl::GetProgramActiveAttributesCount(program);
 
@@ -37,7 +37,7 @@ void GlProgramInfo::FetchVertexAttributes()
     }
 }
 
-void GlProgramInfo::FetchUniforms()
+void GlProgramInfo::FetchUniforms(GlProgramId program)
 {
     const size_t num_uniforms = OpenGl::GetProgramActiveUniformsCount(program);
     uniforms.resize(num_uniforms);

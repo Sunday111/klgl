@@ -36,8 +36,8 @@ class TwoTexturesApp : public klgl::Application
 
         // Vertex buffer attributes
         klgl::OpenGl::EnableVertexAttribArray(0);
-        klgl::RegisterAttribute<&MeshVertex::position>(0, false);
-        klgl::RegisterAttribute<&MeshVertex::texture_coordinates>(1, false);
+        klgl::RegisterAttribute<&MeshVertex::position, false, true>(0);
+        klgl::RegisterAttribute<&MeshVertex::texture_coordinates, false, true>(1);
     }
 
     void GenerateMesh()

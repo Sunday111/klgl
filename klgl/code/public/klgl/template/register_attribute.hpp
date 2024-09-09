@@ -1,26 +1,20 @@
 #pragma once
 
-#include "klgl/opengl/gl_api.hpp"
+#include "klgl/opengl/vertex_attribute_helper.hpp"
 #include "klgl/template/class_member_traits.hpp"
 #include "klgl/template/member_offset.hpp"
-#include "klgl/template/type_to_gl_type.hpp"
 
 namespace klgl
 {
-template <auto MemberVariablePtr>
-void RegisterAttribute(const GLuint location, const bool normalized)
+template <auto MemberVariablePtr, bool normalize = false, bool to_float = true>
+void RegisterAttribute(const size_t location)
 {
     using MemberTraits = klgl::ClassMemberTraits<decltype(MemberVariablePtr)>;
-    using GlTypeTraits = klgl::TypeToGlType<typename MemberTraits::Member>;
-    const size_t vertex_stride = sizeof(typename MemberTraits::Class);
-    const size_t member_stride = klgl::MemberOffset<MemberVariablePtr>();
-    klgl::OpenGl::EnableVertexAttribArray(location);
-    klgl::OpenGl::VertexAttribPointer(
+    using AttribHelper = VertexBufferHelperStatic<typename MemberTraits::Member, normalize, to_float>;
+    AttribHelper::EnableVertexAttribArray(location);
+    AttribHelper::AttributePointer(
         location,
-        GlTypeTraits::Size,
-        GlTypeTraits::AttribComponentType,
-        normalized,
-        vertex_stride,
-        reinterpret_cast<void*>(member_stride));  // NOLINT
+        sizeof(typename MemberTraits::Class),
+        klgl::MemberOffset<MemberVariablePtr>());
 }
 }  // namespace klgl

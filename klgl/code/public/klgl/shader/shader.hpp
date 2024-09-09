@@ -8,6 +8,7 @@
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "klgl/opengl/identifiers.hpp"
 #include "klgl/opengl/object.hpp"
+#include "klgl/opengl/program_info.hpp"
 #include "klgl/shader/define_handle.hpp"
 #include "klgl/shader/uniform_handle.hpp"
 
@@ -27,6 +28,8 @@ public:
     ~Shader();
 
     void Use();
+
+    [[nodiscard]] const GlProgramInfo& GetInfo() const { return info_; }
 
     void Compile(std::string& buffer);
     [[nodiscard]] std::optional<uint32_t> FindUniformLocation(const char*) const noexcept;
@@ -86,6 +89,7 @@ protected:
     }
 
 private:
+    void UpdateInfo();
     void UpdateUniforms();
 
 public:
@@ -95,6 +99,7 @@ private:
     std::filesystem::path path_;
     std::vector<ShaderDefine> defines_;
     std::vector<ShaderUniform> uniforms_;
+    GlProgramInfo info_;
     GlObject<GlProgramId> program_;
     bool definitions_initialized_ : 1 = false;
     bool need_recompile_ : 1 = false;

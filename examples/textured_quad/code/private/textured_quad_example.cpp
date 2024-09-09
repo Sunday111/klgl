@@ -5,6 +5,7 @@
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/opengl/gl_api.hpp"
+#include "klgl/opengl/program_info.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
 #include "klgl/template/register_attribute.hpp"
@@ -44,20 +45,18 @@ class TexturedQuadApp : public klgl::Application
         mesh_ = klgl::MeshOpenGL::MakeFromData(std::span{vertices}, std::span{mesh_data.indices}, mesh_data.topology);
         mesh_->Bind();
 
-        // Vertex buffer attributes
-        klgl::OpenGl::EnableVertexAttribArray(0);
-        klgl::RegisterAttribute<&MeshVertex::position>(0, false);
-        klgl::RegisterAttribute<&MeshVertex::texture_coordinates>(1, false);
-
         // Load shader
         shader_ = std::make_unique<klgl::Shader>("textured_quad_2d.shader.json");
         shader_->Use();
 
-        // Obtain uniform handles
-        u_color_ = *shader_->FindUniform(klgl::Name("u_color"));
-        u_scale_ = *shader_->FindUniform(klgl::Name("u_scale"));
-        u_translation_ = *shader_->FindUniform(klgl::Name("u_translation"));
-        u_texture_ = *shader_->FindUniform(klgl::Name("u_texture"));
+        // Verify vertex attributes types match your expectations and get their location by name
+        const auto& program_info = shader_->GetInfo();
+        a_vertex_ = program_info.VerifyAndGetVertexAttributeLocation<edt::Vec2f>("a_vertex");
+        a_tex_coord_ = program_info.VerifyAndGetVertexAttributeLocation<edt::Vec2f>("a_tex_coord");
+
+        // Declare vertex buffer layout
+        klgl::RegisterAttribute<&MeshVertex::position>(a_vertex_);
+        klgl::RegisterAttribute<&MeshVertex::texture_coordinates>(a_tex_coord_);
 
         // Generate circle mask texture
         {
@@ -85,17 +84,17 @@ class TexturedQuadApp : public klgl::Application
 
         shader_->Use();
         shader_->SetUniform(u_color_, edt::Math::GetRainbowColorsA(GetTimeSeconds()).Cast<float>() / 255.f);
-        shader_->SendUniform(u_color_);
-
+        shader_->SendUniforms();
         texture_->Bind();
-
         mesh_->BindAndDraw();
     }
 
-    klgl::UniformHandle u_color_;
-    klgl::UniformHandle u_scale_;
-    klgl::UniformHandle u_translation_;
-    klgl::UniformHandle u_texture_;
+    size_t a_vertex_{};
+    size_t a_tex_coord_{};
+    klgl::UniformHandle u_color_{"u_color"};
+    klgl::UniformHandle u_scale_{"u_scale"};
+    klgl::UniformHandle u_translation_{"u_translation"};
+    klgl::UniformHandle u_texture_{"u_texture"};
     std::shared_ptr<klgl::Shader> shader_;
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
     std::unique_ptr<klgl::Texture> texture_;

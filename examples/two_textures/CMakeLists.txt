@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/main.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/two_textures_example.cpp)
 add_executable(klgl_two_textures_example ${module_source_files})
 set_generic_compiler_options(klgl_two_textures_example PRIVATE)
 target_link_libraries(klgl_two_textures_example PUBLIC klgl)

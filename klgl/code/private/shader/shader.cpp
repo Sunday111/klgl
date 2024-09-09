@@ -209,15 +209,13 @@ void Shader::Compile(std::string& buffer)
 
     program_ = std::move(program);
     need_recompile_ = false;
+    UpdateInfo();
     UpdateUniforms();
 
-    GlProgramInfo shader_info(program_);
-    shader_info.FetchVertexAttributes();
-
-    if (shader_info.vertex_attributes.size())
+    if (info_.vertex_attributes.size())
     {
         fmt::println("Vertex attributes:");
-        for (const auto& attribute : shader_info.vertex_attributes)
+        for (const auto& attribute : info_.vertex_attributes)
         {
             fmt::println(
                 "    {}: {}. Location: {}. Size: {}. Type: {}",
@@ -229,11 +227,10 @@ void Shader::Compile(std::string& buffer)
         }
     }
 
-    shader_info.FetchUniforms();
-    if (shader_info.uniforms.size())
+    if (info_.uniforms.size())
     {
         fmt::println("Uniforms:");
-        for (const auto& uniform : shader_info.uniforms)
+        for (const auto& uniform : info_.uniforms)
         {
             if (uniform.size == 1)
             {
@@ -497,6 +494,12 @@ static std::optional<edt::GUID> ConvertGlType(GLenum gl_type)
     }
 
     return std::optional<edt::GUID>();
+}
+
+void Shader::UpdateInfo()
+{
+    info_.FetchUniforms(program_);
+    info_.FetchVertexAttributes(program_);
 }
 
 void Shader::UpdateUniforms()

@@ -22,7 +22,7 @@ public:
     template <typename ValueType, bool to_float = true, bool normalize = false>
     struct Batch
     {
-        using AttribHelper = TightlyPackedAttributeBufferStatic<ValueType, normalize, to_float>;
+        using AttribHelper = VertexBufferHelperStatic<ValueType, normalize, to_float>;
 
         Batch() : vbo(GlObject<GlBufferId>::CreateFrom(OpenGl::GenBuffer()))
         {
@@ -57,8 +57,7 @@ public:
             MeshOpenGL::MakeFromData(std::span{mesh_data.vertices}, std::span{mesh_data.indices}, mesh_data.topology);
         mesh_->Bind();
 
-        GlProgramInfo program_info(shader_->GetProgramId());
-        program_info.FetchVertexAttributes();
+        const auto& program_info = shader_->GetInfo();
         a_vertex_ = program_info.VerifyAndGetVertexAttributeLocation<Vec2f>("a_vertex");
         a_type_ = program_info.VerifyAndGetVertexAttributeLocation<uint8_t>("a_type");
         a_color_ = program_info.VerifyAndGetVertexAttributeLocation<Vec4f>("a_color");
@@ -66,7 +65,7 @@ public:
 
         // Vertex buffer attributes
         OpenGl::EnableVertexAttribArray(a_vertex_);
-        TightlyPackedAttributeBufferStatic<edt::Vec2f, false, true>::AttributePointer(a_vertex_);
+        VertexBufferHelperStatic<edt::Vec2f, false, true>::AttributePointer(a_vertex_);
     }
 
     void BeginDraw()

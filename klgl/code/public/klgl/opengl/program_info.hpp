@@ -27,10 +27,8 @@ struct GlUniformInfo
 
 struct GlProgramInfo
 {
-    explicit GlProgramInfo(GlProgramId program_id) : program(program_id) {}
-
-    void FetchVertexAttributes();
-    void FetchUniforms();
+    void FetchVertexAttributes(GlProgramId program);
+    void FetchUniforms(GlProgramId program);
 
     [[nodiscard]] size_t VerifyAndGetVertexAttributeLocation(std::string_view name, GlVertexAttributeType type) const;
 
@@ -40,7 +38,6 @@ struct GlProgramInfo
         return VerifyAndGetVertexAttributeLocation(name, detail::TypeVertAttribTypeEnum<T>::value);
     }
 
-    GlProgramId program;
     std::vector<GlVertexAttributeInfo> vertex_attributes;
     std::vector<GlUniformInfo> uniforms;
 };
