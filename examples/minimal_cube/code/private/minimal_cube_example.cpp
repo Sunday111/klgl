@@ -77,6 +77,8 @@ class CubeApp : public klgl::Application
             }
         }
         ImGui::End();
+
+        shader_->DrawDetails();
     }
 
     void Tick() override

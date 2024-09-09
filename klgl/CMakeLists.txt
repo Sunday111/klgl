@@ -114,6 +114,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/procedural_texture_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture_format_helper.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/imgui_helpers.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/simple_type_widget.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/type_id_widget_minimal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/window.hpp)

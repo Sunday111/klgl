@@ -25,6 +25,7 @@
 #include "klgl/shader/shader_define.hpp"
 #include "klgl/shader/shader_uniform.hpp"
 #include "klgl/texture/texture.hpp"
+#include "klgl/ui/imgui_helpers.hpp"
 #include "klgl/ui/type_id_widget_minimal.hpp"
 #include "nlohmann/json.hpp"
 
@@ -215,6 +216,47 @@ void Shader::Compile(std::string& buffer)
 
 void Shader::DrawDetails()
 {
+    std::string buffer;
+
+    if (ImGui::TreeNode("Relection"))
+    {
+        if (!info_.vertex_attributes.empty() && ImGui::TreeNode("Vertex attributes"))
+        {
+            for (const auto& vertex_attribute : info_.vertex_attributes)
+            {
+                if (ImGui::TreeNode(vertex_attribute.name.data()))
+                {
+                    ImGuiHelper::FormattedText(buffer, "Index: {}", vertex_attribute.index);
+                    ImGuiHelper::FormattedText(buffer, "Type: {}", vertex_attribute.type);
+                    ImGuiHelper::FormattedText(buffer, "Location: {}", vertex_attribute.location);
+                    ImGuiHelper::FormattedText(buffer, "Size: {}", vertex_attribute.size);
+                    ImGui::TreePop();
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+        if (!info_.uniforms.empty() && ImGui::TreeNode("Uniforms"))
+        {
+            for (const auto& uniform : info_.uniforms)
+            {
+                if (ImGui::TreeNode(uniform.name.data()))
+                {
+                    ImGuiHelper::FormattedText(buffer, "Index: {}", uniform.index);
+                    ImGuiHelper::FormattedText(buffer, "Type: {}", uniform.type);
+                    ImGuiHelper::FormattedText(buffer, "Location: {}", uniform.location);
+                    ImGuiHelper::FormattedText(buffer, "Size: {}", uniform.size);
+                    ImGui::TreePop();
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+        ImGui::TreePop();
+    }
+
     if (ImGui::TreeNode("Static Variables"))
     {
         for (ShaderDefine& definition : defines_)
@@ -263,7 +305,6 @@ void Shader::DrawDetails()
 
     if (need_recompile_)
     {
-        std::string buffer;
         Compile(buffer);
     }
 }
