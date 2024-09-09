@@ -32,10 +32,10 @@ inline constexpr auto kGlVertexAttributeTypeToGlValue = []
     c.Add(T::IntVec2, GL_INT_VEC2);
     c.Add(T::IntVec3, GL_INT_VEC3);
     c.Add(T::IntVec4, GL_INT_VEC4);
-    c.Add(T::UnsigneInt, GL_UNSIGNED_INT);
-    c.Add(T::UnsigneIntVec2, GL_UNSIGNED_INT_VEC2);
-    c.Add(T::UnsigneIntVec3, GL_UNSIGNED_INT_VEC3);
-    c.Add(T::UnsigneIntVec4, GL_UNSIGNED_INT_VEC4);
+    c.Add(T::UnsignedInt, GL_UNSIGNED_INT);
+    c.Add(T::UnsignedIntVec2, GL_UNSIGNED_INT_VEC2);
+    c.Add(T::UnsignedIntVec3, GL_UNSIGNED_INT_VEC3);
+    c.Add(T::UnsignedIntVec4, GL_UNSIGNED_INT_VEC4);
     c.Add(T::Double, GL_DOUBLE);
     c.Add(T::DoubleVec2, GL_DOUBLE_VEC2);
     c.Add(T::DoubleVec3, GL_DOUBLE_VEC3);

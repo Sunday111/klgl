@@ -142,7 +142,7 @@ void Shader::Compile(std::string& buffer)
     buffer.clear();
 
     size_t num_compiled = 0;
-    std::array<GlObject<GlShaderId>, 2> shaders{};
+    std::array<GlObject<GlShaderId>, 3> shaders{};
 
     {
         const std::string& version = shader_json.at("glsl_version");
@@ -198,6 +198,7 @@ void Shader::Compile(std::string& buffer)
     };
 
     add_one(GlShaderType::Vertex, "vertex");
+    add_one(GlShaderType::Geometry, "geometry");
     add_one(GlShaderType::Fragment, "fragment");
 
     auto program = GlObject<GlProgramId>::CreateFrom(OpenGl::CreateProgram());

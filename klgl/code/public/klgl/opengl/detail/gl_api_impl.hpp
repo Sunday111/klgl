@@ -51,8 +51,8 @@ struct OpenGl::Internal
             }
             else
             {
-                shader_sources = shader_sources_stack;
-                shader_sources_lengths = shader_sources_lengths_stack;
+                shader_sources = std::span{shader_sources_stack}.subspan(0, num_sources);
+                shader_sources_lengths = std::span{shader_sources_lengths_stack}.subspan(0, num_sources);
             }
 
             for (size_t i = 0; i < sources.size(); ++i)
@@ -1766,6 +1766,138 @@ void OpenGl::VertexAttribIPointer(
     Internal::ThrowIfError(VertexAttribIPointerCE(index, size, type, stride, pointer));
 }
 
+/****************************************************** Draw ******************************************************/
+
+// Draw elements
+
+void OpenGl::DrawElementsNE(
+    GlPrimitiveType mode,
+    size_t num,
+    GlIndexBufferElementType indices_type,
+    const void* indices) noexcept
+{
+    ScopeAnnotation annotation("OpenGl::Draw");
+    glDrawElements(ToGlValue(mode), static_cast<GLsizei>(num), ToGlValue(indices_type), indices);
+}
+
+std::optional<OpenGlError> OpenGl::DrawElementsCE(
+    GlPrimitiveType mode,
+    size_t num,
+    GlIndexBufferElementType indices_type,
+    const void* indices) noexcept
+{
+    DrawElementsNE(mode, num, indices_type, indices);
+    return Internal::ConsumeError(
+        "glDrawElements(mode: {}, num: {}, indices_type: {}, indices: {})",
+        mode,
+        num,
+        indices_type,
+        indices);
+}
+
+void OpenGl::DrawElements(GlPrimitiveType mode, size_t num, GlIndexBufferElementType indices_type, const void* indices)
+{
+    Internal::ThrowIfError(DrawElementsCE(mode, num, indices_type, indices));
+}
+
+// Draw elements instanced
+
+void OpenGl::DrawElementsInstancedNE(
+    GlPrimitiveType mode,
+    size_t num,
+    GlIndexBufferElementType indices_type,
+    const void* indices,
+    size_t num_instances) noexcept
+{
+    ScopeAnnotation annotation("OpenGl::DrawInstanced");
+    glDrawElementsInstanced(
+        ToGlValue(mode),
+        static_cast<GLsizei>(num),
+        ToGlValue(indices_type),
+        indices,
+        static_cast<GLsizei>(num_instances));
+}
+
+std::optional<OpenGlError> OpenGl::DrawElementsInstancedCE(
+    GlPrimitiveType mode,
+    size_t num,
+    GlIndexBufferElementType indices_type,
+    const void* indices,
+    size_t num_instances) noexcept
+{
+    DrawElementsInstancedNE(mode, num, indices_type, indices, num_instances);
+    return Internal::ConsumeError(
+        "glDrawElementsInstanced(mode: {}, count {}, type: {}, indices: {}, instancecount: {})",
+        mode,
+        num,
+        indices_type,
+        indices,
+        num_instances);
+}
+
+void OpenGl::DrawElementsInstanced(
+    GlPrimitiveType mode,
+    size_t num,
+    GlIndexBufferElementType indices_type,
+    const void* indices,
+    size_t num_instances)
+{
+    Internal::ThrowIfError(DrawElementsInstancedCE(mode, num, indices_type, indices, num_instances));
+}
+
+// Draw arrays
+
+void OpenGl::DrawArraysNE(GlPrimitiveType mode, size_t first_index, size_t indices_count) noexcept
+{
+    glDrawArrays(ToGlValue(mode), static_cast<GLint>(first_index), static_cast<GLsizei>(indices_count));
+}
+
+std::optional<OpenGlError> OpenGl::DrawArraysCE(GlPrimitiveType mode, size_t first_index, size_t indices_count) noexcept
+{
+    DrawArraysNE(mode, first_index, indices_count);
+    return Internal::ConsumeError("glDrawArrays(mode: {}, first: {}, count: {})", mode, first_index, indices_count);
+}
+
+void OpenGl::DrawArrays(GlPrimitiveType mode, size_t first_index, size_t indices_count)
+{
+    Internal::ThrowIfError(DrawArraysCE(mode, first_index, indices_count));
+}
+
+// Draw arrays instanced
+
+void OpenGl::DrawArraysInstancedNE(
+    GlPrimitiveType mode,
+    size_t first_index,
+    size_t indices_count,
+    size_t instances_count) noexcept
+{
+    glDrawArraysInstanced(
+        ToGlValue(mode),
+        static_cast<GLint>(first_index),
+        static_cast<GLsizei>(indices_count),
+        static_cast<GLsizei>(instances_count));
+}
+
+std::optional<OpenGlError> OpenGl::DrawArraysInstancedCE(
+    GlPrimitiveType mode,
+    size_t first_index,
+    size_t indices_count,
+    size_t instances_count) noexcept
+{
+    DrawArraysInstancedNE(mode, first_index, indices_count, instances_count);
+    return Internal::ConsumeError(
+        "glDrawArraysInstanced(mode: {}, first: {}, count: {}, instancecount: {})",
+        mode,
+        first_index,
+        indices_count,
+        instances_count);
+}
+
+void OpenGl::DrawArraysInstanced(GlPrimitiveType mode, size_t first_index, size_t indices_count, size_t instances_count)
+{
+    Internal::ThrowIfError(DrawArraysInstancedCE(mode, first_index, indices_count, instances_count));
+}
+
 /******************************************************************************************************************/
 
 void OpenGl::EnableVertexAttribArrayNE(size_t index) noexcept
@@ -1830,79 +1962,6 @@ std::optional<OpenGlError> OpenGl::ViewportCE(GLint x, GLint y, GLsizei width, G
 void OpenGl::Viewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
     Internal::ThrowIfError(ViewportCE(x, y, width, height));
-}
-
-void OpenGl::DrawElementsNE(
-    GlPrimitiveType mode,
-    size_t num,
-    GlIndexBufferElementType indices_type,
-    const void* indices) noexcept
-{
-    ScopeAnnotation annotation("OpenGl::Draw");
-    glDrawElements(ToGlValue(mode), static_cast<GLsizei>(num), ToGlValue(indices_type), indices);
-}
-
-std::optional<OpenGlError> OpenGl::DrawElementsCE(
-    GlPrimitiveType mode,
-    size_t num,
-    GlIndexBufferElementType indices_type,
-    const void* indices) noexcept
-{
-    DrawElementsNE(mode, num, indices_type, indices);
-    return Internal::ConsumeError(
-        "glDrawElements(mode: {}, num: {}, indices_type: {}, indices: {})",
-        mode,
-        num,
-        indices_type,
-        indices);
-}
-
-void OpenGl::DrawElements(GlPrimitiveType mode, size_t num, GlIndexBufferElementType indices_type, const void* indices)
-{
-    Internal::ThrowIfError(DrawElementsCE(mode, num, indices_type, indices));
-}
-
-void OpenGl::DrawElementsInstancedNE(
-    GlPrimitiveType mode,
-    size_t num,
-    GlIndexBufferElementType indices_type,
-    const void* indices,
-    size_t num_instances) noexcept
-{
-    ScopeAnnotation annotation("OpenGl::DrawInstanced");
-    glDrawElementsInstanced(
-        ToGlValue(mode),
-        static_cast<GLsizei>(num),
-        ToGlValue(indices_type),
-        indices,
-        static_cast<GLsizei>(num_instances));
-}
-
-std::optional<OpenGlError> OpenGl::DrawElementsInstancedCE(
-    GlPrimitiveType mode,
-    size_t num,
-    GlIndexBufferElementType indices_type,
-    const void* indices,
-    size_t num_instances) noexcept
-{
-    DrawElementsInstancedNE(mode, num, indices_type, indices, num_instances);
-    return Internal::ConsumeError(
-        "glDrawElementsInstanced(mode: {}, count {}, type: {}, indices: {}, instancecount: {})",
-        mode,
-        num,
-        indices_type,
-        indices,
-        num_instances);
-}
-
-void OpenGl::DrawElementsInstanced(
-    GlPrimitiveType mode,
-    size_t num,
-    GlIndexBufferElementType indices_type,
-    const void* indices,
-    size_t num_instances)
-{
-    Internal::ThrowIfError(DrawElementsInstancedCE(mode, num, indices_type, indices, num_instances));
 }
 
 void OpenGl::GenerateMipmapNE(GLenum target) noexcept

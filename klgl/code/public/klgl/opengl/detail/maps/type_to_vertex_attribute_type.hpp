@@ -26,6 +26,9 @@ KLGL_MAPPER(edt::Vec4f, GlVertexAttributeType::FloatVec4);
 KLGL_MAPPER(edt::Mat2f, GlVertexAttributeType::FloatMat2);
 KLGL_MAPPER(edt::Mat3f, GlVertexAttributeType::FloatMat3);
 KLGL_MAPPER(edt::Mat4f, GlVertexAttributeType::FloatMat4);
+KLGL_MAPPER(edt::Vec2u8, GlVertexAttributeType::UnsignedIntVec2);
+KLGL_MAPPER(edt::Vec3u8, GlVertexAttributeType::UnsignedIntVec3);
+KLGL_MAPPER(edt::Vec4u8, GlVertexAttributeType::UnsignedIntVec4);
 
 template <std::signed_integral T>
     requires(sizeof(T) <= 4)
@@ -38,7 +41,7 @@ template <std::unsigned_integral T>
     requires(sizeof(T) <= 4)
 struct TypeVertAttribTypeEnum<T>
 {
-    static constexpr auto value = GlVertexAttributeType::UnsigneInt;
+    static constexpr auto value = GlVertexAttributeType::UnsignedInt;
 };
 
 }  // namespace klgl::detail

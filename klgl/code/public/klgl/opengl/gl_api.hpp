@@ -584,24 +584,8 @@ public:
         GlVertexAttribComponentType type,
         size_t stride,
         const void* pointer);
-    /******************************************************************************************************************/
 
-    KLGL_OGL_INLINE static void EnableVertexAttribArrayNE(size_t index) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableVertexAttribArrayCE(size_t index) noexcept;
-    KLGL_OGL_INLINE static void EnableVertexAttribArray(size_t index);
-
-    KLGL_OGL_INLINE static void EnableDepthTestNE() noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableDepthTestCE() noexcept;
-    KLGL_OGL_INLINE static void EnableDepthTest();
-
-    KLGL_OGL_INLINE static void EnableBlendingNE() noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableBlendingCE() noexcept;
-    KLGL_OGL_INLINE static void EnableBlending();
-
-    KLGL_OGL_INLINE static void ViewportNE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
-    ViewportCE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept;
-    KLGL_OGL_INLINE static void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
+    /****************************************************** Draw ******************************************************/
 
     KLGL_OGL_INLINE static void DrawElementsNE(
         GlPrimitiveType mode,
@@ -634,6 +618,52 @@ public:
         GlIndexBufferElementType indices_type,
         const void* indices,
         size_t num_instances);
+
+    // Render primitives from array data
+    // mode: specifies what kind of primitives to render.
+    // first index: the starting index in the enabled arrays.
+    // indices count: the number of indices to be rendered.
+    KLGL_OGL_INLINE static void DrawArraysNE(GlPrimitiveType mode, size_t first_index, size_t indices_count) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    DrawArraysCE(GlPrimitiveType mode, size_t first_index, size_t indices_count) noexcept;
+    KLGL_OGL_INLINE static void DrawArrays(GlPrimitiveType mode, size_t first_index, size_t indices_count);
+
+    // Draw multiple instances of a range of elements
+    // mode: specifies what kind of primitives to render.
+    // first index: the starting index in the enabled arrays.
+    // indices count: the number of indices to be rendered.
+    // instances count: the number of instances of the specified range of indices to be rendered.
+    KLGL_OGL_INLINE static void DrawArraysInstancedNE(
+        GlPrimitiveType mode,
+        size_t first_index,
+        size_t indices_count,
+        size_t instances_count) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DrawArraysInstancedCE(
+        GlPrimitiveType mode,
+        size_t first_index,
+        size_t indices_count,
+        size_t instances_count) noexcept;
+    KLGL_OGL_INLINE static void
+    DrawArraysInstanced(GlPrimitiveType mode, size_t first_index, size_t indices_count, size_t instances_count);
+
+    /******************************************************************************************************************/
+
+    KLGL_OGL_INLINE static void EnableVertexAttribArrayNE(size_t index) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableVertexAttribArrayCE(size_t index) noexcept;
+    KLGL_OGL_INLINE static void EnableVertexAttribArray(size_t index);
+
+    KLGL_OGL_INLINE static void EnableDepthTestNE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableDepthTestCE() noexcept;
+    KLGL_OGL_INLINE static void EnableDepthTest();
+
+    KLGL_OGL_INLINE static void EnableBlendingNE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableBlendingCE() noexcept;
+    KLGL_OGL_INLINE static void EnableBlending();
+
+    KLGL_OGL_INLINE static void ViewportNE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    ViewportCE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept;
+    KLGL_OGL_INLINE static void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
     KLGL_OGL_INLINE static void GenerateMipmapNE(GLenum target) noexcept;
     KLGL_OGL_INLINE static void GenerateMipmap(GLenum target);

@@ -17,7 +17,7 @@ namespace klgl
 class Painter2d::Impl
 {
 public:
-    static constexpr size_t kBatchSize = 3;
+    static constexpr size_t kBatchSize = 128;
 
     template <typename ValueType, bool to_float = true, bool normalize = false>
     struct Batch
