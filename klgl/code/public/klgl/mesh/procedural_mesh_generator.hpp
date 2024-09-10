@@ -21,6 +21,7 @@ class GeneratedMeshData3d
 {
 public:
     std::vector<edt::Vec3f> vertices;
+    std::vector<edt::Vec3f> normals;
     std::vector<edt::Vec2f> texture_coordinates;
     std::vector<uint32_t> indices;
     GlPrimitiveType topology = GlPrimitiveType::Triangles;
