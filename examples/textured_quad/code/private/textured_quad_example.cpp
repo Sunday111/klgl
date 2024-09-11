@@ -46,7 +46,7 @@ class TexturedQuadApp : public klgl::Application
         mesh_->Bind();
 
         // Load shader
-        shader_ = std::make_unique<klgl::Shader>("textured_quad_2d.shader.json");
+        shader_ = std::make_unique<klgl::Shader>("textured_quad_2d");
         shader_->Use();
 
         // Verify vertex attributes types match your expectations and get their location by name

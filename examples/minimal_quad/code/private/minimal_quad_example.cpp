@@ -38,7 +38,7 @@ class QuadApp : public klgl::Application
             nullptr);
 
         // Load shader
-        shader_ = std::make_unique<klgl::Shader>("just_color_2d.shader.json");
+        shader_ = std::make_unique<klgl::Shader>("just_color_2d");
         shader_->Use();
     }
 

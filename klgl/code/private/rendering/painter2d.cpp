@@ -48,7 +48,7 @@ public:
 
     Impl()
     {
-        shader_ = std::make_unique<Shader>("klgl/painter2d.shader.json");
+        shader_ = std::make_unique<Shader>("klgl/painter2d");
 
         // Create quad mesh
         const auto mesh_data = ProceduralMeshGenerator::GenerateQuadMesh();

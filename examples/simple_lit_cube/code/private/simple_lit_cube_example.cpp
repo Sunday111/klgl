@@ -34,7 +34,7 @@ class SimpleLitCubeApp : public klgl::Application
         GetWindow().SetSize(1000, 1000);
         GetWindow().SetTitle("Cube");
 
-        shader_ = std::make_unique<klgl::Shader>("basic_light_3d.shader.json");
+        shader_ = std::make_unique<klgl::Shader>("basic_light_3d");
         a_position_ = shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_position");
         a_normal_ = shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_normal");
 

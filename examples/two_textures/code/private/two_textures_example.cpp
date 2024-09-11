@@ -61,7 +61,7 @@ class TwoTexturesApp : public klgl::Application
     void PrepareShader()
     {
         // Load shader
-        shader_ = std::make_unique<klgl::Shader>("two_textures_2d.shader.json");
+        shader_ = std::make_unique<klgl::Shader>("two_textures_2d");
         shader_->Use();
 
         // Set initial uniform parameter for scale uniform. It wont change anymore

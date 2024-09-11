@@ -46,7 +46,7 @@ class CubeApp : public klgl::Application
             nullptr);
 
         // Load shader
-        shader_ = std::make_unique<klgl::Shader>("just_color_3d.shader.json");
+        shader_ = std::make_unique<klgl::Shader>("just_color_3d");
 
         klgl::OpenGl::EnableFaceCulling(true);
         klgl::OpenGl::CullFace(klgl::GlCullFaceMode::Back);

@@ -136,8 +136,11 @@ void Shader::Compile(std::string& buffer)
 {
     program_ = {};
 
+    auto shader_dir = shaders_dir_ / path_;
+    auto json_path = shader_dir / (shader_dir.stem().string() + ".shader.json");
+
     // Reuse the buffer to read JSON file
-    Filesystem::ReadFile(shaders_dir_ / path_, buffer);
+    Filesystem::ReadFile(json_path, buffer);
     auto shader_json = nlohmann::json::parse(buffer);
     buffer.clear();
 
@@ -168,7 +171,6 @@ void Shader::Compile(std::string& buffer)
     }
 
     const size_t common_code_length = buffer.size();
-    const auto shaders_sources_path = shaders_dir_ / "src";
     auto add_one = [&](GlShaderType type, const std::string_view json_name)
     {
         if (!shader_json.contains(json_name))
@@ -181,7 +183,7 @@ void Shader::Compile(std::string& buffer)
         num_compiled++;
 
         const std::string& src_name = shader_json[json_name];
-        Filesystem::AppendFileContentToBuffer(shaders_sources_path / src_name, buffer);
+        Filesystem::AppendFileContentToBuffer(shader_dir / src_name, buffer);
 
         const std::string_view code_view = buffer;
         std::string compile_log;

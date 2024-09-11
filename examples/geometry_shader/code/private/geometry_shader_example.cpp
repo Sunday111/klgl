@@ -37,7 +37,7 @@ class GeometryShaderApp : public klgl::Application
         klgl::OpenGl::EnableBlending();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        shader_ = std::make_unique<klgl::Shader>("points_to_quads_2d.shader.json");
+        shader_ = std::make_unique<klgl::Shader>("points_to_quads_2d");
         shader_->Use();
 
         vao_ = klgl::GlObject<klgl::GlVertexArrayId>::CreateFrom(klgl::OpenGl::GenVertexArray());
