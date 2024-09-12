@@ -132,31 +132,103 @@ uint32_t Shader::GetUniformLocation(const char* name) const
         path_.stem());
 }
 
+static constexpr auto kExtensionToShaderType = []()
+{
+    constexpr size_t num_shader_types = magic_enum::enum_count<GlShaderType>();
+    using StringHasher = decltype([](const std::string_view& str)
+    {
+        size_t r = 5381;
+        for (const char c: str)
+        {
+            r = ((r << 5) + r) + std::bit_cast<uint8_t>(c);
+        }
+
+        return r;
+    });
+    ass::FixedUnorderedMap<num_shader_types, std::string_view, GlShaderType, StringHasher> m;
+    m.Add(".vert", GlShaderType::Vertex);
+    m.Add(".geom", GlShaderType::Geometry);
+    m.Add(".frag", GlShaderType::Fragment);
+    m.Add(".tesc", GlShaderType::TesselationControl);
+    m.Add(".tese", GlShaderType::TesselationEvaluation);
+    m.Add(".comp", GlShaderType::Compute);
+    return m;
+}();
+
 void Shader::Compile(std::string& buffer)
 {
     program_ = {};
 
     auto shader_dir = shaders_dir_ / path_;
-    auto json_path = shader_dir / (shader_dir.stem().string() + ".shader.json");
+
+    std::optional<std::filesystem::path> json_file_path;
+    ass::EnumMap<GlShaderType, std::filesystem::path> type_to_path;
+    for (const auto& entry : std::filesystem::directory_iterator(shader_dir))
+    {
+        if (entry.is_directory()) continue;
+
+        const auto& path = entry.path();
+        const std::string ext = path.extension().string();
+
+        if (ext == ".json")
+        {
+            [[unlikely]] if (json_file_path.has_value())
+            {
+                ErrorHandling::ThrowWithMessage(
+                    "There are at least two {} files in {}: \"{}\" and \"{}\". At most one is allowed.",
+                    ext,
+                    shader_dir,
+                    std::filesystem::relative(json_file_path.value(), shader_dir),
+                    std::filesystem::relative(path, shader_dir));
+            }
+            json_file_path = path;
+        }
+
+        if (!kExtensionToShaderType.Contains(ext)) continue;
+
+        const GlShaderType type = kExtensionToShaderType.Get(ext);
+
+        [[unlikely]] if (type_to_path.Contains(type))
+        {
+            ErrorHandling::ThrowWithMessage(
+                "There are at least two files with same extension {} in {}: {} and {}",
+                ext,
+                shader_dir,
+                type_to_path.Get(type),
+                path);
+        }
+
+        type_to_path.Emplace(type, path);
+    }
 
     // Reuse the buffer to read JSON file
-    Filesystem::ReadFile(json_path, buffer);
-    auto shader_json = nlohmann::json::parse(buffer);
-    buffer.clear();
+    std::optional<nlohmann::json> maybe_config;
+    if (json_file_path)
+    {
+        Filesystem::ReadFile(json_file_path.value(), buffer);
+        maybe_config = nlohmann::json::parse(buffer);
+        buffer.clear();
+    }
 
     size_t num_compiled = 0;
     std::array<GlObject<GlShaderId>, 3> shaders{};
 
     {
-        const std::string& version = shader_json.at("glsl_version");
+        std::string_view version = "330 core";
+        if (maybe_config && maybe_config->contains("glsl_version"))
+        {
+            const std::string& version_str = maybe_config->at("glsl_version");
+            version = version_str;
+        }
         fmt::format_to(std::back_inserter(buffer), "#version {}\n\n", version);
     }
 
     if (!definitions_initialized_)
     {
-        if (shader_json.contains("definitions"))
+        if (maybe_config && maybe_config->contains("definitions"))
         {
-            for (const auto& def_json : shader_json["definitions"])
+            const auto& config = *maybe_config;
+            for (const auto& def_json : config["definitions"])
             {
                 defines_.push_back(ShaderDefine::ReadFromJson(def_json));
             }
@@ -170,20 +242,20 @@ void Shader::Compile(std::string& buffer)
         def.GenDefine(buffer);
     }
 
+    // Resets the line number to display correct line number in logs if there is an error
+    fmt::format_to(std::back_inserter(buffer), "#line 1\n");
+
     const size_t common_code_length = buffer.size();
-    auto add_one = [&](GlShaderType type, const std::string_view json_name)
+    auto add_one = [&](GlShaderType type)
     {
-        if (!shader_json.contains(json_name))
-        {
-            return;
-        }
+        if (!type_to_path.Contains(type)) return;
 
         shaders[num_compiled] = GlObject<GlShaderId>::CreateFrom(OpenGl::CreateShader(type));
         const auto& shader = shaders[num_compiled];
         num_compiled++;
 
-        const std::string& src_name = shader_json[json_name];
-        Filesystem::AppendFileContentToBuffer(shader_dir / src_name, buffer);
+        const auto& path = type_to_path.Get(type);
+        Filesystem::AppendFileContentToBuffer(path, buffer);
 
         const std::string_view code_view = buffer;
         std::string compile_log;
@@ -191,7 +263,7 @@ void Shader::Compile(std::string& buffer)
         {
             throw klgl::ErrorHandling::RuntimeErrorWithMessage(
                 "failed to compile shader {} log:\n{}",
-                src_name,
+                path,
                 compile_log);
         }
 
@@ -199,9 +271,9 @@ void Shader::Compile(std::string& buffer)
         buffer.resize(common_code_length);
     };
 
-    add_one(GlShaderType::Vertex, "vertex");
-    add_one(GlShaderType::Geometry, "geometry");
-    add_one(GlShaderType::Fragment, "fragment");
+    add_one(GlShaderType::Vertex);
+    add_one(GlShaderType::Geometry);
+    add_one(GlShaderType::Fragment);
 
     auto program = GlObject<GlProgramId>::CreateFrom(OpenGl::CreateProgram());
 

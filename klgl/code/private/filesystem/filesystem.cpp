@@ -34,4 +34,26 @@ void Filesystem::AppendFileContentToBuffer(const std::filesystem::path& path, st
     }
 }
 
+std::optional<std::filesystem::path> Filesystem::FindFirstWithExtension(
+    std::filesystem::path& directory,
+    const std::string_view& extension)
+{
+    for (const auto& entry : std::filesystem::directory_iterator(directory))
+    {
+        if (const auto& path = entry.path(); !entry.is_directory())
+        {
+            const std::string filename = path.filename().string();
+            if (auto index = filename.find('.'); index != std::string::npos)
+            {
+                if (auto ext = std::string_view(filename).substr(index + 1); ext == extension)
+                {
+                    return path;
+                }
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+
 }  // namespace klgl
