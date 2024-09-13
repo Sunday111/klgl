@@ -1,7 +1,9 @@
 {
-    "vertex": "points_to_quads_2d.vert",
-    "geometry": "points_to_quads_2d.geom",
-    "fragment": "points_to_quads_2d.frag",
-    "glsl_version": "330 core",
-    "definitions": []
+    "definitions": [
+        {
+            "name": "FIGURE_BORDER",
+            "type": "float",
+            "default": 0.05
+        }
+    ]
 }

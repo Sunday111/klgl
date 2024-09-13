@@ -8,8 +8,8 @@ namespace klgl
 class DefineHandle
 {
 public:
-    uint32_t index = 0;
     Name name;
+    uint32_t index = 0;
 };
 
 }  // namespace klgl

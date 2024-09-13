@@ -44,7 +44,10 @@ public:
             }
             else if constexpr (std::floating_point<T>)
             {
-                return ImGui::SliderFloat;
+                return [](const char* label, float* v, float v_min, float v_max)
+                {
+                    return ImGui::SliderFloat(label, v, v_min, v_max);
+                };
             }
             else if constexpr (std::same_as<T, int>)
             {

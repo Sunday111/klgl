@@ -8,6 +8,7 @@
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
 #include "klgl/template/member_offset.hpp"
+#include "klgl/ui/imgui_helpers.hpp"
 #include "klgl/window.hpp"
 
 enum class ShapeType : uint8_t
@@ -85,6 +86,19 @@ class GeometryShaderApp : public klgl::Application
     {
         klgl::Application::Tick();
 
+        klgl::ImGuiHelper::SliderGetterSetter(
+            "Border",
+            0.001f,
+            0.3f,
+            [&] { return shader_->GetDefineValue<float>(figure_border_); },
+            [&](float value)
+            {
+                shader_->SetDefineValue(figure_border_, value);
+                std::string buffer;
+                shader_->Compile(buffer);
+                shader_->Use();
+            });
+
         float color_width_ = 0.15f;
         float spiral_rotation = GetTimeSeconds();
         float p = color_width_ + (1.f - color_width_) * std::abs(std::sin(GetTimeSeconds()));
@@ -110,6 +124,7 @@ class GeometryShaderApp : public klgl::Application
         klgl::OpenGl::DrawArraysInstanced(klgl::GlPrimitiveType::Points, 0, 1, n);
     }
 
+    klgl::DefineHandle figure_border_ = {.name = klgl::Name("FIGURE_BORDER")};
     std::shared_ptr<klgl::Shader> shader_;
     klgl::GlObject<klgl::GlVertexArrayId> vao_;
 
