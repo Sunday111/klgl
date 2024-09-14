@@ -1736,7 +1736,12 @@ void OpenGl::VertexAttribIPointerNE(
     size_t stride,
     const void* pointer) noexcept
 {
-    glVertexAttribIPointer(static_cast<GLuint>(index), static_cast<GLint>(size), ToGlValue(type), static_cast<GLsizei>(stride), pointer);
+    glVertexAttribIPointer(
+        static_cast<GLuint>(index),
+        static_cast<GLint>(size),
+        ToGlValue(type),
+        static_cast<GLsizei>(stride),
+        pointer);
 }
 
 std::optional<OpenGlError> OpenGl::VertexAttribIPointerCE(

@@ -7,6 +7,9 @@
 #include "klgl/application.hpp"
 #include "klgl/camera/camera3d.hpp"
 #include "klgl/error_handling.hpp"
+#include "klgl/events/event_listener_method.hpp"
+#include "klgl/events/event_manager.hpp"
+#include "klgl/events/mouse_events.hpp"
 #include "klgl/math/transform.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
@@ -14,14 +17,10 @@
 #include "klgl/shader/shader.hpp"
 #include "klgl/ui/simple_type_widget.hpp"
 #include "klgl/window.hpp"
-#include "klgl/events/mouse_events.hpp"
-#include "klgl/events/event_listener_method.hpp"
-#include "klgl/events/event_manager.hpp"
 
 using namespace edt::lazy_matrix_aliases;  // NOLINT
 
-class CubeApp
-    : public klgl::Application
+class CubeApp : public klgl::Application
 {
     void Initialize() override
     {

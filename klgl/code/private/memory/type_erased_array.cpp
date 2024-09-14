@@ -1,7 +1,7 @@
 #include "klgl/memory/type_erased_array.hpp"
 
-#include <cassert>
 #include <bit>
+#include <cassert>
 
 namespace klgl
 {

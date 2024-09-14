@@ -219,8 +219,8 @@ TEST(TypeErasedArray, ResizeInsertErase)
 }
 
 template <typename SrcType, typename DstType>
-    requires(std::is_copy_assignable_v<SrcType> && std::is_copy_assignable_v<DstType>) bool
-CopyAssignGenericTest()
+    requires(std::is_copy_assignable_v<SrcType> && std::is_copy_assignable_v<DstType>)
+bool CopyAssignGenericTest()
 {
     constexpr unsigned kSeed = 12345;
     std::mt19937 rnd(kSeed);  // NOLINT
@@ -334,8 +334,8 @@ struct MovableType
 };
 
 template <typename SrcType, typename DstType>
-    requires(std::is_move_assignable_v<SrcType> && std::is_move_assignable_v<DstType>) bool
-MoveAssignGenericTest()
+    requires(std::is_move_assignable_v<SrcType> && std::is_move_assignable_v<DstType>)
+bool MoveAssignGenericTest()
 {
     constexpr unsigned kSeed = 12345;
     std::mt19937 rnd(kSeed);  // NOLINT
@@ -430,8 +430,8 @@ TEST(TypeErasedArray, MoveAssignDifferentTypes)
 }
 
 template <typename SrcType, typename DstType>
-    requires(std::is_copy_constructible_v<SrcType> && std::is_copy_constructible_v<DstType>) bool
-CopyConstructGenericTest()
+    requires(std::is_copy_constructible_v<SrcType> && std::is_copy_constructible_v<DstType>)
+bool CopyConstructGenericTest()
 {
     constexpr unsigned kSeed = 12345;
     std::mt19937 rnd(kSeed);  // NOLINT
@@ -500,8 +500,8 @@ TEST(TypeErasedArray, CopyConstructorDifferentTypes)
 }
 
 template <typename SrcType, typename DstType>
-    requires(std::is_move_constructible_v<SrcType> && std::is_move_constructible_v<DstType>) bool
-MoveConstructGenericTest()
+    requires(std::is_move_constructible_v<SrcType> && std::is_move_constructible_v<DstType>)
+bool MoveConstructGenericTest()
 {
     constexpr unsigned kSeed = 12345;
     std::mt19937 rnd(kSeed);  // NOLINT

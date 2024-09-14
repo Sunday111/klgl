@@ -7,7 +7,6 @@
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/ui/type_id_widget_minimal.hpp"
 
-
 namespace klgl
 {
 
