@@ -79,7 +79,7 @@ inline static std::span<const uint8_t> MakeValueSpan(const T& value) noexcept
 ShaderDefine ShaderDefine::ReadFromJson(const nlohmann::json& json)
 {
     ShaderDefine def;
-    def.name = Name(json.at("name"));
+    def.name = Name(static_cast<const std::string&>(json.at("name")));
 
     auto& default_value_json = json.at("default");
     std::string type_name = json.at("type");

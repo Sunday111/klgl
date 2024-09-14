@@ -75,7 +75,7 @@ class GeometryShaderApp : public klgl::Application
 
         objects_.resize(1000);
         std::mt19937 rnd;  // NOLINT
-        std::uniform_int_distribution<uint8_t> type_distribution(0, 2);
+        std::uniform_int_distribution<size_t> type_distribution(0, 2);
         for (auto& object : objects_)
         {
             object.type = static_cast<ShapeType>(type_distribution(rnd));

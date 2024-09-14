@@ -14,14 +14,21 @@
 #include "klgl/shader/shader.hpp"
 #include "klgl/ui/simple_type_widget.hpp"
 #include "klgl/window.hpp"
+#include "klgl/events/mouse_events.hpp"
+#include "klgl/events/event_listener_method.hpp"
+#include "klgl/events/event_manager.hpp"
 
 using namespace edt::lazy_matrix_aliases;  // NOLINT
 
-class CubeApp : public klgl::Application
+class CubeApp
+    : public klgl::Application
 {
     void Initialize() override
     {
         klgl::Application::Initialize();
+
+        event_listener_ = klgl::events::EventListenerMethodCallbacks<&CubeApp::OnMouseMove>::CreatePtr(this);
+        GetEventManager().AddEventListener(*event_listener_);
 
         klgl::OpenGl::SetClearColor({});
         GetWindow().SetSize(1000, 1000);
@@ -89,6 +96,17 @@ class CubeApp : public klgl::Application
         RenderGUI();
     }
 
+    void OnMouseMove(const klgl::events::OnMouseMove& event)
+    {
+        constexpr float sensitivity = 0.01f;
+        if (GetWindow().IsFocused() && GetWindow().IsInInputMode() && !ImGui::GetIO().WantCaptureMouse)
+        {
+            const auto delta = (event.current - event.previous) * sensitivity;
+            const auto [yaw, pitch, roll] = camera_.GetRotation();
+            camera_.SetRotation({yaw + delta.x(), pitch + delta.y(), roll});
+        }
+    }
+
     void HandleInput()
     {
         if (!ImGui::GetIO().WantCaptureKeyboard)
@@ -102,7 +120,7 @@ class CubeApp : public klgl::Application
             if (ImGui::IsKeyDown(ImGuiKey_A)) right -= 1;
             if (ImGui::IsKeyDown(ImGuiKey_E)) up += 1;
             if (ImGui::IsKeyDown(ImGuiKey_Q)) up -= 1;
-            if (right + forward + up)
+            if (std::abs(right) + std::abs(forward) + std::abs(up))
             {
                 Vec3f delta = static_cast<float>(forward) * camera_.GetForwardAxis();
                 delta += static_cast<float>(right) * camera_.GetRightAxis();
@@ -110,20 +128,9 @@ class CubeApp : public klgl::Application
                 camera_.SetEye(camera_.GetEye() + delta * move_speed_ * GetLastFrameDurationSeconds());
             }
         }
-
-        constexpr float sensitivity = 0.001f;
-        const bool focused = GetWindow().IsFocused();
-        if (focused && GetWindow().IsInInputMode() && !ImGui::GetIO().WantCaptureMouse)
-        {
-            auto delta = GetWindow().GetCursorPos();
-            fmt::println("{}, {}", delta.x(), delta.y());
-            delta *= sensitivity;
-            float pitch = camera_.GetRotation().pitch + delta.y();
-            float yaw = camera_.GetRotation().yaw + delta.x();
-            float roll = camera_.GetRotation().roll;
-            camera_.SetRotation({yaw, pitch, roll});
-        }
     }
+
+    std::unique_ptr<klgl::events::IEventListener> event_listener_;
 
     klgl::UniformHandle u_color_ = klgl::UniformHandle("u_color");
     klgl::UniformHandle u_model_ = klgl::UniformHandle("u_model");

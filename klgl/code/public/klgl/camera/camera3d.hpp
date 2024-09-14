@@ -13,12 +13,13 @@ using namespace edt::lazy_matrix_aliases;  // NOLINT
 class Camera3d
 {
 public:
+    // dir and up have to be normalized.
     [[nodiscard]] static constexpr edt::Mat4f
     LookAtLH(const edt::Vec3f& eye, const edt::Vec3f& dir, const edt::Vec3f& up) noexcept
     {
         // https://github.com/g-truc/glm/blob/33b4a621a697a305bc3a7610d290677b96beb181/glm/ext/matrix_transform.inl#L176
         const auto& f = dir;
-        const auto s = up.Cross(f).Normalized();
+        const auto s = up.Cross(f);
         const auto u = f.Cross(s);
 
         Mat4f r = Mat4f::Identity();
@@ -37,12 +38,13 @@ public:
         return r;
     }
 
+    // dir and up have to be normalized.
     [[nodiscard]] static constexpr edt::Mat4f
     LookAtRH(const edt::Vec3f& eye, const edt::Vec3f& dir, const edt::Vec3f& up) noexcept
     {
         // https://github.com/g-truc/glm/blob/33b4a621a697a305bc3a7610d290677b96beb181/glm/ext/matrix_transform.inl#L153
         const auto& f = dir;
-        const auto s = f.Cross(up).Normalized();
+        const auto s = f.Cross(up);
         const auto u = s.Cross(f);
         auto r = Mat4f::Identity();
         r.At<0, 0>() = s.x();
@@ -60,6 +62,7 @@ public:
         return r;
     }
 
+    // dir and up have to be normalized.
     [[nodiscard]] static constexpr edt::Mat4f
     MakeOpenGLViewMatrix(const edt::Vec3f& eye, const edt::Vec3f& dir, const edt::Vec3f& up) noexcept
     {
@@ -68,7 +71,7 @@ public:
         return r;
     }
 
-    [[nodiscard]] static constexpr edt::Mat4f PerspectiveLH(float fovy, float aspect, float zNear, float zFar) noexcept
+    [[nodiscard]] static edt::Mat4f PerspectiveLH(float fovy, float aspect, float zNear, float zFar) noexcept
     {
         // https://github.com/g-truc/glm/blob/33b4a621a697a305bc3a7610d290677b96beb181/glm/ext/matrix_clip_space.inl#L281
         assert(std::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.f);
@@ -82,7 +85,7 @@ public:
         return r;
     }
 
-    [[nodiscard]] static constexpr edt::Mat4f PerspectiveRH(float fovy, float aspect, float zNear, float zFar) noexcept
+    [[nodiscard]] static edt::Mat4f PerspectiveRH(float fovy, float aspect, float zNear, float zFar) noexcept
     {
         // https://github.com/g-truc/glm/blob/33b4a621a697a305bc3a7610d290677b96beb181/glm/ext/matrix_clip_space.inl#L249
         auto r = PerspectiveLH(fovy, aspect, zNear, zFar);
@@ -127,7 +130,7 @@ public:
 
     // Projection matrix for OpenGL.
     // Already transposed so can be used as is.
-    constexpr edt::Mat4f GetProjectionMatrix(float aspect) const noexcept
+    edt::Mat4f GetProjectionMatrix(float aspect) const noexcept
     {
         return PerspectiveRH(edt::Math::DegToRad(fov_), aspect, near_, far_);
     }

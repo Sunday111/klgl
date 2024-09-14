@@ -1689,7 +1689,7 @@ void OpenGl::VertexAttribPointerNE(
     const void* pointer) noexcept
 {
     glVertexAttribPointer(
-        index,
+        static_cast<GLuint>(index),
         static_cast<GLint>(size),
         ToGlValue(type),
         Internal::CastBool(normalized),
@@ -1736,7 +1736,7 @@ void OpenGl::VertexAttribIPointerNE(
     size_t stride,
     const void* pointer) noexcept
 {
-    glVertexAttribIPointer(index, static_cast<GLint>(size), ToGlValue(type), static_cast<GLsizei>(stride), pointer);
+    glVertexAttribIPointer(static_cast<GLuint>(index), static_cast<GLint>(size), ToGlValue(type), static_cast<GLsizei>(stride), pointer);
 }
 
 std::optional<OpenGlError> OpenGl::VertexAttribIPointerCE(

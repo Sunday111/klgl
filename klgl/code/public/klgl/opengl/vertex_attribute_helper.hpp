@@ -188,7 +188,7 @@ struct VertexBufferHelper
         }
     }
 
-    static constexpr size_t kLocationsCount = []() -> GLuint
+    static constexpr size_t kLocationsCount = []() -> size_t
     {
         if constexpr (edt::IsMatrix<T>)
         {
@@ -205,7 +205,7 @@ struct VertexBufferHelper
     {
         for (GLuint i = 0; i != kLocationsCount; ++i)
         {
-            glVertexAttribDivisor(location + i, divisor);
+            glVertexAttribDivisor(static_cast<GLuint>(location + i), divisor);
         }
     }
 
@@ -221,7 +221,7 @@ struct VertexBufferHelper
     {
         for (GLuint i = 0; i != kLocationsCount; ++i)
         {
-            glEnableVertexArrayAttrib(vao.GetValue(), location + i);
+            glEnableVertexArrayAttrib(vao.GetValue(), static_cast<GLuint>(location + i));
         }
     }
 };

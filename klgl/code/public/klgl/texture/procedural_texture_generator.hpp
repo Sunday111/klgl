@@ -35,12 +35,13 @@ public:
 
     static void MirrorX(const edt::Vec2<size_t>& size, std::span<uint8_t> data)
     {
-        const auto hs = size / 2;
-        for (size_t y = 0; y != size.y(); ++y)
+        const auto w = size.x();
+        const auto w_2 = w / 2;
+        for (const size_t y : std::views::iota(size_t{0}, size.y()))
         {
-            for (size_t x = 0; x != hs.x(); ++x)
+            for (const size_t x : std::views::iota(size_t{0}, w_2))
             {
-                std::swap(data[x + y * size.x()], data[(y + 1) * size.x() - x + 1]);
+                std::swap(data[x + y * w], data[(y + 1) * w - 1 - x]);
             }
         }
     }

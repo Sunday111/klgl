@@ -217,7 +217,8 @@ void Shader::Compile(std::string& buffer)
         std::string_view version = "330 core";
         if (maybe_config && maybe_config->contains("glsl_version"))
         {
-            const std::string& version_str = maybe_config->at("glsl_version");
+            const auto& value = maybe_config->at("glsl_version");
+            const auto& version_str = value.get_ref<const nlohmann::json::string_t&>();
             version = version_str;
         }
         fmt::format_to(std::back_inserter(buffer), "#version {}\n\n", version);
