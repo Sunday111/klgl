@@ -1,6 +1,9 @@
 {
     "ModuleType": "Library",
     "Dependencies": {
+        "GitPackages": [
+            "https://github.com/Sunday111/imgui_glfw_cmake yae"
+        ],
         "Public": [
             "ass",
             "edt",
