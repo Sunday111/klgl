@@ -24,6 +24,7 @@
 #include "klgl/shader/shader.hpp"
 #include "klgl/shader/shader_define.hpp"
 #include "klgl/shader/shader_uniform.hpp"
+#include "klgl/template/constexpr_string_hash.hpp"
 #include "klgl/texture/texture.hpp"
 #include "klgl/ui/imgui_helpers.hpp"
 #include "klgl/ui/type_id_widget_minimal.hpp"
@@ -135,17 +136,7 @@ uint32_t Shader::GetUniformLocation(const char* name) const
 static constexpr auto kExtensionToShaderType = []()
 {
     constexpr size_t num_shader_types = magic_enum::enum_count<GlShaderType>();
-    using StringHasher = decltype([](const std::string_view& str)
-    {
-        size_t r = 5381;
-        for (const char c: str)
-        {
-            r = ((r << 5) + r) + std::bit_cast<uint8_t>(c);
-        }
-
-        return r;
-    });
-    ass::FixedUnorderedMap<num_shader_types, std::string_view, GlShaderType, StringHasher> m;
+    ass::FixedUnorderedMap<num_shader_types, std::string_view, GlShaderType, ConstexprStringHasher> m;
     m.Add(".vert", GlShaderType::Vertex);
     m.Add(".geom", GlShaderType::Geometry);
     m.Add(".frag", GlShaderType::Fragment);

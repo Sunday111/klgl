@@ -104,6 +104,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/shader_uniform.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/uniform_handle.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/class_member_traits.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/constexpr_string_hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/get_enum_underlying.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/member_offset.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/on_scope_leave.hpp

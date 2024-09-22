@@ -11,6 +11,7 @@ class Filesystem
 {
 public:
     static void ReadFile(const std::filesystem::path& path, std::string& buffer);
+    static void WriteFile(const std::filesystem::path& path, std::string_view buffer);
     static void AppendFileContentToBuffer(const std::filesystem::path& path, std::string& buffer);
 
     // Note: this one is not recursive

@@ -6,8 +6,10 @@
 #error "Macro redefinition or name collision"
 #endif
 
-#define KLGL_ENUM_AS_INDEX_MAGIC_ENUM(Type)                                                      \
-    template <>                                                                                  \
-    struct ass::EnumIndexConverter<klgl::Type> : public EnumIndexConverter_MagicEnum<klgl::Type> \
-    {                                                                                            \
+#define KLGL_ENUM_AS_INDEX_MAGIC_ENUM_NONAMESPACE(Type)                              \
+    template <>                                                                      \
+    struct ass::EnumIndexConverter<Type> : public EnumIndexConverter_MagicEnum<Type> \
+    {                                                                                \
     }
+
+#define KLGL_ENUM_AS_INDEX_MAGIC_ENUM(Type) KLGL_ENUM_AS_INDEX_MAGIC_ENUM_NONAMESPACE(klgl::Type)

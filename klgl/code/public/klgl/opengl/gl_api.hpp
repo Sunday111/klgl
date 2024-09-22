@@ -648,6 +648,19 @@ public:
 
     /******************************************************************************************************************/
 
+    KLGL_OGL_INLINE static void
+    ReadPixels(size_t x, size_t y, size_t w, size_t h, GLenum format, GLenum type, void* data)
+    {
+        glReadPixels(
+            static_cast<GLint>(x),
+            static_cast<GLint>(y),
+            static_cast<GLsizei>(w),
+            static_cast<GLsizei>(h),
+            format,
+            type,
+            data);
+    }
+
     KLGL_OGL_INLINE static void EnableVertexAttribArrayNE(size_t index) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableVertexAttribArrayCE(size_t index) noexcept;
     KLGL_OGL_INLINE static void EnableVertexAttribArray(size_t index);

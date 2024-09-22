@@ -5,6 +5,8 @@
 
 #include <fstream>
 
+#include "klgl/error_handling.hpp"
+
 namespace klgl
 {
 
@@ -12,6 +14,13 @@ void Filesystem::ReadFile(const std::filesystem::path& path, std::string& buffer
 {
     buffer.clear();
     AppendFileContentToBuffer(path, buffer);
+}
+
+void Filesystem::WriteFile(const std::filesystem::path& path, std::string_view buffer)
+{
+    std::ofstream file(path);
+    klgl::ErrorHandling::Ensure(file.is_open(), "Failed to open file \"{}\" for write", path);
+    file << buffer;
 }
 
 void Filesystem::AppendFileContentToBuffer(const std::filesystem::path& path, std::string& buffer)
