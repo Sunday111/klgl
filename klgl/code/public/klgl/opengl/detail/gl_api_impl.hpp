@@ -87,7 +87,7 @@ struct OpenGl::Internal
     }
 
     template <typename T>
-    [[nodiscard]] static T TryTakeValue(std::expected<T, OpenGlError> expected)
+    [[nodiscard]] static T TryTakeValue(tl::expected<T, OpenGlError> expected)
     {
         if (expected.has_value())
         {
@@ -97,7 +97,7 @@ struct OpenGl::Internal
         throw std::move(expected.error());
     }
 
-    [[nodiscard]] inline static std::expected<size_t, OpenGlError> CastToSizeT(int32_t v)
+    [[nodiscard]] inline static tl::expected<size_t, OpenGlError> CastToSizeT(int32_t v)
     {
         return static_cast<size_t>(v);
     }
@@ -116,12 +116,12 @@ struct OpenGl::Internal
     }
 
     template <typename T, typename... Args>
-    [[nodiscard]] static std::expected<std::decay_t<T>, OpenGlError>
+    [[nodiscard]] static tl::expected<std::decay_t<T>, OpenGlError>
     ValueOrError(T&& value, fmt::format_string<Args...> format, Args&&... args)
     {
         if (GlError e = OpenGl::GetError(); e != GlError::NoError)
         {
-            return std::unexpected{
+            return tl::unexpected{
                 OpenGlError(e, fmt::format(format, std::forward<Args>(args)...), cpptrace::generate_raw_trace(1))};
         }
 
@@ -129,7 +129,7 @@ struct OpenGl::Internal
     }
 
     template <typename ValueType, typename F>
-    [[nodiscard]] static auto ChainIfValue(std::expected<ValueType, OpenGlError> expected, F and_then)
+    [[nodiscard]] static auto ChainIfValue(tl::expected<ValueType, OpenGlError> expected, F and_then)
         -> std::remove_cvref_t<typename std::invoke_result_t<F, ValueType>>
     {
         if (expected.has_value())
@@ -137,7 +137,7 @@ struct OpenGl::Internal
             return and_then(std::move(expected.value()));
         }
 
-        return std::unexpected{std::move(expected.error())};
+        return tl::unexpected{std::move(expected.error())};
     }
 
     template <typename Identifier>
@@ -180,12 +180,12 @@ struct OpenGl::Internal
     }
 
     template <typename T>
-    [[nodiscard]] static std::expected<T, OpenGlError> GenOneCE()
+    [[nodiscard]] static tl::expected<T, OpenGlError> GenOneCE()
     {
         T result{};
         if (auto maybe_error = GenManyCE(std::span{&result, 1}))
         {
-            return std::unexpected(std::move(maybe_error.value()));
+            return tl::unexpected(std::move(maybe_error.value()));
         }
 
         return result;
@@ -240,7 +240,7 @@ GlBufferId OpenGl::GenBufferNE() noexcept
     return Internal::GenOneNE<GlBufferId>();
 }
 
-std::expected<GlBufferId, OpenGlError> OpenGl::GenBufferCE() noexcept
+tl::expected<GlBufferId, OpenGlError> OpenGl::GenBufferCE() noexcept
 {
     return Internal::GenOneCE<GlBufferId>();
 }
@@ -386,7 +386,7 @@ GlVertexArrayId OpenGl::GenVertexArrayNE() noexcept
     return Internal::GenOneNE<GlVertexArrayId>();
 }
 
-std::expected<GlVertexArrayId, OpenGlError> OpenGl::GenVertexArrayCE() noexcept
+tl::expected<GlVertexArrayId, OpenGlError> OpenGl::GenVertexArrayCE() noexcept
 {
     return Internal::GenOneCE<GlVertexArrayId>();
 }
@@ -458,7 +458,7 @@ GlTextureId OpenGl::GenTextureNE() noexcept
     return Internal::GenOneNE<GlTextureId>();
 }
 
-std::expected<GlTextureId, OpenGlError> OpenGl::GenTextureCE() noexcept
+tl::expected<GlTextureId, OpenGlError> OpenGl::GenTextureCE() noexcept
 {
     return Internal::GenOneCE<GlTextureId>();
 }
@@ -816,7 +816,7 @@ GlShaderId OpenGl::CreateShaderNE(GlShaderType type) noexcept
     return GlShaderId::FromValue(glCreateShader(ToGlValue(type)));
 }
 
-std::expected<GlShaderId, OpenGlError> OpenGl::CreateShaderCE(GlShaderType type) noexcept
+tl::expected<GlShaderId, OpenGlError> OpenGl::CreateShaderCE(GlShaderType type) noexcept
 {
     return Internal::ValueOrError(CreateShaderNE(type), "glCreateShader(type: {})", type);
 }
@@ -880,7 +880,7 @@ bool OpenGl::GetShaderCompileStatusNE(GlShaderId shader) noexcept
 
 // Get compile status
 
-std::expected<bool, OpenGlError> OpenGl::GetShaderCompileStatusCE(GlShaderId shader) noexcept
+tl::expected<bool, OpenGlError> OpenGl::GetShaderCompileStatusCE(GlShaderId shader) noexcept
 {
     return Internal::ValueOrError(
         GetShaderCompileStatusNE(shader),
@@ -902,7 +902,7 @@ size_t OpenGl::GetShaderLogLengthNE(GlShaderId shader) noexcept
 
 // Get shader log length
 
-std::expected<size_t, OpenGlError> OpenGl::GetShaderLogLengthCE(GlShaderId shader) noexcept
+tl::expected<size_t, OpenGlError> OpenGl::GetShaderLogLengthCE(GlShaderId shader) noexcept
 {
     return Internal::ValueOrError(GetShaderLogLengthNE(shader), "glGetShaderiv(shader : {}) ", shader.GetValue());
 }
@@ -928,11 +928,11 @@ std::string OpenGl::GetShaderLogNE(GlShaderId shader) noexcept
 
 // Get shader log
 
-std::expected<std::string, OpenGlError> OpenGl::GetShaderLogCE(GlShaderId shader) noexcept
+tl::expected<std::string, OpenGlError> OpenGl::GetShaderLogCE(GlShaderId shader) noexcept
 {
     return Internal::ChainIfValue(
         GetShaderLogLengthCE(shader),
-        [&](size_t length) -> std::expected<std::string, OpenGlError>
+        [&](size_t length) -> tl::expected<std::string, OpenGlError>
         {
             std::string log;
             log.resize(length);
@@ -1128,7 +1128,7 @@ GlProgramId OpenGl::CreateProgramNE() noexcept
     return GlProgramId::FromValue(glCreateProgram());
 }
 
-std::expected<GlProgramId, OpenGlError> OpenGl::CreateProgramCE() noexcept
+tl::expected<GlProgramId, OpenGlError> OpenGl::CreateProgramCE() noexcept
 {
     return Internal::ValueOrError(CreateProgramNE(), "glCreateProgram()");
 }
@@ -1181,7 +1181,7 @@ bool OpenGl::GetProgramLinkStatusNE(GlProgramId program) noexcept
     return GetProgramIntParameterNE(program, GlProgramIntParameter::LinkStatus) == GL_TRUE;
 }
 
-std::expected<bool, OpenGlError> OpenGl::GetProgramLinkStatusCE(GlProgramId program) noexcept
+tl::expected<bool, OpenGlError> OpenGl::GetProgramLinkStatusCE(GlProgramId program) noexcept
 {
     return Internal::ValueOrError(
         GetProgramLinkStatusNE(program),
@@ -1203,7 +1203,7 @@ int32_t OpenGl::GetProgramIntParameterNE(GlProgramId program, GlProgramIntParame
     return value;
 }
 
-std::expected<int32_t, OpenGlError> OpenGl::GetProgramIntParameterCE(
+tl::expected<int32_t, OpenGlError> OpenGl::GetProgramIntParameterCE(
     GlProgramId program,
     GlProgramIntParameter parameter) noexcept
 {
@@ -1226,7 +1226,7 @@ size_t OpenGl::GetProgramActiveAttributesCountNE(GlProgramId program) noexcept
     return static_cast<size_t>(GetProgramIntParameterNE(program, GlProgramIntParameter::ActiveAttributes));
 }
 
-std::expected<size_t, OpenGlError> OpenGl::GetProgramActiveAttributesCountCE(GlProgramId program) noexcept
+tl::expected<size_t, OpenGlError> OpenGl::GetProgramActiveAttributesCountCE(GlProgramId program) noexcept
 {
     return Internal::ChainIfValue(
         GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveAttributes),
@@ -1245,7 +1245,7 @@ size_t OpenGl::GetProgramActiveAttributeMaxNameLengthNE(GlProgramId program) noe
     return static_cast<size_t>(GetProgramIntParameterNE(program, GlProgramIntParameter::ActiveAttributeMaxLength));
 }
 
-std::expected<size_t, OpenGlError> OpenGl::GetProgramActiveAttributeMaxNameLengthCE(GlProgramId program) noexcept
+tl::expected<size_t, OpenGlError> OpenGl::GetProgramActiveAttributeMaxNameLengthCE(GlProgramId program) noexcept
 {
     return Internal::ChainIfValue(
         GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveAttributeMaxLength),
@@ -1334,7 +1334,7 @@ int32_t OpenGl::GetAttributeLocationNE(GlProgramId program, std::string_view att
     return glGetAttribLocation(program.GetValue(), attribute_name.data());
 }
 
-std::expected<size_t, OpenGlError> OpenGl::GetAttributeLocationCE(
+tl::expected<size_t, OpenGlError> OpenGl::GetAttributeLocationCE(
     GlProgramId program,
     std::string_view attribute_name) noexcept
 {
@@ -1359,7 +1359,7 @@ size_t OpenGl::GetProgramActiveUniformsCountNE(GlProgramId program) noexcept
     return static_cast<size_t>(std::max<int32_t>(0, count));
 }
 
-std::expected<size_t, OpenGlError> OpenGl::GetProgramActiveUniformsCountCE(GlProgramId program) noexcept
+tl::expected<size_t, OpenGlError> OpenGl::GetProgramActiveUniformsCountCE(GlProgramId program) noexcept
 {
     return Internal::ChainIfValue(
         GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveUniforms),
@@ -1378,7 +1378,7 @@ size_t OpenGl::GetProgramActiveUniformMaxNameLengthNE(GlProgramId program) noexc
     return static_cast<size_t>(GetProgramIntParameterNE(program, GlProgramIntParameter::ActiveUniformMaxLength));
 }
 
-std::expected<size_t, OpenGlError> OpenGl::GetProgramActiveUniformMaxNameLengthCE(GlProgramId program) noexcept
+tl::expected<size_t, OpenGlError> OpenGl::GetProgramActiveUniformMaxNameLengthCE(GlProgramId program) noexcept
 {
     return Internal::ChainIfValue(
         GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveUniformMaxLength),
@@ -1470,7 +1470,7 @@ size_t OpenGl::GetProgramLogLengthNE(GlProgramId program) noexcept
     return static_cast<size_t>(log_length);
 }
 
-std::expected<size_t, OpenGlError> OpenGl::GetProgramLogLengthCE(GlProgramId program) noexcept
+tl::expected<size_t, OpenGlError> OpenGl::GetProgramLogLengthCE(GlProgramId program) noexcept
 {
     GLint log_length{};
     glGetProgramiv(program.GetValue(), GL_INFO_LOG_LENGTH, &log_length);
@@ -1498,11 +1498,11 @@ std::string OpenGl::GetProgramLogNE(GlProgramId program) noexcept
     return log;
 }
 
-std::expected<std::string, OpenGlError> OpenGl::GetProgramLogCE(GlProgramId program) noexcept
+tl::expected<std::string, OpenGlError> OpenGl::GetProgramLogCE(GlProgramId program) noexcept
 {
     return Internal::ChainIfValue(
         GetProgramLogLengthCE(program),
-        [&](const size_t length) -> std::expected<std::string, OpenGlError>
+        [&](const size_t length) -> tl::expected<std::string, OpenGlError>
         {
             std::string log;
             log.resize(length);
@@ -1546,7 +1546,7 @@ GLint OpenGl::GetUniformLocationNE(GlProgramId program, const char* name) noexce
     return glGetUniformLocation(program.GetValue(), name);
 }
 
-std::expected<GLint, OpenGlError> OpenGl::GetUniformLocationCE(GlProgramId program, const char* name) noexcept
+tl::expected<GLint, OpenGlError> OpenGl::GetUniformLocationCE(GlProgramId program, const char* name) noexcept
 {
     return Internal::ValueOrError(
         GetUniformLocationNE(program, name),

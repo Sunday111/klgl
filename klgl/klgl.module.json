@@ -15,7 +15,8 @@
             "imgui_glfw_cmake",
             "cpptrace",
             "unordered_dense",
-            "magic_enum"
+            "magic_enum",
+            "expected"
         ],
         "Private": []
     },

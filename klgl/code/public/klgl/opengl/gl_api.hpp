@@ -2,7 +2,8 @@
 
 #include <glad/glad.h>
 
-#include <expected>
+#include <tl/expected.hpp>
+
 #include <optional>
 #include <span>
 
@@ -15,6 +16,7 @@
 namespace klgl
 {
 
+
 using namespace edt::lazy_matrix_aliases;  // NOLINT
 
 // This class wraps OpenGL calls
@@ -22,7 +24,7 @@ using namespace edt::lazy_matrix_aliases;  // NOLINT
 // - NE - no error checking. These methods are also marked as noexcept as they promise to not throw exceptions
 //   you can still check for errors yourself using OpenGl::GetError function
 // - CE - stands for "Consume Errors" checks for errors but does not throw them as exception but returns them as
-// OpenGlError (or std::expected with OpenGlError if function has return value)
+// OpenGlError (or tl::expected with OpenGlError if function has return value)
 // - no suffix. Checks for errors and throws an exception with error code, stack trace and raw opengl call description
 
 class OpenGl
@@ -40,7 +42,7 @@ public:
     KLGL_OGL_INLINE static void GenBuffers(const std::span<GlBufferId>& buffers);
 
     [[nodiscard]] KLGL_OGL_INLINE static GlBufferId GenBufferNE() noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlBufferId, OpenGlError> GenBufferCE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<GlBufferId, OpenGlError> GenBufferCE() noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static GlBufferId GenBuffer();
 
     KLGL_OGL_INLINE static void BindBufferNE(GlBufferType target, GlBufferId buffer) noexcept;
@@ -147,7 +149,7 @@ public:
     KLGL_OGL_INLINE static void GenVertexArrays(const std::span<GlVertexArrayId>& arrays);
 
     [[nodiscard]] KLGL_OGL_INLINE static GlVertexArrayId GenVertexArrayNE() noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlVertexArrayId, OpenGlError> GenVertexArrayCE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<GlVertexArrayId, OpenGlError> GenVertexArrayCE() noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static GlVertexArrayId GenVertexArray();
 
     KLGL_OGL_INLINE static void BindVertexArrayNE(GlVertexArrayId array) noexcept;
@@ -166,7 +168,7 @@ public:
     KLGL_OGL_INLINE static void GenTextures(const std::span<GlTextureId>& textures);
 
     [[nodiscard]] KLGL_OGL_INLINE static GlTextureId GenTextureNE() noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlTextureId, OpenGlError> GenTextureCE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<GlTextureId, OpenGlError> GenTextureCE() noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static GlTextureId GenTexture();
 
     KLGL_OGL_INLINE static void BindTextureNE(GlTargetTextureType target, GlTextureId texture) noexcept;
@@ -300,7 +302,7 @@ public:
     /************************************************** Shaders *******************************************************/
 
     [[nodiscard]] KLGL_OGL_INLINE static GlShaderId CreateShaderNE(GlShaderType type) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlShaderId, OpenGlError> CreateShaderCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<GlShaderId, OpenGlError> CreateShaderCE(
         GlShaderType type) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static GlShaderId CreateShader(GlShaderType type);
 
@@ -318,17 +320,17 @@ public:
     KLGL_OGL_INLINE static void CompileShader(GlShaderId shader);
 
     [[nodiscard]] KLGL_OGL_INLINE static bool GetShaderCompileStatusNE(GlShaderId shader) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<bool, OpenGlError> GetShaderCompileStatusCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<bool, OpenGlError> GetShaderCompileStatusCE(
         GlShaderId shader) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static bool GetShaderCompileStatus(GlShaderId shader);
 
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetShaderLogLengthNE(GlShaderId shader) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetShaderLogLengthCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<size_t, OpenGlError> GetShaderLogLengthCE(
         GlShaderId shader) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetShaderLogLength(GlShaderId shader);
 
     [[nodiscard]] KLGL_OGL_INLINE static std::string GetShaderLogNE(GlShaderId shader) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<std::string, OpenGlError> GetShaderLogCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<std::string, OpenGlError> GetShaderLogCE(
         GlShaderId shader) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::string GetShaderLog(GlShaderId shader);
 
@@ -339,7 +341,7 @@ public:
     /************************************************** Program *******************************************************/
 
     [[nodiscard]] KLGL_OGL_INLINE static GlProgramId CreateProgramNE() noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GlProgramId, OpenGlError> CreateProgramCE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<GlProgramId, OpenGlError> CreateProgramCE() noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static GlProgramId CreateProgram();
 
     KLGL_OGL_INLINE static void AttachShaderNE(GlProgramId program, GlShaderId shader) noexcept;
@@ -354,14 +356,14 @@ public:
     KLGL_OGL_INLINE static void LinkProgram(GlProgramId program);
 
     [[nodiscard]] KLGL_OGL_INLINE static bool GetProgramLinkStatusNE(GlProgramId program) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<bool, OpenGlError> GetProgramLinkStatusCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<bool, OpenGlError> GetProgramLinkStatusCE(
         GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static bool GetProgramLinkStatus(GlProgramId program);
 
     [[nodiscard]] KLGL_OGL_INLINE static int32_t GetProgramIntParameterNE(
         GlProgramId program,
         GlProgramIntParameter parameter) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<int32_t, OpenGlError> GetProgramIntParameterCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<int32_t, OpenGlError> GetProgramIntParameterCE(
         GlProgramId program,
         GlProgramIntParameter parameter) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static int32_t GetProgramIntParameter(
@@ -369,12 +371,12 @@ public:
         GlProgramIntParameter parameter);
 
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveAttributesCountNE(GlProgramId program) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramActiveAttributesCountCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<size_t, OpenGlError> GetProgramActiveAttributesCountCE(
         GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveAttributesCount(GlProgramId program);
 
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveAttributeMaxNameLengthNE(GlProgramId program) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramActiveAttributeMaxNameLengthCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<size_t, OpenGlError> GetProgramActiveAttributeMaxNameLengthCE(
         GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveAttributeMaxNameLength(GlProgramId program);
 
@@ -406,7 +408,7 @@ public:
     [[nodiscard]] KLGL_OGL_INLINE static int32_t GetAttributeLocationNE(
         GlProgramId program,
         std::string_view attribute_name) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetAttributeLocationCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<size_t, OpenGlError> GetAttributeLocationCE(
         GlProgramId program,
         std::string_view attribute_name) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetAttributeLocation(
@@ -414,12 +416,12 @@ public:
         std::string_view attribute_name);
 
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveUniformsCountNE(GlProgramId program) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramActiveUniformsCountCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<size_t, OpenGlError> GetProgramActiveUniformsCountCE(
         GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveUniformsCount(GlProgramId program);
 
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveUniformMaxNameLengthNE(GlProgramId program) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramActiveUniformMaxNameLengthCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<size_t, OpenGlError> GetProgramActiveUniformMaxNameLengthCE(
         GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveUniformMaxNameLength(GlProgramId program);
 
@@ -449,12 +451,12 @@ public:
         char* out_name_buffer) noexcept;
 
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramLogLengthNE(GlProgramId program) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<size_t, OpenGlError> GetProgramLogLengthCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<size_t, OpenGlError> GetProgramLogLengthCE(
         GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramLogLength(GlProgramId program);
 
     [[nodiscard]] KLGL_OGL_INLINE static std::string GetProgramLogNE(GlProgramId program) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<std::string, OpenGlError> GetProgramLogCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<std::string, OpenGlError> GetProgramLogCE(
         GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::string GetProgramLog(GlProgramId program);
 
@@ -463,7 +465,7 @@ public:
     KLGL_OGL_INLINE static void UseProgram(GlProgramId program);
 
     [[nodiscard]] KLGL_OGL_INLINE static GLint GetUniformLocationNE(GlProgramId program, const char* name) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::expected<GLint, OpenGlError> GetUniformLocationCE(
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<GLint, OpenGlError> GetUniformLocationCE(
         GlProgramId program,
         const char* name) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static GLint GetUniformLocation(GlProgramId program, const char* name);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <optional>
 
 #include "EverydayTools/Math/Math.hpp"
 #include "klgl/math/rotator.hpp"

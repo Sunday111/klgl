@@ -131,7 +131,8 @@ target_link_libraries(klgl PUBLIC ass
                                   imgui_glfw_cmake
                                   cpptrace::cpptrace
                                   unordered_dense
-                                  magic_enum)
+                                  magic_enum
+                                  expected)
 target_include_directories(klgl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(klgl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)
 add_custom_target(klgl_copy_files ALL

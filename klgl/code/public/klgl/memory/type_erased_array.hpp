@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <cassert>
 
 #include "CppReflection/Detail/MakeTypeSpecialMembers.hpp"
 #include "CppReflection/TypeSpecialMembers.hpp"
@@ -45,6 +46,7 @@ public:
     [[nodiscard]] size_t CapacityBytes() const;
     [[nodiscard]] const TypeInfo& GetType() const { return type_; }
 
+#if __cplusplus >= 202302L
     template <typename Self>
     [[nodiscard]] auto* operator[](this Self&& self, const size_t index)
     {
@@ -52,6 +54,20 @@ public:
         assert(index < self.Size());
         return static_cast<ResultType>(self.first_object_ + index * self.type_.object_size);
     }
+#else
+    [[nodiscard]] void* operator[](const size_t index)
+    {
+        assert(index < Size());
+        return first_object_ + index * type_.object_size;
+    }
+
+
+    [[nodiscard]] const void* operator[](const size_t index) const
+    {
+        assert(index < Size());
+        return first_object_ + index * type_.object_size;
+    }
+#endif
 
     template <typename T>
     [[nodiscard]] static TypeErasedArray Create()
