@@ -32,8 +32,7 @@ public:
         throw RuntimeErrorWithMessage(format, std::forward<Args>(args)...);
     }
 
-    template <typename F>
-    static void InvokeAndCatchAll(F&& f)
+    static void InvokeAndCatchAll(auto&& f)
     {
         constexpr auto red_fg = fmt::fg(fmt::rgb(255, 0, 0));
         try
