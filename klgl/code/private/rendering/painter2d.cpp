@@ -83,6 +83,9 @@ public:
         drawing = false;
 
         shader_->Use();
+
+        shader_->SetUniform(u_view_, view_matrix_);
+
         OpenGl::EnableBlending();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -147,6 +150,8 @@ public:
     size_t a_type_ = 1;
     size_t a_color_ = 2;
     size_t a_transform_ = 3;
+    UniformHandle u_view_ = UniformHandle("u_view");
+    Mat3f view_matrix_ = Mat3f::Identity();
 };
 
 Painter2d::Painter2d() : self(std::make_unique<Impl>()) {}
@@ -212,6 +217,11 @@ void Painter2d::DrawTriangle(const Triangle2d& triangle)
     m.SetColumn(2, Vec3f(t, 1));
 
     self->AddPrimitive(2, triangle.color, m);
+}
+
+void Painter2d::SetViewMatrix(const Mat3f& view_matrix)
+{
+    self->view_matrix_ = view_matrix;
 }
 
 }  // namespace klgl

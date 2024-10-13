@@ -50,6 +50,8 @@ public:
     void DrawCircle(const Circle2d& circle);
     void DrawTriangle(const Triangle2d& triangle);
 
+    void SetViewMatrix(const Mat3f& view_matrix);
+
 private:
     std::unique_ptr<Impl> self;
 };
