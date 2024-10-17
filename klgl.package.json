@@ -1,0 +1,13 @@
+{
+    "name": "klgl",
+    "dependencies": {
+        "packages": [
+            {
+                "link": "https://github.com/Sunday111/imgui_glfw_cmake main",
+                "packages": [
+                    "imgui_glfw_cmake"
+                ]
+            }
+        ]
+    }
+}
