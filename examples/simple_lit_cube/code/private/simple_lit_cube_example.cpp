@@ -5,7 +5,7 @@
 #include <ass/enum_set.hpp>
 
 #include "klgl/application.hpp"
-#include "klgl/camera/camera3d.hpp"
+#include "klgl/camera/camera_3d.hpp"
 #include "klgl/error_handling.hpp"
 #include "klgl/events/event_listener_method.hpp"
 #include "klgl/events/event_manager.hpp"

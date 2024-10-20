@@ -1,4 +1,4 @@
-#include "klgl/camera/camera3d.hpp"
+#include "klgl/camera/camera_3d.hpp"
 
 #include <imgui.h>
 
