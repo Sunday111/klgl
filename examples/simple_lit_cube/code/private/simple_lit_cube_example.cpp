@@ -171,7 +171,6 @@ class SimpleLitCubeApp : public klgl::Application
     std::shared_ptr<klgl::Shader> shader_;
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
 
-    // Camera (3, 3, 4) looks at the cube (6, 6, 0).
     float move_speed_ = 5.f;
     std::vector<edt::Mat4f> cubes_;
     klgl::Camera3d camera_{Vec3f{3, 3, 4}, {.yaw = 45, .pitch = 45}};

@@ -16,31 +16,6 @@ class Camera3d
 public:
     // dir and up have to be normalized.
     [[nodiscard]] static constexpr edt::Mat4f
-    LookAtLH(const edt::Vec3f& eye, const edt::Vec3f& dir, const edt::Vec3f& up) noexcept
-    {
-        // https://github.com/g-truc/glm/blob/33b4a621a697a305bc3a7610d290677b96beb181/glm/ext/matrix_transform.inl#L176
-        const auto& f = dir;
-        const auto s = up.Cross(f);
-        const auto u = f.Cross(s);
-
-        Mat4f r = Mat4f::Identity();
-        r.At<0, 0>() = s.x();
-        r.At<1, 0>() = s.y();
-        r.At<2, 0>() = s.z();
-        r.At<0, 1>() = u.x();
-        r.At<1, 1>() = u.y();
-        r.At<2, 1>() = u.z();
-        r.At<0, 2>() = f.x();
-        r.At<1, 2>() = f.y();
-        r.At<2, 2>() = f.z();
-        r.At<3, 0>() = -s.Dot(eye);
-        r.At<3, 1>() = -u.Dot(eye);
-        r.At<3, 2>() = -f.Dot(eye);
-        return r;
-    }
-
-    // dir and up have to be normalized.
-    [[nodiscard]] static constexpr edt::Mat4f
     LookAtRH(const edt::Vec3f& eye, const edt::Vec3f& dir, const edt::Vec3f& up) noexcept
     {
         // https://github.com/g-truc/glm/blob/33b4a621a697a305bc3a7610d290677b96beb181/glm/ext/matrix_transform.inl#L153
