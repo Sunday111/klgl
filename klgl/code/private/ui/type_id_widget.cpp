@@ -1,9 +1,11 @@
+#include <fmt/format.h>
 #include <imgui.h>
 
 #include <limits>
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "CppReflection/TypeRegistry.hpp"
+#include "klgl/error_handling.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/ui/type_id_widget_minimal.hpp"
 
@@ -67,15 +69,25 @@ bool ScalarProperty(
     T max = std::numeric_limits<T>::max())
 {
     constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
-    if (type_info.guid == type_guid)
-    {
-        T* value = reinterpret_cast<T*>(address);  // NOLINT
-        const bool c = ImGui::DragScalar(name.data(), CastDataType<T>(), value, 1.0f, &min, &max);
-        value_changed = c;
-        return true;
-    }
+    if (type_info.guid != type_guid) return false;
+    auto value = reinterpret_cast<T*>(address);  // NOLINT
+    const bool c = ImGui::DragScalar(name.data(), CastDataType<T>(), value, 1.0f, &min, &max);
+    value_changed = c;
+    return true;
+}
 
-    return false;
+template <typename T>
+bool ScalarProperty(edt::GUID type_guid, std::string_view name, const void* address)
+{
+    constexpr T min = std::numeric_limits<T>::lowest();
+    constexpr T max = std::numeric_limits<T>::max();
+    constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
+    if (type_info.guid != type_guid) return false;
+    auto value = *reinterpret_cast<const T*>(address);  // NOLINT
+    ImGui::BeginDisabled(true);
+    ImGui::DragScalar(name.data(), CastDataType<T>(), &value, 1.0f, &min, &max);
+    ImGui::EndDisabled();
+    return true;
 }
 
 template <typename T, size_t N>
@@ -151,23 +163,54 @@ bool MatrixProperty(edt::GUID type_guid, std::string_view name, void* address, b
     return false;
 }
 
+void EnsureHandledType(bool found_type, const edt::GUID& guid)
+{
+    [[likely]] if (found_type)
+    {
+        return;
+    }
+    const auto type_info = cppreflection::GetTypeRegistry()->FindType(guid);
+    if (!type_info)
+    {
+        const auto char_arr = guid.ToCharArray();
+        throw ErrorHandling::RuntimeErrorWithMessage(
+            "Could not find a type with guid \"{}\", in the type registry",
+            std::string_view{char_arr.data(), char_arr.size()});
+    }
+    throw ErrorHandling::RuntimeErrorWithMessage(
+        "type type \"{}\" is not supported by simple type widget feature",
+        type_info->GetName());
+}
+
 void SimpleTypeWidget(edt::GUID type_guid, std::string_view name, void* value, bool& value_changed)
 {
     value_changed = false;
-    [[maybe_unused]] const bool found_type = ScalarProperty<float>(type_guid, name, value, value_changed) ||
-                                             ScalarProperty<double>(type_guid, name, value, value_changed) ||
-                                             ScalarProperty<uint8_t>(type_guid, name, value, value_changed) ||
-                                             ScalarProperty<uint16_t>(type_guid, name, value, value_changed) ||
-                                             ScalarProperty<uint32_t>(type_guid, name, value, value_changed) ||
-                                             ScalarProperty<uint64_t>(type_guid, name, value, value_changed) ||
-                                             ScalarProperty<int8_t>(type_guid, name, value, value_changed) ||
-                                             ScalarProperty<int16_t>(type_guid, name, value, value_changed) ||
-                                             ScalarProperty<int32_t>(type_guid, name, value, value_changed) ||
-                                             ScalarProperty<int64_t>(type_guid, name, value, value_changed) ||
-                                             VectorProperty<Vec2f>(type_guid, name, value, value_changed) ||
-                                             VectorProperty<Vec3f>(type_guid, name, value, value_changed) ||
-                                             VectorProperty<Vec4f>(type_guid, name, value, value_changed) ||
-                                             MatrixProperty<Mat4f>(type_guid, name, value, value_changed);
+    const bool found_type = ScalarProperty<float>(type_guid, name, value, value_changed) ||
+                            ScalarProperty<double>(type_guid, name, value, value_changed) ||
+                            ScalarProperty<uint8_t>(type_guid, name, value, value_changed) ||
+                            ScalarProperty<uint16_t>(type_guid, name, value, value_changed) ||
+                            ScalarProperty<uint32_t>(type_guid, name, value, value_changed) ||
+                            ScalarProperty<uint64_t>(type_guid, name, value, value_changed) ||
+                            ScalarProperty<int8_t>(type_guid, name, value, value_changed) ||
+                            ScalarProperty<int16_t>(type_guid, name, value, value_changed) ||
+                            ScalarProperty<int32_t>(type_guid, name, value, value_changed) ||
+                            ScalarProperty<int64_t>(type_guid, name, value, value_changed) ||
+                            VectorProperty<Vec2f>(type_guid, name, value, value_changed) ||
+                            VectorProperty<Vec3f>(type_guid, name, value, value_changed) ||
+                            VectorProperty<Vec4f>(type_guid, name, value, value_changed) ||
+                            MatrixProperty<Mat4f>(type_guid, name, value, value_changed);
+    EnsureHandledType(found_type, type_guid);
+}
+
+void SimpleTypeWidget(edt::GUID type_guid, std::string_view name, const void* value)
+{
+    const bool found_type =
+        ScalarProperty<float>(type_guid, name, value) || ScalarProperty<double>(type_guid, name, value) ||
+        ScalarProperty<uint8_t>(type_guid, name, value) || ScalarProperty<uint16_t>(type_guid, name, value) ||
+        ScalarProperty<uint32_t>(type_guid, name, value) || ScalarProperty<uint64_t>(type_guid, name, value) ||
+        ScalarProperty<int8_t>(type_guid, name, value) || ScalarProperty<int16_t>(type_guid, name, value) ||
+        ScalarProperty<int32_t>(type_guid, name, value) || ScalarProperty<int64_t>(type_guid, name, value);
+    EnsureHandledType(found_type, type_guid);
 }
 
 void TypeIdWidget(edt::GUID type_guid, void* base, bool& value_changed)
