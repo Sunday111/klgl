@@ -85,7 +85,8 @@ bool ScalarProperty(edt::GUID type_guid, std::string_view name, const void* addr
     if (type_info.guid != type_guid) return false;
     auto value = *reinterpret_cast<const T*>(address);  // NOLINT
     ImGui::BeginDisabled(true);
-    ImGui::DragScalar(name.data(), CastDataType<T>(), &value, 1.0f, &min, &max);
+    [[maybe_unused]] bool value_changed = ImGui::DragScalar(name.data(), CastDataType<T>(), &value, 1.0f, &min, &max);
+    assert(!value_changed);
     ImGui::EndDisabled();
     return true;
 }
@@ -104,31 +105,49 @@ template <typename T>
 bool VectorProperty(edt::GUID type_guid, std::string_view name, void* address, bool& value_changed)
 {
     constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
-    if (type_info.guid == type_guid)
-    {
-        T& member_ref = *reinterpret_cast<T*>(address);  // NOLINT
-        value_changed |= VectorProperty(name, member_ref);
-        return true;
-    }
-
-    return false;
+    if (type_info.guid != type_guid) return false;
+    T& member_ref = *reinterpret_cast<T*>(address);  // NOLINT
+    value_changed |= VectorProperty(name, member_ref);
+    return true;
 }
 
-template <typename T, size_t num_rows, size_t num_columns>
+template <typename T>
+bool VectorProperty(edt::GUID type_guid, std::string_view name, const void* address)
+{
+    constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
+    if (type_info.guid != type_guid) return false;
+    T member_ref = *reinterpret_cast<const T*>(address);  // NOLINT
+    ImGui::BeginDisabled(true);
+    [[maybe_unused]] const bool value_changed = VectorProperty(name, member_ref);
+    assert(!value_changed);
+    ImGui::EndDisabled();
+    return true;
+}
+
+template <typename Matrix, typename T = typename Matrix::Component>
 bool MatrixProperty(
     const std::string_view title,
-    edt::Matrix<T, num_rows, num_columns>& value,
+    Matrix& value,
     T min = std::numeric_limits<T>::lowest(),
     T max = std::numeric_limits<T>::max()) noexcept
 {
-    bool changed = false;
+    constexpr size_t num_rows = Matrix::NumRows();
+    constexpr size_t num_columns = Matrix::NumColumns();
+    constexpr bool is_const = std::is_const_v<Matrix>;
+    bool matrix_changed = false;
     if (ImGui::TreeNode(title.data()))
     {
         for (size_t row_index = 0; row_index != num_rows; ++row_index)
         {
             edt::Matrix<T, num_columns, 1> row = value.GetRow(row_index).Transposed();
             ImGui::PushID(static_cast<int>(row_index));
-            const bool row_changed = ImGui::DragScalarN(
+
+            if constexpr (is_const)
+            {
+                ImGui::BeginDisabled(true);
+            }
+
+            [[maybe_unused]] const bool row_changed = ImGui::DragScalarN(
                 "",
                 CastDataType<T>(),
                 row.data(),
@@ -137,30 +156,47 @@ bool MatrixProperty(
                 &min,
                 &max,
                 "%.3f");
-            ImGui::PopID();
-            [[unlikely]] if (row_changed)
+
+            if constexpr (is_const)
             {
-                value.SetRow(row_index, row);
+                assert(!row_changed);
+                ImGui::EndDisabled();
             }
-            changed = changed || row_changed;
+
+            ImGui::PopID();
+
+            if constexpr (!is_const)
+            {
+                [[unlikely]] if (row_changed)
+                {
+                    value.SetRow(row_index, row);
+                    matrix_changed = true;
+                }
+            }
         }
         ImGui::TreePop();
     }
-    return changed;
+    return matrix_changed;
 }
 
 template <typename T>
 bool MatrixProperty(edt::GUID type_guid, std::string_view name, void* address, bool& value_changed)
 {
     constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
-    if (type_info.guid == type_guid)
-    {
-        T& member_ref = *reinterpret_cast<T*>(address);  // NOLINT
-        value_changed |= MatrixProperty(name, member_ref);
-        return true;
-    }
+    if (type_info.guid != type_guid) return false;
+    T& member_ref = *reinterpret_cast<T*>(address);  // NOLINT
+    value_changed |= MatrixProperty(name, member_ref);
+    return true;
+}
 
-    return false;
+template <typename T>
+bool MatrixProperty(edt::GUID type_guid, std::string_view name, const void* address)
+{
+    constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
+    if (type_info.guid != type_guid) return false;
+    const T& value = *reinterpret_cast<const T*>(address);  // NOLINT
+    MatrixProperty(name, value);
+    return true;
 }
 
 void EnsureHandledType(bool found_type, const edt::GUID& guid)
@@ -198,6 +234,7 @@ void SimpleTypeWidget(edt::GUID type_guid, std::string_view name, void* value, b
                             VectorProperty<Vec2f>(type_guid, name, value, value_changed) ||
                             VectorProperty<Vec3f>(type_guid, name, value, value_changed) ||
                             VectorProperty<Vec4f>(type_guid, name, value, value_changed) ||
+                            MatrixProperty<Mat3f>(type_guid, name, value, value_changed) ||
                             MatrixProperty<Mat4f>(type_guid, name, value, value_changed);
     EnsureHandledType(found_type, type_guid);
 }
@@ -209,7 +246,10 @@ void SimpleTypeWidget(edt::GUID type_guid, std::string_view name, const void* va
         ScalarProperty<uint8_t>(type_guid, name, value) || ScalarProperty<uint16_t>(type_guid, name, value) ||
         ScalarProperty<uint32_t>(type_guid, name, value) || ScalarProperty<uint64_t>(type_guid, name, value) ||
         ScalarProperty<int8_t>(type_guid, name, value) || ScalarProperty<int16_t>(type_guid, name, value) ||
-        ScalarProperty<int32_t>(type_guid, name, value) || ScalarProperty<int64_t>(type_guid, name, value);
+        ScalarProperty<int32_t>(type_guid, name, value) || ScalarProperty<int64_t>(type_guid, name, value) ||
+        VectorProperty<Vec2f>(type_guid, name, value) || VectorProperty<Vec3f>(type_guid, name, value) ||
+        VectorProperty<Vec4f>(type_guid, name, value) || MatrixProperty<Mat3f>(type_guid, name, value) ||
+        MatrixProperty<Mat4f>(type_guid, name, value);
     EnsureHandledType(found_type, type_guid);
 }
 
