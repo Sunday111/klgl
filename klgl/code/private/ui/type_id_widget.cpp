@@ -5,6 +5,7 @@
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "CppReflection/TypeRegistry.hpp"
+#include "ass/fixed_unordered_map.hpp"
 #include "klgl/error_handling.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/ui/type_id_widget_minimal.hpp"
@@ -60,36 +61,29 @@ static constexpr ImGuiDataType_ CastDataType() noexcept
 }
 
 template <typename T>
-bool ScalarProperty(
-    edt::GUID type_guid,
-    std::string_view name,
-    void* address,
-    bool& value_changed,
-    T min = std::numeric_limits<T>::lowest(),
-    T max = std::numeric_limits<T>::max())
+class ScalarPropWidget
 {
-    constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
-    if (type_info.guid != type_guid) return false;
-    auto value = reinterpret_cast<T*>(address);  // NOLINT
-    const bool c = ImGui::DragScalar(name.data(), CastDataType<T>(), value, 1.0f, &min, &max);
-    value_changed = c;
-    return true;
-}
+public:
+    static bool Widget(std::string_view name, void* address)
+    {
+        constexpr T min = std::numeric_limits<T>::lowest();
+        constexpr T max = std::numeric_limits<T>::max();
+        auto value = reinterpret_cast<T*>(address);  // NOLINT
+        return ImGui::DragScalar(name.data(), CastDataType<T>(), value, 1.0f, &min, &max);
+    }
 
-template <typename T>
-bool ScalarProperty(edt::GUID type_guid, std::string_view name, const void* address)
-{
-    constexpr T min = std::numeric_limits<T>::lowest();
-    constexpr T max = std::numeric_limits<T>::max();
-    constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
-    if (type_info.guid != type_guid) return false;
-    auto value = *reinterpret_cast<const T*>(address);  // NOLINT
-    ImGui::BeginDisabled(true);
-    [[maybe_unused]] bool value_changed = ImGui::DragScalar(name.data(), CastDataType<T>(), &value, 1.0f, &min, &max);
-    assert(!value_changed);
-    ImGui::EndDisabled();
-    return true;
-}
+    static void ConstWidget(std::string_view name, const void* address)
+    {
+        constexpr T min = std::numeric_limits<T>::lowest();
+        constexpr T max = std::numeric_limits<T>::max();
+        auto value = *reinterpret_cast<const T*>(address);  // NOLINT
+        ImGui::BeginDisabled(true);
+        [[maybe_unused]] bool value_changed =
+            ImGui::DragScalar(name.data(), CastDataType<T>(), &value, 1.0f, &min, &max);
+        assert(!value_changed);
+        ImGui::EndDisabled();
+    }
+};
 
 template <typename T, size_t N>
 bool VectorProperty(
@@ -102,27 +96,24 @@ bool VectorProperty(
 }
 
 template <typename T>
-bool VectorProperty(edt::GUID type_guid, std::string_view name, void* address, bool& value_changed)
+class VectorPropWidget
 {
-    constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
-    if (type_info.guid != type_guid) return false;
-    T& member_ref = *reinterpret_cast<T*>(address);  // NOLINT
-    value_changed |= VectorProperty(name, member_ref);
-    return true;
-}
+public:
+    static bool Widget(std::string_view name, void* address)
+    {
+        T& value = *reinterpret_cast<T*>(address);  // NOLINT
+        return VectorProperty(name, value);
+    }
 
-template <typename T>
-bool VectorProperty(edt::GUID type_guid, std::string_view name, const void* address)
-{
-    constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
-    if (type_info.guid != type_guid) return false;
-    T member_ref = *reinterpret_cast<const T*>(address);  // NOLINT
-    ImGui::BeginDisabled(true);
-    [[maybe_unused]] const bool value_changed = VectorProperty(name, member_ref);
-    assert(!value_changed);
-    ImGui::EndDisabled();
-    return true;
-}
+    static void ConstWidget(std::string_view name, const void* address)
+    {
+        T value = *reinterpret_cast<const T*>(address);  // NOLINT
+        ImGui::BeginDisabled(true);
+        [[maybe_unused]] const bool value_changed = VectorProperty(name, value);
+        assert(!value_changed);
+        ImGui::EndDisabled();
+    }
+};
 
 template <typename Matrix, typename T = typename Matrix::Component>
 bool MatrixProperty(
@@ -179,32 +170,131 @@ bool MatrixProperty(
     return matrix_changed;
 }
 
-template <typename T>
-bool MatrixProperty(edt::GUID type_guid, std::string_view name, void* address, bool& value_changed)
+template <typename Matrix>
+class MatrixPropWidget
 {
-    constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
-    if (type_info.guid != type_guid) return false;
-    T& member_ref = *reinterpret_cast<T*>(address);  // NOLINT
-    value_changed |= MatrixProperty(name, member_ref);
-    return true;
-}
-
-template <typename T>
-bool MatrixProperty(edt::GUID type_guid, std::string_view name, const void* address)
-{
-    constexpr auto type_info = cppreflection::GetStaticTypeInfo<T>();
-    if (type_info.guid != type_guid) return false;
-    const T& value = *reinterpret_cast<const T*>(address);  // NOLINT
-    MatrixProperty(name, value);
-    return true;
-}
-
-void EnsureHandledType(bool found_type, const edt::GUID& guid)
-{
-    [[likely]] if (found_type)
+public:
+    static bool Widget(std::string_view name, void* address)
     {
-        return;
+        auto& value = *reinterpret_cast<Matrix*>(address);  // NOLINT
+        return MatrixProperty(name, value);
     }
+
+    static void ConstWidget(std::string_view name, const void* address)
+    {
+        const auto& value = *reinterpret_cast<const Matrix*>(address);  // NOLINT
+        MatrixProperty(name, value);
+    }
+};
+
+struct TypeWidgets
+{
+    using ConstFn = void (*)(std::string_view name, const void* data);
+    using NonConstFn = bool (*)(std::string_view name, void* data);
+
+    NonConstFn fn{};
+    ConstFn const_fn{};
+};
+
+template <typename Map>
+[[nodiscard]] constexpr size_t CountSlotsWithoutCollisions(const Map& m)
+{
+    ass::FixedBitset<Map::Capacity()> bits;
+    for (const auto& [key, value] : m)
+    {
+        using Hasher = typename Map::Hasher;
+        bits.Set(m.ToIndex(Hasher{}(key)), true);
+    }
+
+    return bits.CountOnes();
+}
+
+template <int rot1, int rot2>
+struct GUIDHasher
+{
+    [[nodiscard]] constexpr size_t operator()(const edt::GUID& guid) const
+    {
+        size_t a = guid.part1;
+        size_t b = guid.part2;
+
+        if constexpr (rot1)
+        {
+            a = std::rotr(a, rot1);
+        }
+
+        if constexpr (rot2)
+        {
+            b = std::rotr(b, rot2);
+        }
+
+        // const uint64_t prime = 0x9e3779b97f4a7c15;
+        // return (a * prime) ^ (b * (prime >> 1));
+
+        return a ^ b;
+    }
+};
+
+using GuidToWidgetHasher = GUIDHasher<6, -6>;
+inline constexpr size_t kGuidToWidgetCapacity = 25;
+inline constexpr auto kGuidToWidget = []
+{
+    ass::FixedUnorderedMap<kGuidToWidgetCapacity, edt::GUID, TypeWidgets, GuidToWidgetHasher> map;
+
+    auto add = [&]<typename T, typename Widget>(const std::tuple<T, Widget>&)
+    {
+        auto guid = cppreflection::GetStaticTypeGUID<T>();
+        if (map.Contains(guid))
+        {
+            throw std::runtime_error("Cannot add twice");
+        }
+
+        map.Add(guid, TypeWidgets{.fn = Widget::Widget, .const_fn = Widget::ConstWidget});
+    };
+
+    auto add_scalar = [&]<typename T>(const std::tuple<T>&)
+    {
+        add(std::tuple<T, ScalarPropWidget<T>>{});
+    };
+
+    auto add_vector = [&]<typename T>(const std::tuple<T>&)
+    {
+        add(std::tuple<T, VectorPropWidget<T>>{});
+    };
+
+    auto add_matrix = [&]<typename T>(const std::tuple<T>&)
+    {
+        add(std::tuple<T, MatrixPropWidget<T>>{});
+    };
+
+    add_scalar(std::tuple<float>{});
+    add_scalar(std::tuple<double>{});
+    add_scalar(std::tuple<int8_t>{});
+    add_scalar(std::tuple<int16_t>{});
+    add_scalar(std::tuple<int32_t>{});
+    add_scalar(std::tuple<int64_t>{});
+    add_scalar(std::tuple<uint8_t>{});
+    add_scalar(std::tuple<uint16_t>{});
+    add_scalar(std::tuple<uint32_t>{});
+    add_scalar(std::tuple<uint64_t>{});
+    add_vector(std::tuple<Vec2f>{});
+    add_vector(std::tuple<Vec3f>{});
+    add_vector(std::tuple<Vec4f>{});
+    add_matrix(std::tuple<Mat3f>{});
+    add_matrix(std::tuple<Mat4f>{});
+
+    return map;
+}();
+
+inline constexpr size_t nIndices = CountSlotsWithoutCollisions(kGuidToWidget);
+static_assert(nIndices == kGuidToWidget.Size());
+
+const TypeWidgets& GetTypeWidgets(const edt::GUID& guid)
+{
+    [[likely]] if (kGuidToWidget.Contains(guid))
+    {
+        return kGuidToWidget.Get(guid);
+    }
+
     const auto type_info = cppreflection::GetTypeRegistry()->FindType(guid);
     if (!type_info)
     {
@@ -213,6 +303,7 @@ void EnsureHandledType(bool found_type, const edt::GUID& guid)
             "Could not find a type with guid \"{}\", in the type registry",
             std::string_view{char_arr.data(), char_arr.size()});
     }
+
     throw ErrorHandling::RuntimeErrorWithMessage(
         "type type \"{}\" is not supported by simple type widget feature",
         type_info->GetName());
@@ -220,37 +311,14 @@ void EnsureHandledType(bool found_type, const edt::GUID& guid)
 
 void SimpleTypeWidget(edt::GUID type_guid, std::string_view name, void* value, bool& value_changed)
 {
-    value_changed = false;
-    const bool found_type = ScalarProperty<float>(type_guid, name, value, value_changed) ||
-                            ScalarProperty<double>(type_guid, name, value, value_changed) ||
-                            ScalarProperty<uint8_t>(type_guid, name, value, value_changed) ||
-                            ScalarProperty<uint16_t>(type_guid, name, value, value_changed) ||
-                            ScalarProperty<uint32_t>(type_guid, name, value, value_changed) ||
-                            ScalarProperty<uint64_t>(type_guid, name, value, value_changed) ||
-                            ScalarProperty<int8_t>(type_guid, name, value, value_changed) ||
-                            ScalarProperty<int16_t>(type_guid, name, value, value_changed) ||
-                            ScalarProperty<int32_t>(type_guid, name, value, value_changed) ||
-                            ScalarProperty<int64_t>(type_guid, name, value, value_changed) ||
-                            VectorProperty<Vec2f>(type_guid, name, value, value_changed) ||
-                            VectorProperty<Vec3f>(type_guid, name, value, value_changed) ||
-                            VectorProperty<Vec4f>(type_guid, name, value, value_changed) ||
-                            MatrixProperty<Mat3f>(type_guid, name, value, value_changed) ||
-                            MatrixProperty<Mat4f>(type_guid, name, value, value_changed);
-    EnsureHandledType(found_type, type_guid);
+    auto& widgets = GetTypeWidgets(type_guid);
+    value_changed = widgets.fn(name, value);
 }
 
 void SimpleTypeWidget(edt::GUID type_guid, std::string_view name, const void* value)
 {
-    const bool found_type =
-        ScalarProperty<float>(type_guid, name, value) || ScalarProperty<double>(type_guid, name, value) ||
-        ScalarProperty<uint8_t>(type_guid, name, value) || ScalarProperty<uint16_t>(type_guid, name, value) ||
-        ScalarProperty<uint32_t>(type_guid, name, value) || ScalarProperty<uint64_t>(type_guid, name, value) ||
-        ScalarProperty<int8_t>(type_guid, name, value) || ScalarProperty<int16_t>(type_guid, name, value) ||
-        ScalarProperty<int32_t>(type_guid, name, value) || ScalarProperty<int64_t>(type_guid, name, value) ||
-        VectorProperty<Vec2f>(type_guid, name, value) || VectorProperty<Vec3f>(type_guid, name, value) ||
-        VectorProperty<Vec4f>(type_guid, name, value) || MatrixProperty<Mat3f>(type_guid, name, value) ||
-        MatrixProperty<Mat4f>(type_guid, name, value);
-    EnsureHandledType(found_type, type_guid);
+    auto& widgets = GetTypeWidgets(type_guid);
+    widgets.const_fn(name, value);
 }
 
 void TypeIdWidget(edt::GUID type_guid, void* base, bool& value_changed)
