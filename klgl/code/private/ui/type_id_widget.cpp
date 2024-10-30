@@ -309,16 +309,15 @@ const TypeWidgets& GetTypeWidgets(const edt::GUID& guid)
         type_info->GetName());
 }
 
-void SimpleTypeWidget(edt::GUID type_guid, std::string_view name, void* value, bool& value_changed)
+bool SimpleTypeWidget(edt::GUID type_guid, std::string_view name, void* value)
 {
-    auto& widgets = GetTypeWidgets(type_guid);
-    value_changed = widgets.fn(name, value);
+    return GetTypeWidgets(type_guid).fn(name, value);
 }
 
-void SimpleTypeWidget(edt::GUID type_guid, std::string_view name, const void* value)
+bool SimpleTypeWidget(edt::GUID type_guid, std::string_view name, const void* value)
 {
-    auto& widgets = GetTypeWidgets(type_guid);
-    widgets.const_fn(name, value);
+    GetTypeWidgets(type_guid).const_fn(name, value);
+    return false;
 }
 
 void TypeIdWidget(edt::GUID type_guid, void* base, bool& value_changed)
@@ -327,9 +326,7 @@ void TypeIdWidget(edt::GUID type_guid, void* base, bool& value_changed)
     for (const cppreflection::Field* field : type_info->GetFields())
     {
         void* pmember = field->GetValue(base);
-        bool member_changed = false;
-        SimpleTypeWidget(field->GetType()->GetGuid(), field->GetName(), pmember, member_changed);
-        value_changed |= member_changed;
+        value_changed |= SimpleTypeWidget(field->GetType()->GetGuid(), field->GetName(), pmember);
     }
 }
 

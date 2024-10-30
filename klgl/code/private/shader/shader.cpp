@@ -6,9 +6,9 @@
 
 #include <array>
 #include <cassert>
-#include <tl/expected.hpp>
 #include <filesystem>
 #include <string_view>
+#include <tl/expected.hpp>
 #include <vector>
 
 #include "CppReflection/TypeRegistry.hpp"
@@ -328,8 +328,8 @@ void Shader::DrawDetails()
     {
         for (ShaderDefine& definition : defines_)
         {
-            bool value_changed = false;
-            SimpleTypeWidget(definition.type_guid, definition.name.GetView(), definition.value.data(), value_changed);
+            const bool value_changed =
+                SimpleTypeWidget(definition.type_guid, definition.name.GetView(), definition.value.data());
 
             if (value_changed)
             {
@@ -357,8 +357,8 @@ void Shader::DrawDetails()
                 reinterpret_cast<uint8_t*>(stack_val_arr.data()),  // NOLINT
                 type_info->GetInstanceSize());
 
-            bool value_changed = false;
-            SimpleTypeWidget(uniform.GetTypeGUID(), uniform.GetName().GetView(), val_view.data(), value_changed);
+            const bool value_changed =
+                SimpleTypeWidget(uniform.GetTypeGUID(), uniform.GetName().GetView(), val_view.data());
 
             if (value_changed)
             {
