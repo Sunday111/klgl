@@ -32,12 +32,14 @@ public:
         throw RuntimeErrorWithMessage(format, std::forward<Args>(args)...);
     }
 
-    static void InvokeAndCatchAll(auto&& f)
+    template <typename F, typename... Args>
+    static int InvokeAndCatchAll(F&& f, Args&&... args)  // NOLINT
     {
         constexpr auto red_fg = fmt::fg(fmt::rgb(255, 0, 0));
         try
         {
-            f();
+            f(std::forward<Args>(args)...);
+            return 0;
         }
         catch (const cpptrace::exception& exception)
         {
@@ -52,6 +54,8 @@ public:
         {
             fmt::print(red_fg, "Unhandled exception of unknown type\n");
         }
+
+        return 1;
     }
 
     static void CheckOpenGlError(const std::string_view context);
