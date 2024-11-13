@@ -206,12 +206,11 @@ GlError OpenGl::GetError() noexcept
         return GlError::NoError;
     }
 
-    if (!kGlValueToGlError.Contains(error))
-    {
-        return GlError::Unknown;
-    }
+    const size_t map_idx = kGlValueToGlError.FindKeyIndex(error);
 
-    return kGlValueToGlError.Get(error);
+    if (map_idx == ass::kInvalidIndex) return GlError::Unknown;
+
+    return kGlValueToGlError.GetAtIndex(map_idx);
 }
 
 /************************************************** Buffers *******************************************************/
