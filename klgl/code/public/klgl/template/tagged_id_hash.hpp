@@ -2,7 +2,7 @@
 
 #include "ankerl/unordered_dense.h"
 
-namespace verlet
+namespace klgl
 {
 
 template <typename Identifier>
@@ -15,4 +15,4 @@ struct TaggedIdentifierHash
         return ankerl::unordered_dense::detail::wyhash::hash(&x.GetValue(), sizeof(typename Identifier::Repr));
     }
 };
-}  // namespace verlet
+}  // namespace klgl

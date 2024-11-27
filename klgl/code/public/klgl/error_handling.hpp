@@ -12,7 +12,7 @@ class ErrorHandling
 {
 public:
     template <typename Exception = cpptrace::runtime_error, typename... Args>
-    static void Ensure(const bool condition, fmt::format_string<Args...> format, Args&&... args)
+    static constexpr void Ensure(const bool condition, fmt::format_string<Args...> format, Args&&... args)
     {
         if (!condition)
         {
