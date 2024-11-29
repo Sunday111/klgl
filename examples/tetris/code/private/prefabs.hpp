@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <functional>
+#include <optional>
 #include <ranges>
 
 #include "EverydayTools/Math/Matrix.hpp"
@@ -146,4 +147,140 @@ I I I I
 . I . .
 )");
 
-inline constexpr std::array<const std::array<BlockPrefab, 4>*, 2> Prefabs = {&RotationsI, &RotationsS};
+inline constexpr auto RotationsO = MakeRotationsArray(
+    R"(
+. O O .
+. O O .
+. . . .
+. . . .
+)",
+    R"(
+. O O .
+. O O .
+. . . .
+. . . .
+)",
+    R"(
+. O O .
+. O O .
+. . . .
+. . . .
+)",
+    R"(
+. O O .
+. O O .
+. . . .
+. . . .
+)");
+
+inline constexpr auto RotationsT = MakeRotationsArray(
+    R"(
+. T . .
+T T T .
+. . . .
+. . . .
+)",
+    R"(
+. T . .
+. T T .
+. T . .
+. . . .
+)",
+    R"(
+. . . .
+T T T .
+. T . .
+. . . .
+)",
+    R"(
+. T . .
+T T . .
+. T . .
+. . . .
+)");
+
+inline constexpr auto RotationsL = MakeRotationsArray(
+    R"(
+. . L .
+L L L .
+. . . .
+. . . .
+)",
+    R"(
+. L . .
+. L . .
+. L L .
+. . . .
+)",
+    R"(
+. . . .
+L L L .
+L . . .
+. . . .
+)",
+    R"(
+L L . .
+. L . .
+. L . .
+. . . .
+)");
+
+inline constexpr auto RotationsJ = MakeRotationsArray(
+    R"(
+J . . .
+J J J .
+. . . .
+. . . .
+)",
+    R"(
+. J J .
+. J . .
+. J . .
+. . . .
+)",
+    R"(
+. . . .
+J J J .
+. . J .
+. . . .
+)",
+    R"(
+. J . .
+. J . .
+J J . .
+. . . .
+)");
+
+inline constexpr auto RotationsZ = MakeRotationsArray(
+    R"(
+Z Z . .
+. Z Z .
+. . . .
+. . . .
+)",
+    R"(
+. . Z .
+. Z Z .
+. Z . .
+. . . .
+)",
+    R"(
+. . . .
+Z Z . .
+. Z Z .
+. . . .
+)",
+    R"(
+. Z . .
+Z Z . .
+Z . . .
+. . . .
+)");
+
+inline constexpr std::array
+    Prefabs{&RotationsI, &RotationsS, &RotationsO, &RotationsT, &RotationsL, &RotationsJ, &RotationsZ};
+
+[[nodiscard]] constexpr const BlockPrefab& GetBlockPrefab(size_t block_index, size_t block_rotation)
+{
+    return Prefabs.at(block_index)->at(block_rotation);
+}

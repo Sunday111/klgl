@@ -35,11 +35,6 @@ public:
     edt::Vec4u8 color = colors::kRed;
 };
 
-[[nodiscard]] constexpr const BlockPrefab& GetBlockPrefab(size_t block_index, size_t block_rotation)
-{
-    return Prefabs.at(block_index)->at(block_rotation);
-}
-
 using BlockId = edt::TaggedIdentifier<tags::BlockIDTag, uint32_t>;
 inline constexpr BlockId kInvalidBlockId{};
 
@@ -50,7 +45,7 @@ public:
     BlockId block_id = kInvalidBlockId;
 };
 
-enum class KeyboardKey
+enum class KeyboardKey : uint8_t
 {
     W,
     A,
@@ -245,7 +240,7 @@ class Painter2dApp : public klgl::Application
         klgl::OpenGl::SetClearColor({});
         GetWindow().SetSize(500, 1000);
         GetWindow().SetTitle("Tetris Example");
-        SetTargetFramerate(60);
+        SetTargetFramerate(60.f);
         painter_ = std::make_unique<klgl::Painter2d>();
         klgl::ErrorHandling::Ensure(SpawnNewBlock(), "Failed to spawn the very first block.");
     }
@@ -286,74 +281,79 @@ class Painter2dApp : public klgl::Application
         }
 
         const float time = GetTimeSeconds();
-
-        // Block movement down by gravity
-        if constexpr (kGravityEnabled)
+        constexpr float kTimeStepSeconds = 0.06f;
+        const size_t current_time_step = static_cast<size_t>(time / kTimeStepSeconds);
+        if (current_time_step != last_handled_time_step_)
         {
-            bool need_new_block = false;
-            if (const float delta_time = time - last_move_down_time_; delta_time > 0.5f)
+            const bool gravity_time_step = current_time_step % 15 == 0;
+            if (gravity_time_step)
             {
-                last_move_down_time_ = time;
+                // Block movement down by gravity
+                if constexpr (kGravityEnabled)
+                {
+                    bool need_new_block = false;
 
-                // Try to move the current block if it exists
-                if (current_block_id_.IsValid())
-                {
-                    auto [new_block_id, success] = tetris_grid_.MoveBlock(current_block_id_, {0, -1});
-                    current_block_id_ = new_block_id;
-                    need_new_block = !success;
-                }
-                else
-                {
-                    need_new_block = true;
+                    // Try to move the current block if it exists
+                    if (current_block_id_.IsValid())
+                    {
+                        auto [new_block_id, success] = tetris_grid_.MoveBlock(current_block_id_, {0, -1});
+                        current_block_id_ = new_block_id;
+                        need_new_block = !success;
+                    }
+                    else
+                    {
+                        need_new_block = true;
+                    }
+
+                    if (need_new_block)
+                    {
+                        [[maybe_unused]] bool val = SpawnNewBlock();
+                    }
                 }
             }
 
-            if (need_new_block)
+            auto handle_held_key = [&](KeyboardKey key, edt::Vec2<int> delta)
             {
-                [[maybe_unused]] bool val = SpawnNewBlock();
+                const auto& state = keyboard_key_to_state_.Get(key);
+                if (!state.is_down || state.changed_state_this_frame)
+                {
+                    return;
+                }
+
+                // Then wait 0.5s before fast moving begins
+                constexpr float delay = 0.5f;
+
+                const float fast_move_duration = time - (state.down_since + delay);
+                if (std::signbit(fast_move_duration)) return;
+
+                assert(expected_moves >= moves_counter);
+
+                auto [new_block_id, success] = tetris_grid_.MoveBlock(current_block_id_, delta);
+                current_block_id_ = new_block_id;
+            };
+
+            handle_held_key(KeyboardKey::A, {-1, 0});
+            handle_held_key(KeyboardKey::D, {1, 0});
+            if (!gravity_time_step)
+            {
+                handle_held_key(KeyboardKey::S, {0, -1});
             }
+
+            last_handled_time_step_ = current_time_step;
         }
 
         auto handle_move_key = [&](KeyboardKey key, edt::Vec2<int> delta)
         {
             const auto& state = keyboard_key_to_state_.Get(key);
-            if (!state.is_down)
+            if (state.is_down)
             {
+                // On press make the first move instantly
                 if (state.changed_state_this_frame)
                 {
-                    moves_on_hold_counters_.GetOrAdd(key) = 0;
+                    auto [new_block_id, success] = tetris_grid_.MoveBlock(current_block_id_, delta);
+                    current_block_id_ = new_block_id;
                 }
-
-                return;
             }
-
-            // Key is being held right now.
-            // Determine how much time
-
-            // On press make the first move instantly
-            if (state.changed_state_this_frame)
-            {
-                auto [new_block_id, success] = tetris_grid_.MoveBlock(current_block_id_, delta);
-                current_block_id_ = new_block_id;
-                return;
-            }
-
-            // Then wait 0.5s before fast moving begins
-            constexpr float delay = 0.5f;
-
-            const float fast_move_duration = time - (state.down_since + delay);
-            if (std::signbit(fast_move_duration)) return;
-
-            constexpr float fast_move_dt = 0.25f;
-            size_t& moves_counter = moves_on_hold_counters_.GetOrAdd(key);
-            size_t expected_moves = static_cast<size_t>(fast_move_duration / fast_move_dt);
-            assert(expected_moves >= moves_counter);
-
-            if (expected_moves == moves_counter) return;
-
-            moves_counter = expected_moves;
-            auto [new_block_id, success] = tetris_grid_.MoveBlock(current_block_id_, delta);
-            current_block_id_ = new_block_id;
         };
 
         handle_move_key(KeyboardKey::A, {-1, 0});
@@ -407,22 +407,21 @@ class Painter2dApp : public klgl::Application
         }
     }
 
-    static constexpr bool kMoveUpAllowed = false;
+    static constexpr bool kMoveUpAllowed = true;
     static constexpr bool kGravityEnabled = true;
 
     BlockId current_block_id_;
     TetrisGrid tetris_grid_;
     std::unique_ptr<klgl::Painter2d> painter_;
 
-    size_t seed_ = 0;
+    unsigned seed_ = 0;
     std::mt19937 rng_{seed_};
     std::uniform_int_distribution<size_t> prefab_dist_{0, Prefabs.size() - 1};
     std::uniform_int_distribution<size_t> rotation_dist_{0, 3};
 
     ass::EnumMap<KeyboardKey, KeyboardKeyState> keyboard_key_to_state_;
-    ass::EnumMap<KeyboardKey, size_t> moves_on_hold_counters_;
 
-    float last_move_down_time_ = 0;
+    size_t last_handled_time_step_ = 0;
 };
 
 void Main()
