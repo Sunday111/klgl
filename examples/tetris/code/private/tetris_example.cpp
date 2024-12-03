@@ -251,6 +251,14 @@ public:
 
 class Painter2dApp : public klgl::Application
 {
+    struct AnimatedRect
+    {
+        klgl::Painter2d::Rect2d start_state{};
+        klgl::Painter2d::Rect2d finish_state{};
+        float start_time = 0.f;
+        float duration = 0.f;
+    };
+
     void Initialize() override
     {
         klgl::Application::Initialize();
@@ -265,8 +273,8 @@ class Painter2dApp : public klgl::Application
     [[nodiscard]] bool SpawnNewBlock()
     {
         Block new_block{
-            .prefab_idx = prefab_dist_(rng_),
-            .rotation_idx = rotation_dist_(rng_),
+            .prefab_idx = prefab_dist_(rnd_),
+            .rotation_idx = rotation_dist_(rnd_),
             .pos = {3, 16},
             .color = edt::Vec4u8(edt::Math::GetRainbowColors(GetTimeSeconds()), 255),
         };
@@ -394,9 +402,38 @@ class Painter2dApp : public klgl::Application
     {
         if (state.next_x < tetris_grid_.kSize.x())
         {
-            auto& cell = tetris_grid_.GetCell({state.next_x, state.row_index});
+            const edt::Vec2<size_t> coords{state.next_x, state.row_index};
+            auto& cell = tetris_grid_.GetCell(coords);
+            auto cell_color = cell.color;
             cell.block_id = kInvalidBlockId;
             cell.color = colors::kBlack;
+
+            const float time = GetTimeSeconds();
+            auto cell_rect = MakeCellRect(coords);
+            constexpr size_t num_subdivisions = 4;
+            cell_rect.center += cell_rect.size / static_cast<float>(num_subdivisions * 2) - cell_rect.size / 2;
+            cell_rect.size /= static_cast<float>(num_subdivisions);
+
+            std::uniform_real_distribution<float> dist_distr(0.f, cell_rect.size.x() * 5.f);
+
+            for (const size_t kx : std::views::iota(size_t{0}, size_t{4}))
+            {
+                for (const size_t ky : std::views::iota(size_t{0}, size_t{4}))
+                {
+                    auto& anim = animations_.emplace_back();
+                    anim.start_time = time;
+                    anim.duration = 2.f;
+                    anim.start_state = cell_rect;
+                    anim.start_state.center += edt::Vec2<size_t>{kx, ky}.Cast<float>() * cell_rect.size;
+                    anim.start_state.color = cell_color;
+
+                    anim.finish_state = anim.start_state;
+                    anim.finish_state.color.w() = 0;
+                    anim.finish_state.center.x() += dist_distr(rnd_);
+                    anim.finish_state.center.y() += dist_distr(rnd_);
+                }
+            }
+
             state.next_x++;
         }
         else
@@ -484,16 +521,50 @@ class Painter2dApp : public klgl::Application
 
         painter_->BeginDraw();
 
-        auto rect_size = edt::Vec2f(2.f, 2.f) / tetris_grid_.kSize.Cast<float>();
         for (auto coords : tetris_grid_.AllCoords())
         {
-            painter_->DrawRect(
-                {.center = {edt::Vec2f{-1, -1} + rect_size * coords.Cast<float>() + rect_size / 2},
-                 .size = rect_size,
-                 .color = tetris_grid_.GetCell(coords).color});
+            painter_->DrawRect(MakeCellRect(coords));
         }
 
+        DrawAnimatedRects();
+
         painter_->EndDraw();
+    }
+
+    klgl::Painter2d::Rect2d MakeCellRect(const edt::Vec2<size_t> coords) const
+    {
+        auto rect_size = edt::Vec2f(2.f, 2.f) / tetris_grid_.kSize.Cast<float>();
+        return {
+            .center = {edt::Vec2f{-1, -1} + rect_size * coords.Cast<float>() + rect_size / 2},
+            .size = rect_size,
+            .color = tetris_grid_.GetCell(coords).color};
+    }
+
+    void DrawAnimatedRects()
+    {
+        const float time = GetTimeSeconds();
+        for (auto& animation : animations_)
+        {
+            const float k = std::clamp((time - animation.start_time) / animation.duration, 0.f, 1.f);
+            const auto& a = animation.start_state;
+            const auto& b = animation.finish_state;
+
+            klgl::Painter2d::Rect2d rect{
+                .center = edt::Math::Lerp(a.center, b.center, k),
+                .size = edt::Math::Lerp(a.size, b.size, k),
+                .color = edt::Math::Lerp(a.color.Cast<float>(), b.color.Cast<float>(), k).Cast<uint8_t>(),
+                .rotation_degrees = std::lerp(a.rotation_degrees, b.rotation_degrees, k),
+            };
+
+            painter_->DrawRect(rect);
+        }
+
+        if (!animations_.empty()) fmt::println("");
+
+        const size_t to_remove = std::size(std::ranges::partition(
+            animations_,
+            [&](const AnimatedRect& rect) { return (rect.start_time + rect.duration) > time; }));
+        animations_.resize(animations_.size() - to_remove);
     }
 
     bool KeyReleasedThisFrame(KeyboardKey key) const
@@ -536,7 +607,7 @@ class Painter2dApp : public klgl::Application
     std::unique_ptr<klgl::Painter2d> painter_;
 
     unsigned seed_ = 0;
-    std::mt19937 rng_{seed_};
+    std::mt19937 rnd_{seed_};
     std::uniform_int_distribution<size_t> prefab_dist_{0, Prefabs.size() - 1};
     std::uniform_int_distribution<size_t> rotation_dist_{0, 3};
 
@@ -545,6 +616,8 @@ class Painter2dApp : public klgl::Application
     ass::EnumMap<KeyboardKey, KeyboardKeyState> keyboard_key_to_state_;
 
     size_t last_handled_time_step_ = 0;
+
+    std::vector<AnimatedRect> animations_;
 };
 
 void Main()
