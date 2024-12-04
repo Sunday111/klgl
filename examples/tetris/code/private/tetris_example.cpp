@@ -262,7 +262,7 @@ class Painter2dApp : public klgl::Application
     void Initialize() override
     {
         klgl::Application::Initialize();
-        klgl::OpenGl::SetClearColor({});
+        klgl::OpenGl::SetClearColor(0.2f, 0.2f, 0.2f, 1.f);
         GetWindow().SetSize(500, 1000);
         GetWindow().SetTitle("Tetris Example");
         SetTargetFramerate(60.f);
@@ -523,7 +523,12 @@ class Painter2dApp : public klgl::Application
 
         for (auto coords : tetris_grid_.AllCoords())
         {
-            painter_->DrawRect(MakeCellRect(coords));
+            auto cell_rect = MakeCellRect(coords);
+            if (!tetris_grid_.GetCell(coords).block_id.IsValid())
+            {
+                cell_rect.size *= 0.97f;
+            }
+            painter_->DrawRect(cell_rect);
         }
 
         DrawAnimatedRects();
