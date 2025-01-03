@@ -376,8 +376,6 @@ class Painter2dApp : public klgl::Application
             const float fast_move_duration = time - (state.down_since + delay);
             if (std::signbit(fast_move_duration)) return;
 
-            assert(expected_moves >= moves_counter);
-
             auto [new_block_id, success] = tetris_grid_.MoveBlock(current_block_id_, delta);
             current_block_id_ = new_block_id;
         };
