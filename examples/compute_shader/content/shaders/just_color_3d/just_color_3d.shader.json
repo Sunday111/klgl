@@ -1,0 +1,6 @@
+{
+    "vertex": "just_color_3d.vert",
+    "fragment": "just_color_3d.frag",
+    "glsl_version": "330 core",
+    "definitions": []
+}

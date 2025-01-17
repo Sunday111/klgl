@@ -202,7 +202,7 @@ void Shader::Compile(std::string& buffer)
     }
 
     size_t num_compiled = 0;
-    std::array<GlObject<GlShaderId>, 3> shaders{};
+    std::array<GlObject<GlShaderId>, magic_enum::enum_count<GlShaderType>()> shaders{};
 
     {
         std::string_view version = "330 core";
@@ -238,9 +238,10 @@ void Shader::Compile(std::string& buffer)
     fmt::format_to(std::back_inserter(buffer), "#line 1\n");
 
     const size_t common_code_length = buffer.size();
-    auto add_one = [&](GlShaderType type)
+
+    for (GlShaderType type : ass::EnumSet<GlShaderType>::Full())
     {
-        if (!type_to_path.Contains(type)) return;
+        if (!type_to_path.Contains(type)) continue;
 
         shaders[num_compiled] = GlObject<GlShaderId>::CreateFrom(OpenGl::CreateShader(type));
         const auto& shader = shaders[num_compiled];
@@ -261,11 +262,7 @@ void Shader::Compile(std::string& buffer)
 
         // remove file content to reuse the code shared across all types of shaders
         buffer.resize(common_code_length);
-    };
-
-    add_one(GlShaderType::Vertex);
-    add_one(GlShaderType::Geometry);
-    add_one(GlShaderType::Fragment);
+    }
 
     auto program = GlObject<GlProgramId>::CreateFrom(OpenGl::CreateProgram());
 
