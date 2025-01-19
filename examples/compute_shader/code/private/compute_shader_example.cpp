@@ -12,6 +12,7 @@
 #include "klgl/events/event_manager.hpp"
 #include "klgl/events/mouse_events.hpp"
 #include "klgl/opengl/gl_api.hpp"
+#include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
 #include "klgl/window.hpp"
 
