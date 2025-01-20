@@ -32,6 +32,8 @@ public:
     virtual void MainLoop();
     virtual void InitializeReflectionTypes();
 
+    virtual std::tuple<int, int> GetOpenGLVersion() const { return {3, 3}; }
+
     Window& GetWindow();
     const Window& GetWindow() const;
 

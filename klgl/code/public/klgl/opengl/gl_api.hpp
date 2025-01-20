@@ -2,10 +2,9 @@
 
 #include <glad/glad.h>
 
-#include <tl/expected.hpp>
-
 #include <optional>
 #include <span>
+#include <tl/expected.hpp>
 
 #include "EverydayTools/Math/Matrix.hpp"
 #include "enums.hpp"
@@ -15,7 +14,6 @@
 
 namespace klgl
 {
-
 
 using namespace edt::lazy_matrix_aliases;  // NOLINT
 
@@ -65,8 +63,8 @@ public:
 
     template <typename T, size_t Extent>
         requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
-    KLGL_OGL_INLINE
-        static void BufferDataNE(GlBufferType target, const std::span<T, Extent>& data, GlUsage usage) noexcept
+    KLGL_OGL_INLINE static void
+    BufferDataNE(GlBufferType target, const std::span<T, Extent>& data, GlUsage usage) noexcept
     {
         std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
         BufferDataNE(target, bytes, usage);
@@ -74,10 +72,8 @@ public:
 
     template <typename T, size_t Extent>
         requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BufferDataCE(
-        GlBufferType target,
-        const std::span<T, Extent>& data,
-        GlUsage usage) noexcept
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
+    BufferDataCE(GlBufferType target, const std::span<T, Extent>& data, GlUsage usage) noexcept
     {
         std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
         return BufferDataCE(target, bytes, usage);
@@ -85,8 +81,8 @@ public:
 
     template <typename T, size_t Extent>
         requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
-    KLGL_OGL_INLINE
-        static void BufferData(GlBufferType target, const std::span<T, Extent>& data, GlUsage usage) noexcept
+    KLGL_OGL_INLINE static void
+    BufferData(GlBufferType target, const std::span<T, Extent>& data, GlUsage usage) noexcept
     {
         std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
         return BufferData(target, bytes, usage);
@@ -110,10 +106,8 @@ public:
 
     template <typename T, size_t Extent>
         requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
-    KLGL_OGL_INLINE static void BufferSubDataNE(
-        GlBufferType target,
-        size_t offset_elements,
-        const std::span<T, Extent>& data) noexcept
+    KLGL_OGL_INLINE static void
+    BufferSubDataNE(GlBufferType target, size_t offset_elements, const std::span<T, Extent>& data) noexcept
     {
         std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
         BufferSubDataNE(target, offset_elements * sizeof(T), bytes);
@@ -121,10 +115,8 @@ public:
 
     template <typename T, size_t Extent>
         requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
-    KLGL_OGL_INLINE static std::optional<OpenGlError> BufferSubDataCE(
-        GlBufferType target,
-        size_t offset_elements,
-        const std::span<T, Extent>& data) noexcept
+    KLGL_OGL_INLINE static std::optional<OpenGlError>
+    BufferSubDataCE(GlBufferType target, size_t offset_elements, const std::span<T, Extent>& data) noexcept
     {
         std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
         return BufferSubDataCE(target, offset_elements * sizeof(T), bytes);
@@ -132,10 +124,8 @@ public:
 
     template <typename T, size_t Extent>
         requires(!std::same_as<std::remove_const_t<T>, uint8_t>)
-    KLGL_OGL_INLINE static void BufferSubData(
-        GlBufferType target,
-        size_t offset_elements,
-        const std::span<T, Extent>& data) noexcept
+    KLGL_OGL_INLINE static void
+    BufferSubData(GlBufferType target, size_t offset_elements, const std::span<T, Extent>& data) noexcept
     {
         std::span bytes{reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes()};  // NOLINT
         BufferSubData(target, offset_elements * sizeof(T), bytes);
