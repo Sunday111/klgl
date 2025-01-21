@@ -17,83 +17,88 @@
 #include "klgl/shader/shader.hpp"
 #include "klgl/window.hpp"
 
-class Painter2dApp : public klgl::Application
+namespace klgl::compute_shader_example
+{
+
+using namespace edt::lazy_matrix_aliases;  // NOLINT
+using Math = edt::Math;
+
+class Painter2dApp : public Application
 {
     std::tuple<int, int> GetOpenGLVersion() const override { return {4, 5}; }
 
     void Initialize() override
     {
-        klgl::Application::Initialize();
-        klgl::OpenGl::SetClearColor({});
+        Application::Initialize();
+        OpenGl::SetClearColor({});
         GetWindow().SetSize(1000, 1000);
         GetWindow().SetTitle("Painter 2d");
-        compute_shader_ = std::make_unique<klgl::Shader>("compute_shader");
-        just_color_ = std::make_unique<klgl::Shader>("just_color_3d");
+        SetTargetFramerate({});
+        compute_shader_ = std::make_unique<Shader>("compute_shader");
+        color_shader_ = std::make_unique<Shader>("just_color_3d");
 
-        event_listener_ = klgl::events::EventListenerMethodCallbacks<&Painter2dApp::OnMouseMove>::CreatePtr(this);
+        event_listener_ = events::EventListenerMethodCallbacks<&Painter2dApp::OnMouseMove>::CreatePtr(this);
         GetEventManager().AddEventListener(*event_listener_);
 
-        std::vector<edt::Vec4f> positions = CalcPositions();
+        std::vector<Vec4f> positions = CalcPositions();
 
-        m_posBuf = klgl::OpenGl::GenBuffer();
-        m_velBuf = klgl::OpenGl::GenBuffer();
+        particels_positions_buffer_ = OpenGl::GenBuffer();
+        particles_velocities_buffer_ = OpenGl::GenBuffer();
 
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_posBuf.GetValue());
-        klgl::OpenGl::BufferData(klgl::GlBufferType::ShaderStorage, std::span{positions}, klgl::GlUsage::DynamicDraw);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particels_positions_buffer_.GetValue());
+        OpenGl::BufferData(GlBufferType::ShaderStorage, std::span{positions}, GlUsage::DynamicDraw);
 
-        std::vector<edt::Vec4f> velocities(positions.size());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_velBuf.GetValue());
-        klgl::OpenGl::BufferData(klgl::GlBufferType::ShaderStorage, std::span{velocities}, klgl::GlUsage::DynamicCopy);
+        std::vector<Vec4f> velocities(positions.size());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particles_velocities_buffer_.GetValue());
+        OpenGl::BufferData(GlBufferType::ShaderStorage, std::span{velocities}, GlUsage::DynamicCopy);
 
-        glGenVertexArrays(1, &m_vao);
-        glBindVertexArray(m_vao);
+        particles_vao_ = OpenGl::GenVertexArray();
+        OpenGl::BindVertexArray(particles_vao_);
+        OpenGl::BindBuffer(GlBufferType::Array, particels_positions_buffer_);
+        OpenGl::VertexAttribPointer(0, 4, GlVertexAttribComponentType::Float, false, 0, nullptr);
+        OpenGl::EnableVertexAttribArray(0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, m_posBuf.GetValue());
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
-        glEnableVertexAttribArray(0);
+        OpenGl::BindVertexArray({});
 
-        glBindVertexArray(0);
+        bodies_positions_buffer_ = OpenGl::GenBuffer();
+        OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
+        constexpr std::array data{kBodyAStartPosition, kBodyBStartPosition};
+        OpenGl::BufferData(GlBufferType::Array, std::span{data}, GlUsage::DynamicDraw);
 
-        m_bhBuf = klgl::OpenGl::GenBuffer();
-        glBindBuffer(GL_ARRAY_BUFFER, m_bhBuf.GetValue());
-        std::array<float, 8> data{
-            black_hole_start_pos_a_.x(),
-            black_hole_start_pos_a_.y(),
-            black_hole_start_pos_a_.z(),
-            1,
-            black_hole_start_pos_b_.x(),
-            black_hole_start_pos_b_.y(),
-            black_hole_start_pos_b_.z(),
-            1};
-        klgl::OpenGl::BufferData(klgl::GlBufferType::Array, std::span{data}, klgl::GlUsage::DynamicDraw);
+        bodies_vao_ = OpenGl::GenVertexArray();
+        OpenGl::BindVertexArray(bodies_vao_);
+        OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
+        OpenGl::VertexAttribPointer(0, 3, GlVertexAttribComponentType::Float, false, 0, nullptr);
+        OpenGl::EnableVertexAttribArray({});
 
-        glGenVertexArrays(1, &m_bhVao);
-        glBindVertexArray(m_bhVao);
-
-        glBindBuffer(GL_ARRAY_BUFFER, m_bhBuf.GetValue());
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
-        glEnableVertexAttribArray(0);
-
-        glBindVertexArray(0);
+        OpenGl::BindVertexArray({});
     }
 
-    std::vector<edt::Vec4f> CalcPositions()
+    static std::vector<Vec4f> CalcPositions()
     {
-        std::vector<edt::Vec4f> positions(total_particles_);
-        edt::Vec3f delta(2.f / particles_per_axis_.Cast<float>());
+        std::vector<Vec4f> positions(kTotalParticles);
 
-        size_t i = 0;
-        for (size_t x = 0; x < particles_per_axis_.x(); x++)
+        const size_t s = static_cast<size_t>(std::round(std::pow(static_cast<float>(kTotalParticles), 1.f / 3)));
+        auto delta = Vec3f{} + 2.f / static_cast<float>(s);
+
+        [&]
         {
-            for (size_t y = 0; y < particles_per_axis_.y(); y++)
+            size_t i = 0;
+            for (size_t x = 0; x < s; x++)
             {
-                for (size_t z = 0; z < particles_per_axis_.z(); z++)
+                for (size_t y = 0; y < s; y++)
                 {
-                    positions[i] = edt::Vec4f((edt::Vec3<size_t>{x, y, z}.Cast<float>() * delta - 1), 1.f);
-                    i++;
+                    for (size_t z = 0; z < s; z++)
+                    {
+                        positions[i] = Vec4f((Vec3<size_t>{x, y, z}.Cast<float>() * delta - 1), 1.f);
+                        if (++i == kTotalParticles)
+                        {
+                            return;
+                        }
+                    }
                 }
             }
-        }
+        }();
 
         return positions;
     }
@@ -103,66 +108,51 @@ class Painter2dApp : public klgl::Application
         HandleInput();
 
         const float delta_t = GetLastFrameDurationSeconds() * 0.01f;
-        m_angle += m_speed * delta_t;
-        if (m_angle > 360.0f)
-        {
-            m_angle -= 360.0f;
-        }
+        angle_ = std::fmod(angle_ + rotation_speed_ * delta_t, 360.f);
 
-        const auto black_hole_rotation = edt::Math::RotationMatrix3dY(edt::Math::DegToRad(m_angle));
-        const auto black_hole_pos_a = edt::Math::TransformPos(black_hole_rotation, black_hole_start_pos_a_);
-        const auto black_hole_pos_b = edt::Math::TransformPos(black_hole_rotation, black_hole_start_pos_b_);
+        const auto body_rotation = Math::RotationMatrix3dY(Math::DegToRad(angle_));
+        const std::array bodies_positions{
+            Math::TransformPos(body_rotation, kBodyAStartPosition),
+            Math::TransformPos(body_rotation, kBodyBStartPosition)};
 
-        {
-            compute_shader_->Use();
-            compute_shader_->SetUniform(bhu1, black_hole_pos_a);
-            compute_shader_->SetUniform(bhu2, black_hole_pos_b);
-            compute_shader_->SetUniform(u_delta_t_, delta_t);
-            compute_shader_->SendUniforms();
-            glDispatchCompute(total_particles_, 1, 1);
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-        }
+        // Compute particles
+        compute_shader_->Use();
+        compute_shader_->SetUniform(u_body_a_pos_, bodies_positions[0]);
+        compute_shader_->SetUniform(u_body_b_pos_, bodies_positions[1]);
+        compute_shader_->SetUniform(u_delta_t_, delta_t);
+        compute_shader_->SendUniforms();
+        glDispatchCompute(kTotalParticles, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-        {
-            klgl::OpenGl::EnableBlending();
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        OpenGl::EnableBlending();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            just_color_->Use();
-            just_color_->SetUniform(u_model_, edt::Mat4f::Identity());
-            just_color_->SetUniform(u_view_, camera_.GetViewMatrix());
-            just_color_->SetUniform(u_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
-            just_color_->SetUniform(u_color_, edt::Vec4f{1, 1, 1, 0.1f});
-            // just_color_->SetUniform(u_color_, edt::Math::GetRainbowColorsA(GetTimeSeconds()).Cast<float>() / 255.f);
-            just_color_->SendUniforms();
+        color_shader_->Use();
+        color_shader_->SetUniform(u_model_, Mat4f::Identity());
+        color_shader_->SetUniform(u_view_, camera_.GetViewMatrix());
+        color_shader_->SetUniform(u_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
+        color_shader_->SetUniform(u_color_, Vec4f{1, 1, 1, 0.1f});
+        color_shader_->SendUniforms();
 
-            // Draw the particles
-            glPointSize(2.0f);
-            glBindVertexArray(m_vao);
-            glDrawArrays(GL_POINTS, 0, total_particles_);
+        // Draw the particles
+        OpenGl::PointSize(2.f);
+        OpenGl::BindVertexArray(particles_vao_);
+        OpenGl::DrawArrays(GlPrimitiveType::Points, 0, kTotalParticles);
 
-            // Draw black holes
-            just_color_->SetUniform(u_color_, edt::Vec4f{1, 0, 0, 1});
-            just_color_->SendUniforms();
-            glPointSize(15.0f);
-            std::array<float, 8> data{
-                black_hole_pos_a.x(),
-                black_hole_pos_a.y(),
-                black_hole_pos_a.z(),
-                1.0f,
-                black_hole_pos_b.x(),
-                black_hole_pos_b.y(),
-                black_hole_pos_b.z(),
-                1.0f};
-            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, m_bhBuf);
-            klgl::OpenGl::BufferSubData(klgl::GlBufferType::Array, 0, std::span{data});
-            glBindVertexArray(m_bhVao);
-            klgl::OpenGl::DrawArrays(klgl::GlPrimitiveType::Points, 0, 2);
-        }
+        // Draw black holes
+        color_shader_->SetUniform(u_color_, Vec4f{1, 0, 0, 1});
+        color_shader_->SendUniforms();
+        OpenGl::PointSize(15.f);
+
+        OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
+        OpenGl::BufferSubData(GlBufferType::Array, 0, std::span{bodies_positions});
+        OpenGl::BindVertexArray(bodies_vao_);
+        OpenGl::DrawArrays(GlPrimitiveType::Points, 0, 2);
 
         RenderGUI();
     }
 
-    void OnMouseMove(const klgl::events::OnMouseMove& event)
+    void OnMouseMove(const events::OnMouseMove& event)
     {
         constexpr float sensitivity = 0.01f;
         if (GetWindow().IsFocused() && GetWindow().IsInInputMode() && !ImGui::GetIO().WantCaptureMouse)
@@ -179,7 +169,9 @@ class Painter2dApp : public klgl::Application
         {
             camera_.Widget();
             ImGui::Separator();
-            klgl::SimpleTypeWidget("Camera speed", camera_speed_);
+            SimpleTypeWidget("Camera speed", camera_speed_);
+            const auto framerate = static_cast<size_t>(GetFramerate());
+            SimpleTypeWidget("Framerate", framerate);
         }
         ImGui::End();
     }
@@ -199,7 +191,7 @@ class Painter2dApp : public klgl::Application
             if (ImGui::IsKeyDown(ImGuiKey_Q)) up -= 1;
             if (std::abs(right) + std::abs(forward) + std::abs(up))
             {
-                edt::Vec3f delta = static_cast<float>(forward) * camera_.GetForwardAxis();
+                Vec3f delta = static_cast<float>(forward) * camera_.GetForwardAxis();
                 delta += static_cast<float>(right) * camera_.GetRightAxis();
                 delta += static_cast<float>(up) * camera_.GetUpAxis();
                 camera_.SetEye(camera_.GetEye() + delta * camera_speed_ * GetLastFrameDurationSeconds());
@@ -207,36 +199,34 @@ class Painter2dApp : public klgl::Application
         }
     }
 
-    static constexpr edt::Vec3<size_t> particles_per_axis_{100, 100, 100};
-    static constexpr size_t total_particles_ =
-        particles_per_axis_.x() * particles_per_axis_.y() * particles_per_axis_.z();
+    static constexpr size_t kTotalParticles = 1'000'000;
+    static constexpr Vec3f kBodyAStartPosition{5, 0, 0};
+    static constexpr Vec3f kBodyBStartPosition{-5, 0, 0};
 
-    float m_speed = 700;
-    float m_angle = 0;
-
-    GLuint m_vao = 0;
-    klgl::GlBufferId m_posBuf;
-    klgl::GlBufferId m_velBuf;
-
-    GLuint m_bhVao = 0;
-    klgl::GlBufferId m_bhBuf;
-
-    edt::Vec3f black_hole_start_pos_a_{5, 0, 0};
-    edt::Vec3f black_hole_start_pos_b_{-5, 0, 0};
-    std::shared_ptr<klgl::Shader> compute_shader_;
-    std::shared_ptr<klgl::Shader> just_color_;
-
+    float rotation_speed_ = 700;
+    float angle_ = 0;
     float camera_speed_ = 5.f;
-    klgl::UniformHandle bhu1 = klgl::UniformHandle("BlackHolePos1");
-    klgl::UniformHandle bhu2 = klgl::UniformHandle("BlackHolePos2");
-    klgl::UniformHandle u_delta_t_ = klgl::UniformHandle("u_delta_t");
-    klgl::UniformHandle u_color_ = klgl::UniformHandle("u_color");
-    klgl::UniformHandle u_model_ = klgl::UniformHandle("u_model");
-    klgl::UniformHandle u_view_ = klgl::UniformHandle("u_view");
-    klgl::UniformHandle u_projection_ = klgl::UniformHandle("u_projection");
-    klgl::Camera3d camera_{edt::Vec3f{0, 15, 0}, {.yaw = -90, .pitch = 0}};
+    Camera3d camera_{Vec3f{0, 15, 0}, {.yaw = -90, .pitch = 0}};
 
-    std::unique_ptr<klgl::events::IEventListener> event_listener_;
+    GlVertexArrayId particles_vao_;
+    GlBufferId particels_positions_buffer_;
+    GlBufferId particles_velocities_buffer_;
+
+    GlVertexArrayId bodies_vao_;
+    GlBufferId bodies_positions_buffer_;
+
+    std::shared_ptr<Shader> compute_shader_;
+    std::shared_ptr<Shader> color_shader_;
+
+    UniformHandle u_body_a_pos_ = UniformHandle("BlackHolePos1");
+    UniformHandle u_body_b_pos_ = UniformHandle("BlackHolePos2");
+    UniformHandle u_delta_t_ = UniformHandle("u_delta_t");
+    UniformHandle u_color_ = UniformHandle("u_color");
+    UniformHandle u_model_ = UniformHandle("u_model");
+    UniformHandle u_view_ = UniformHandle("u_view");
+    UniformHandle u_projection_ = UniformHandle("u_projection");
+
+    std::unique_ptr<events::IEventListener> event_listener_;
 };
 
 void Main()
@@ -244,9 +234,10 @@ void Main()
     Painter2dApp app;
     app.Run();
 }
+}  // namespace klgl::compute_shader_example
 
 int main()
 {
-    klgl::ErrorHandling::InvokeAndCatchAll(Main);
+    klgl::ErrorHandling::InvokeAndCatchAll(klgl::compute_shader_example::Main);
     return 0;
 }
