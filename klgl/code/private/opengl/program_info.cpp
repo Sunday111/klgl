@@ -67,6 +67,34 @@ void GlProgramInfo::FetchUniforms(GlProgramId program)
     }
 }
 
+void GlProgramInfo::FetchStorageBlocks(GlProgramId program)
+{
+    GLint count = 0;
+    glGetProgramInterfaceiv(program.GetValue(), GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &count);
+    [[maybe_unused]] auto error = OpenGl::GetError();
+    if (error != GlError::NoError) return;
+
+    for (GLint i = 0; i != count; ++i)
+    {
+        std::array<GLsizei, 1> results{};
+        const std::array<GLenum, 1> props_to_query{GL_NAME_LENGTH};
+        glGetProgramResourceiv(
+            program.GetValue(),
+            GL_SHADER_STORAGE_BLOCK,
+            i,
+            std::ssize(props_to_query),
+            props_to_query.data(),
+            std::ssize(results),
+            nullptr,
+            results.data());
+
+        std::string name;
+        name.resize(results.front());
+        glGetProgramResourceName(program.GetValue(), GL_SHADER_STORAGE_BLOCK, i, results.front(), NULL, name.data());
+        fmt::println("{}: {}", i, name);
+    }
+}
+
 size_t GlProgramInfo::VerifyAndGetVertexAttributeLocation(std::string_view name, GlVertexAttributeType type) const
 {
     auto it = std::ranges::find(vertex_attributes, name, &GlVertexAttributeInfo::name);

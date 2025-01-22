@@ -117,7 +117,7 @@ struct OpenGl::Internal
 
     template <typename T, typename... Args>
     [[nodiscard]] static tl::expected<std::decay_t<T>, OpenGlError>
-    ValueOrError(T&& value, fmt::format_string<Args...> format, Args&&... args)
+    ValueOrError(T&& value, fmt::format_string<Args...> format, Args&&... args) noexcept
     {
         if (GlError e = OpenGl::GetError(); e != GlError::NoError)
         {
@@ -126,18 +126,6 @@ struct OpenGl::Internal
         }
 
         return std::forward<T>(value);
-    }
-
-    template <typename ValueType, typename F>
-    [[nodiscard]] static auto ChainIfValue(tl::expected<ValueType, OpenGlError> expected, F and_then)
-        -> std::remove_cvref_t<typename std::invoke_result_t<F, ValueType>>
-    {
-        if (expected.has_value())
-        {
-            return and_then(std::move(expected.value()));
-        }
-
-        return tl::unexpected{std::move(expected.error())};
     }
 
     template <typename Identifier>
@@ -196,6 +184,20 @@ struct OpenGl::Internal
     {
         return TryTakeValue(GenOneCE<T>());
     }
+
+    static constexpr auto GetInfoLog = [](const auto& fn, std::string_view fn_name, const auto& id, size_t length)
+    {
+        std::string log;
+        log.resize(length);
+        fn(id.GetValue(), static_cast<GLint>(length), nullptr, log.data());
+        return ValueOrError(
+            std::move(log),
+            "{}(program: {}, bufSize: {}, length: nullptr, infoLog: {})",
+            fn_name,
+            id.GetValue(),
+            log.size(),
+            static_cast<const void*>(log.data()));
+    };
 };
 
 GlError OpenGl::GetError() noexcept
@@ -929,21 +931,8 @@ std::string OpenGl::GetShaderLogNE(GlShaderId shader) noexcept
 
 tl::expected<std::string, OpenGlError> OpenGl::GetShaderLogCE(GlShaderId shader) noexcept
 {
-    return Internal::ChainIfValue(
-        GetShaderLogLengthCE(shader),
-        [&](size_t length) -> tl::expected<std::string, OpenGlError>
-        {
-            std::string log;
-            log.resize(length);
-            glGetShaderInfoLog(shader.GetValue(), static_cast<GLint>(log.size()), nullptr, log.data());
-
-            return Internal::ValueOrError(
-                std::move(log),
-                "glGetShaderInfoLog(shader: {}, bufSize: {}, length: nullptr, infoLog: {})",
-                shader.GetValue(),
-                log.size(),
-                static_cast<const void*>(log.data()));
-        });
+    return GetShaderLogLengthCE(shader).and_then(
+        std::bind_front(Internal::GetInfoLog, glGetShaderInfoLog, "glGetShaderInfoLog", shader));
 }
 
 std::string OpenGl::GetShaderLog(GlShaderId shader)
@@ -1218,6 +1207,29 @@ int32_t OpenGl::GetProgramIntParameter(GlProgramId program, GlProgramIntParamete
     return Internal::TryTakeValue(GetProgramIntParameterCE(program, parameter));
 }
 
+// Get work group size of compute shader
+
+Vec3i OpenGl::GetProgramWorkGroupSizeNE(GlProgramId program) noexcept
+{
+    Vec3i result{};
+    glGetProgramiv(program.GetValue(), ToGlValue(GlProgramIntParameter::ComputeWorkGroupSize), result.data());
+    return result;
+}
+
+tl::expected<Vec3i, OpenGlError> OpenGl::GetProgramWorkGroupSizeCE(GlProgramId program) noexcept
+{
+    return Internal::ValueOrError(
+        GetProgramWorkGroupSizeNE(program),
+        "glGetProgramiv(program: {}, pname: {})",
+        program.GetValue(),
+        ToGlValue(GlProgramIntParameter::ComputeWorkGroupSize));
+}
+
+Vec3i OpenGl::GetProgramWorkGroupSize(GlProgramId program)
+{
+    return Internal::TryTakeValue(GetProgramWorkGroupSizeCE(program));
+}
+
 // Active attributes count
 
 size_t OpenGl::GetProgramActiveAttributesCountNE(GlProgramId program) noexcept
@@ -1227,9 +1239,7 @@ size_t OpenGl::GetProgramActiveAttributesCountNE(GlProgramId program) noexcept
 
 tl::expected<size_t, OpenGlError> OpenGl::GetProgramActiveAttributesCountCE(GlProgramId program) noexcept
 {
-    return Internal::ChainIfValue(
-        GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveAttributes),
-        Internal::CastToSizeT);
+    return GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveAttributes).and_then(Internal::CastToSizeT);
 }
 
 size_t OpenGl::GetProgramActiveAttributesCount(GlProgramId program)
@@ -1246,9 +1256,8 @@ size_t OpenGl::GetProgramActiveAttributeMaxNameLengthNE(GlProgramId program) noe
 
 tl::expected<size_t, OpenGlError> OpenGl::GetProgramActiveAttributeMaxNameLengthCE(GlProgramId program) noexcept
 {
-    return Internal::ChainIfValue(
-        GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveAttributeMaxLength),
-        Internal::CastToSizeT);
+    return GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveAttributeMaxLength)
+        .and_then(Internal::CastToSizeT);
 }
 
 size_t OpenGl::GetProgramActiveAttributeMaxNameLength(GlProgramId program)
@@ -1360,9 +1369,7 @@ size_t OpenGl::GetProgramActiveUniformsCountNE(GlProgramId program) noexcept
 
 tl::expected<size_t, OpenGlError> OpenGl::GetProgramActiveUniformsCountCE(GlProgramId program) noexcept
 {
-    return Internal::ChainIfValue(
-        GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveUniforms),
-        Internal::CastToSizeT);
+    return GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveUniforms).and_then(Internal::CastToSizeT);
 }
 
 size_t OpenGl::GetProgramActiveUniformsCount(GlProgramId program)
@@ -1379,9 +1386,8 @@ size_t OpenGl::GetProgramActiveUniformMaxNameLengthNE(GlProgramId program) noexc
 
 tl::expected<size_t, OpenGlError> OpenGl::GetProgramActiveUniformMaxNameLengthCE(GlProgramId program) noexcept
 {
-    return Internal::ChainIfValue(
-        GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveUniformMaxLength),
-        Internal::CastToSizeT);
+    return GetProgramIntParameterCE(program, GlProgramIntParameter::ActiveUniformMaxLength)
+        .and_then(Internal::CastToSizeT);
 }
 
 size_t OpenGl::GetProgramActiveUniformMaxNameLength(GlProgramId program)
@@ -1499,20 +1505,8 @@ std::string OpenGl::GetProgramLogNE(GlProgramId program) noexcept
 
 tl::expected<std::string, OpenGlError> OpenGl::GetProgramLogCE(GlProgramId program) noexcept
 {
-    return Internal::ChainIfValue(
-        GetProgramLogLengthCE(program),
-        [&](const size_t length) -> tl::expected<std::string, OpenGlError>
-        {
-            std::string log;
-            log.resize(length);
-            glGetProgramInfoLog(program.GetValue(), static_cast<GLint>(log.size()), nullptr, log.data());
-            return Internal::ValueOrError(
-                std::move(log),
-                "glGetProgramInfoLog(program: {}, bufSize: {}, length: nullptr, infoLog: {})",
-                program.GetValue(),
-                log.size(),
-                static_cast<const void*>(log.data()));
-        });
+    return GetProgramLogLengthCE(program).and_then(
+        std::bind_front(Internal::GetInfoLog, glGetProgramInfoLog, "glGetProgramInfoLog", program));
 }
 
 std::string OpenGl::GetProgramLog(GlProgramId program)

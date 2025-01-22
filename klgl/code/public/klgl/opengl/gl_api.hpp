@@ -360,6 +360,11 @@ public:
         GlProgramId program,
         GlProgramIntParameter parameter);
 
+    [[nodiscard]] KLGL_OGL_INLINE static Vec3i GetProgramWorkGroupSizeNE(GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<Vec3i, OpenGlError> GetProgramWorkGroupSizeCE(
+        GlProgramId program) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static Vec3i GetProgramWorkGroupSize(GlProgramId program);
+
     [[nodiscard]] KLGL_OGL_INLINE static size_t GetProgramActiveAttributesCountNE(GlProgramId program) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static tl::expected<size_t, OpenGlError> GetProgramActiveAttributesCountCE(
         GlProgramId program) noexcept;

@@ -34,8 +34,11 @@ class Painter2dApp : public Application
         GetWindow().SetSize(1000, 1000);
         GetWindow().SetTitle("Painter 2d");
         SetTargetFramerate({});
-        compute_shader_ = std::make_unique<Shader>("compute_shader");
-        color_shader_ = std::make_unique<Shader>("just_color_3d");
+        compute_shader_ = std::make_unique<Shader>("compute_shader_example/compute_shader");
+
+        color_shader_ = std::make_unique<Shader>("compute_shader_example/color");
+        const size_t a_color_shader_vertex =
+            color_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("vertex_attribute");
 
         event_listener_ = events::EventListenerMethodCallbacks<&Painter2dApp::OnMouseMove>::CreatePtr(this);
         GetEventManager().AddEventListener(*event_listener_);
@@ -55,7 +58,7 @@ class Painter2dApp : public Application
         particles_vao_ = OpenGl::GenVertexArray();
         OpenGl::BindVertexArray(particles_vao_);
         OpenGl::BindBuffer(GlBufferType::Array, particels_positions_buffer_);
-        OpenGl::VertexAttribPointer(0, 4, GlVertexAttribComponentType::Float, false, 0, nullptr);
+        OpenGl::VertexAttribPointer(a_color_shader_vertex, 4, GlVertexAttribComponentType::Float, false, 0, nullptr);
         OpenGl::EnableVertexAttribArray(0);
 
         OpenGl::BindVertexArray({});
@@ -68,7 +71,7 @@ class Painter2dApp : public Application
         bodies_vao_ = OpenGl::GenVertexArray();
         OpenGl::BindVertexArray(bodies_vao_);
         OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
-        OpenGl::VertexAttribPointer(0, 3, GlVertexAttribComponentType::Float, false, 0, nullptr);
+        OpenGl::VertexAttribPointer(a_color_shader_vertex, 3, GlVertexAttribComponentType::Float, false, 0, nullptr);
         OpenGl::EnableVertexAttribArray({});
 
         OpenGl::BindVertexArray({});
@@ -107,7 +110,7 @@ class Painter2dApp : public Application
     {
         HandleInput();
 
-        const float delta_t = GetLastFrameDurationSeconds() * 0.01f;
+        const float delta_t = GetLastFrameDurationSeconds() * 0.01f * time_multiplier_;
         angle_ = std::fmod(angle_ + rotation_speed_ * delta_t, 360.f);
 
         const auto body_rotation = Math::RotationMatrix3dY(Math::DegToRad(angle_));
@@ -172,6 +175,7 @@ class Painter2dApp : public Application
             SimpleTypeWidget("Camera speed", camera_speed_);
             const auto framerate = static_cast<size_t>(GetFramerate());
             SimpleTypeWidget("Framerate", framerate);
+            ImGui::SliderFloat("Time multiplier", &time_multiplier_, 0.1f, 10.f);
         }
         ImGui::End();
     }
@@ -206,6 +210,7 @@ class Painter2dApp : public Application
     float rotation_speed_ = 700;
     float angle_ = 0;
     float camera_speed_ = 5.f;
+    float time_multiplier_ = 0.f;
     Camera3d camera_{Vec3f{0, 15, 0}, {.yaw = -90, .pitch = 0}};
 
     GlVertexArrayId particles_vao_;

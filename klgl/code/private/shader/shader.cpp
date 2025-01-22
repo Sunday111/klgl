@@ -574,6 +574,7 @@ void Shader::UpdateInfo()
 {
     info_.FetchUniforms(program_);
     info_.FetchVertexAttributes(program_);
+    info_.FetchStorageBlocks(program_);
 }
 
 void Shader::UpdateUniforms()
