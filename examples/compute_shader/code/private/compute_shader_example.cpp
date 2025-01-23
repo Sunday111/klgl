@@ -35,51 +35,78 @@ class Painter2dApp : public Application
         GetWindow().SetTitle("Painter 2d");
         SetTargetFramerate({});
         compute_shader_ = std::make_unique<Shader>("compute_shader_example/compute_shader");
+        particle_shader_ = std::make_unique<Shader>("compute_shader_example/particle");
+        body_shader_ = std::make_unique<Shader>("compute_shader_example/body");
 
-        color_shader_ = std::make_unique<Shader>("compute_shader_example/color");
-        const size_t a_color_shader_vertex =
-            color_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("vertex_attribute");
+        const size_t a_particle_shader_position =
+            particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("vertex_position");
 
         event_listener_ = events::EventListenerMethodCallbacks<&Painter2dApp::OnMouseMove>::CreatePtr(this);
         GetEventManager().AddEventListener(*event_listener_);
 
-        std::vector<Vec4f> positions = CalcPositions();
-
         particels_positions_buffer_ = OpenGl::GenBuffer();
         particles_velocities_buffer_ = OpenGl::GenBuffer();
 
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particels_positions_buffer_.GetValue());
-        OpenGl::BufferData(GlBufferType::ShaderStorage, std::span{positions}, GlUsage::DynamicDraw);
-
-        std::vector<Vec4f> velocities(positions.size());
+        std::vector<Vec3f> velocities(kTotalParticles, Vec3f{});
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particles_velocities_buffer_.GetValue());
         OpenGl::BufferData(GlBufferType::ShaderStorage, std::span{velocities}, GlUsage::DynamicCopy);
+
+        const auto positions = CalcPositions();
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particels_positions_buffer_.GetValue());
+        OpenGl::BufferData(GlBufferType::ShaderStorage, std::span{positions}, GlUsage::DynamicDraw);
 
         particles_vao_ = OpenGl::GenVertexArray();
         OpenGl::BindVertexArray(particles_vao_);
         OpenGl::BindBuffer(GlBufferType::Array, particels_positions_buffer_);
-        OpenGl::VertexAttribPointer(a_color_shader_vertex, 4, GlVertexAttribComponentType::Float, false, 0, nullptr);
+        OpenGl::VertexAttribPointer(
+            a_particle_shader_position,
+            4,
+            GlVertexAttribComponentType::Float,
+            false,
+            0,
+            nullptr);
         OpenGl::EnableVertexAttribArray(0);
 
-        OpenGl::BindVertexArray({});
+        // OpenGl::BindVertexArray(particles_vao_);
+        // OpenGl::BindBuffer(GlBufferType::Array, particles_velocities_buffer_);
+        // OpenGl::VertexAttribPointer(
+        //     a_color_shader_vertex_velocity,
+        //     4,
+        //     GlVertexAttribComponentType::Float,
+        //     false,
+        //     0,
+        //     nullptr);
+        // OpenGl::EnableVertexAttribArray(0);
+        //
+        // OpenGl::BindVertexArray({});
 
-        bodies_positions_buffer_ = OpenGl::GenBuffer();
-        OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
-        constexpr std::array data{kBodyAStartPosition, kBodyBStartPosition};
-        OpenGl::BufferData(GlBufferType::Array, std::span{data}, GlUsage::DynamicDraw);
+        {
+            bodies_positions_buffer_ = OpenGl::GenBuffer();
+            OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
+            constexpr std::array data{kBodyAStartPosition, kBodyBStartPosition};
+            OpenGl::BufferData(GlBufferType::Array, std::span{data}, GlUsage::DynamicDraw);
 
-        bodies_vao_ = OpenGl::GenVertexArray();
-        OpenGl::BindVertexArray(bodies_vao_);
-        OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
-        OpenGl::VertexAttribPointer(a_color_shader_vertex, 3, GlVertexAttribComponentType::Float, false, 0, nullptr);
-        OpenGl::EnableVertexAttribArray({});
+            bodies_vao_ = OpenGl::GenVertexArray();
+            const size_t a_body_shader_position =
+                particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("vertex_position");
+            OpenGl::BindVertexArray(bodies_vao_);
+            OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
+            OpenGl::VertexAttribPointer(
+                a_body_shader_position,
+                3,
+                GlVertexAttribComponentType::Float,
+                false,
+                0,
+                nullptr);
+            OpenGl::EnableVertexAttribArray({});
 
-        OpenGl::BindVertexArray({});
+            OpenGl::BindVertexArray({});
+        }
     }
 
-    static std::vector<Vec4f> CalcPositions()
+    static std::vector<Vec3f> CalcPositions()
     {
-        std::vector<Vec4f> positions(kTotalParticles);
+        std::vector<Vec3f> positions(kTotalParticles);
 
         const size_t s = static_cast<size_t>(std::round(std::pow(static_cast<float>(kTotalParticles), 1.f / 3)));
         auto delta = Vec3f{} + 2.f / static_cast<float>(s);
@@ -93,7 +120,7 @@ class Painter2dApp : public Application
                 {
                     for (size_t z = 0; z < s; z++)
                     {
-                        positions[i] = Vec4f((Vec3<size_t>{x, y, z}.Cast<float>() * delta - 1), 1.f);
+                        positions[i] = (Vec3<size_t>{x, y, z}.Cast<float>() * delta - 1);
                         if (++i == kTotalParticles)
                         {
                             return;
@@ -130,27 +157,37 @@ class Painter2dApp : public Application
         OpenGl::EnableBlending();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        color_shader_->Use();
-        color_shader_->SetUniform(u_model_, Mat4f::Identity());
-        color_shader_->SetUniform(u_view_, camera_.GetViewMatrix());
-        color_shader_->SetUniform(u_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
-        color_shader_->SetUniform(u_color_, Vec4f{1, 1, 1, 0.1f});
-        color_shader_->SendUniforms();
+        {
+            // Draw the particles
+            particle_shader_->Use();
+            particle_shader_->SetUniform(u_particle_model_, Mat4f::Identity());
+            particle_shader_->SetUniform(u_particle_view_, camera_.GetViewMatrix());
+            particle_shader_->SetUniform(u_particle_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
+            particle_shader_->SetUniform(u_particle_color_, Vec4f{1, 1, 1, 0.1f});
+            particle_shader_->SendUniforms();
 
-        // Draw the particles
-        OpenGl::PointSize(2.f);
-        OpenGl::BindVertexArray(particles_vao_);
-        OpenGl::DrawArrays(GlPrimitiveType::Points, 0, kTotalParticles);
+            OpenGl::PointSize(2.f);
+            OpenGl::BindVertexArray(particles_vao_);
+            OpenGl::DrawArrays(GlPrimitiveType::Points, 0, kTotalParticles);
+        }
 
-        // Draw black holes
-        color_shader_->SetUniform(u_color_, Vec4f{1, 0, 0, 1});
-        color_shader_->SendUniforms();
-        OpenGl::PointSize(15.f);
+        {
+            // Draw bodies
+            body_shader_->Use();
+            body_shader_->SetUniform(u_body_model_, Mat4f::Identity());
+            body_shader_->SetUniform(u_body_view_, camera_.GetViewMatrix());
+            body_shader_->SetUniform(u_body_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
+            body_shader_->SetUniform(u_body_color_, Vec4f{1, 0, 0, 1});
+            body_shader_->SendUniforms();
 
-        OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
-        OpenGl::BufferSubData(GlBufferType::Array, 0, std::span{bodies_positions});
-        OpenGl::BindVertexArray(bodies_vao_);
-        OpenGl::DrawArrays(GlPrimitiveType::Points, 0, 2);
+            // Update bodies positions
+            OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
+            OpenGl::BufferSubData(GlBufferType::Array, 0, std::span{bodies_positions});
+
+            OpenGl::PointSize(15.f);
+            OpenGl::BindVertexArray(bodies_vao_);
+            OpenGl::DrawArrays(GlPrimitiveType::Points, 0, 2);
+        }
 
         RenderGUI();
     }
@@ -221,15 +258,22 @@ class Painter2dApp : public Application
     GlBufferId bodies_positions_buffer_;
 
     std::shared_ptr<Shader> compute_shader_;
-    std::shared_ptr<Shader> color_shader_;
+    std::shared_ptr<Shader> particle_shader_;
+    std::shared_ptr<Shader> body_shader_;
 
     UniformHandle u_body_a_pos_ = UniformHandle("BlackHolePos1");
     UniformHandle u_body_b_pos_ = UniformHandle("BlackHolePos2");
     UniformHandle u_delta_t_ = UniformHandle("u_delta_t");
-    UniformHandle u_color_ = UniformHandle("u_color");
-    UniformHandle u_model_ = UniformHandle("u_model");
-    UniformHandle u_view_ = UniformHandle("u_view");
-    UniformHandle u_projection_ = UniformHandle("u_projection");
+
+    UniformHandle u_particle_color_ = UniformHandle("u_color");
+    UniformHandle u_particle_model_ = UniformHandle("u_model");
+    UniformHandle u_particle_view_ = UniformHandle("u_view");
+    UniformHandle u_particle_projection_ = UniformHandle("u_projection");
+
+    UniformHandle u_body_color_ = UniformHandle("u_color");
+    UniformHandle u_body_model_ = UniformHandle("u_model");
+    UniformHandle u_body_view_ = UniformHandle("u_view");
+    UniformHandle u_body_projection_ = UniformHandle("u_projection");
 
     std::unique_ptr<events::IEventListener> event_listener_;
 };
