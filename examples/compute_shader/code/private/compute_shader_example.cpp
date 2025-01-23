@@ -33,13 +33,13 @@ class Painter2dApp : public Application
         OpenGl::SetClearColor({});
         GetWindow().SetSize(1000, 1000);
         GetWindow().SetTitle("Painter 2d");
-        SetTargetFramerate({});
+        SetTargetFramerate({60});
         compute_shader_ = std::make_unique<Shader>("compute_shader_example/compute_shader");
         particle_shader_ = std::make_unique<Shader>("compute_shader_example/particle");
         body_shader_ = std::make_unique<Shader>("compute_shader_example/body");
 
         const size_t a_particle_shader_position =
-            particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("vertex_position");
+            particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_position");
 
         event_listener_ = events::EventListenerMethodCallbacks<&Painter2dApp::OnMouseMove>::CreatePtr(this);
         GetEventManager().AddEventListener(*event_listener_);
@@ -88,7 +88,7 @@ class Painter2dApp : public Application
 
             bodies_vao_ = OpenGl::GenVertexArray();
             const size_t a_body_shader_position =
-                particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("vertex_position");
+                particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_position");
             OpenGl::BindVertexArray(bodies_vao_);
             OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
             OpenGl::VertexAttribPointer(
@@ -137,33 +137,35 @@ class Painter2dApp : public Application
     {
         HandleInput();
 
-        const float delta_t = GetLastFrameDurationSeconds() * 0.01f * time_multiplier_;
-        angle_ = std::fmod(angle_ + rotation_speed_ * delta_t, 360.f);
+        for ([[maybe_unused]] const int i : std::views::iota(0, time_steps_per_frame_))
+        {
+            angle_ = std::fmod(angle_ + rotation_speed_ * time_step_, 360.f);
 
-        const auto body_rotation = Math::RotationMatrix3dY(Math::DegToRad(angle_));
-        const std::array bodies_positions{
-            Math::TransformPos(body_rotation, kBodyAStartPosition),
-            Math::TransformPos(body_rotation, kBodyBStartPosition)};
+            const auto body_rotation = Math::RotationMatrix3dY(Math::DegToRad(angle_));
+            bodies_positions_.clear();
+            bodies_positions_.push_back(Math::TransformPos(body_rotation, kBodyAStartPosition));
+            bodies_positions_.push_back(Math::TransformPos(body_rotation, kBodyBStartPosition));
 
-        // Compute particles
-        compute_shader_->Use();
-        compute_shader_->SetUniform(u_body_a_pos_, bodies_positions[0]);
-        compute_shader_->SetUniform(u_body_b_pos_, bodies_positions[1]);
-        compute_shader_->SetUniform(u_delta_t_, delta_t);
-        compute_shader_->SendUniforms();
-        glDispatchCompute(kTotalParticles, 1, 1);
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+            // Compute particles
+            compute_shader_->Use();
+            compute_shader_->SetUniform(u_body_a_pos_, bodies_positions_[0]);
+            compute_shader_->SetUniform(u_body_b_pos_, bodies_positions_[1]);
+            compute_shader_->SetUniform(u_delta_t_, time_step_);
+            compute_shader_->SendUniforms();
+            glDispatchCompute(kTotalParticles, 1, 1);
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        }
 
         OpenGl::EnableBlending();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+        const auto mvp = camera_.GetViewMatrix().MatMul(camera_.GetProjectionMatrix(GetWindow().GetAspect()));
+
         {
             // Draw the particles
             particle_shader_->Use();
-            particle_shader_->SetUniform(u_particle_model_, Mat4f::Identity());
-            particle_shader_->SetUniform(u_particle_view_, camera_.GetViewMatrix());
-            particle_shader_->SetUniform(u_particle_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
-            particle_shader_->SetUniform(u_particle_color_, Vec4f{1, 1, 1, 0.1f});
+            particle_shader_->SetUniform(u_particle_mvp_, mvp);
+            particle_shader_->SetUniform(u_particle_color_, Vec4f{1, 1, 1, particle_alpha_});
             particle_shader_->SendUniforms();
 
             OpenGl::PointSize(2.f);
@@ -174,19 +176,17 @@ class Painter2dApp : public Application
         {
             // Draw bodies
             body_shader_->Use();
-            body_shader_->SetUniform(u_body_model_, Mat4f::Identity());
-            body_shader_->SetUniform(u_body_view_, camera_.GetViewMatrix());
-            body_shader_->SetUniform(u_body_projection_, camera_.GetProjectionMatrix(GetWindow().GetAspect()));
+            body_shader_->SetUniform(u_body_mvp_, mvp);
             body_shader_->SetUniform(u_body_color_, Vec4f{1, 0, 0, 1});
             body_shader_->SendUniforms();
 
             // Update bodies positions
             OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
-            OpenGl::BufferSubData(GlBufferType::Array, 0, std::span{bodies_positions});
+            OpenGl::BufferSubData(GlBufferType::Array, 0, std::span{bodies_positions_});
 
             OpenGl::PointSize(15.f);
             OpenGl::BindVertexArray(bodies_vao_);
-            OpenGl::DrawArrays(GlPrimitiveType::Points, 0, 2);
+            OpenGl::DrawArrays(GlPrimitiveType::Points, 0, bodies_positions_.size());
         }
 
         RenderGUI();
@@ -212,7 +212,9 @@ class Painter2dApp : public Application
             SimpleTypeWidget("Camera speed", camera_speed_);
             const auto framerate = static_cast<size_t>(GetFramerate());
             SimpleTypeWidget("Framerate", framerate);
-            ImGui::SliderFloat("Time multiplier", &time_multiplier_, 0.1f, 10.f);
+            ImGui::SliderFloat("Time multiplier", &time_step_, 0.0f, 1.f / 10000, "%.6f");
+            ImGui::SliderInt("Time steps per frame", &time_steps_per_frame_, 0, 10);
+            ImGui::SliderFloat("Particle alpha", &particle_alpha_, 0.0001f, 1.f, "%.4f");
         }
         ImGui::End();
     }
@@ -244,10 +246,11 @@ class Painter2dApp : public Application
     static constexpr Vec3f kBodyAStartPosition{5, 0, 0};
     static constexpr Vec3f kBodyBStartPosition{-5, 0, 0};
 
+    int time_steps_per_frame_ = 10;
     float rotation_speed_ = 700;
     float angle_ = 0;
     float camera_speed_ = 5.f;
-    float time_multiplier_ = 0.f;
+    float time_step_ = 0.f;
     Camera3d camera_{Vec3f{0, 15, 0}, {.yaw = -90, .pitch = 0}};
 
     GlVertexArrayId particles_vao_;
@@ -266,14 +269,14 @@ class Painter2dApp : public Application
     UniformHandle u_delta_t_ = UniformHandle("u_delta_t");
 
     UniformHandle u_particle_color_ = UniformHandle("u_color");
-    UniformHandle u_particle_model_ = UniformHandle("u_model");
-    UniformHandle u_particle_view_ = UniformHandle("u_view");
-    UniformHandle u_particle_projection_ = UniformHandle("u_projection");
+    UniformHandle u_particle_mvp_ = UniformHandle("u_mvp");
 
     UniformHandle u_body_color_ = UniformHandle("u_color");
-    UniformHandle u_body_model_ = UniformHandle("u_model");
-    UniformHandle u_body_view_ = UniformHandle("u_view");
-    UniformHandle u_body_projection_ = UniformHandle("u_projection");
+    UniformHandle u_body_mvp_ = UniformHandle("u_mvp");
+
+    std::vector<Vec3f> bodies_positions_;
+
+    float particle_alpha_ = 0.1f;
 
     std::unique_ptr<events::IEventListener> event_listener_;
 };
