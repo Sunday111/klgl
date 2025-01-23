@@ -13,6 +13,7 @@
 #include "klgl/events/event_manager.hpp"
 #include "klgl/events/mouse_events.hpp"
 #include "klgl/opengl/gl_api.hpp"
+#include "klgl/opengl/vertex_attribute_helper.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
 #include "klgl/window.hpp"
@@ -40,6 +41,8 @@ class Painter2dApp : public Application
 
         const size_t a_particle_shader_position =
             particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_position");
+        const size_t a_particle_shader_velocity =
+            particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_velocity");
 
         event_listener_ = events::EventListenerMethodCallbacks<&Painter2dApp::OnMouseMove>::CreatePtr(this);
         GetEventManager().AddEventListener(*event_listener_);
@@ -58,27 +61,13 @@ class Painter2dApp : public Application
         particles_vao_ = OpenGl::GenVertexArray();
         OpenGl::BindVertexArray(particles_vao_);
         OpenGl::BindBuffer(GlBufferType::Array, particels_positions_buffer_);
-        OpenGl::VertexAttribPointer(
-            a_particle_shader_position,
-            4,
-            GlVertexAttribComponentType::Float,
-            false,
-            0,
-            nullptr);
-        OpenGl::EnableVertexAttribArray(0);
+        OpenGl::EnableVertexAttribArray(a_particle_shader_position);
+        VertexBufferHelperStatic<edt::Vec4f, false>::AttributePointer(a_particle_shader_position);
 
-        // OpenGl::BindVertexArray(particles_vao_);
-        // OpenGl::BindBuffer(GlBufferType::Array, particles_velocities_buffer_);
-        // OpenGl::VertexAttribPointer(
-        //     a_color_shader_vertex_velocity,
-        //     4,
-        //     GlVertexAttribComponentType::Float,
-        //     false,
-        //     0,
-        //     nullptr);
-        // OpenGl::EnableVertexAttribArray(0);
-        //
-        // OpenGl::BindVertexArray({});
+        OpenGl::BindBuffer(GlBufferType::Array, particles_velocities_buffer_);
+        OpenGl::EnableVertexAttribArray(a_particle_shader_velocity);
+        VertexBufferHelperStatic<edt::Vec4f, false>::AttributePointer(a_particle_shader_velocity);
+        OpenGl::BindVertexArray({});
 
         {
             bodies_positions_buffer_ = OpenGl::GenBuffer();
@@ -215,7 +204,13 @@ class Painter2dApp : public Application
             ImGui::SliderFloat("Time multiplier", &time_step_, 0.0f, 1.f / 10000, "%.6f");
             ImGui::SliderInt("Time steps per frame", &time_steps_per_frame_, 0, 10);
             ImGui::SliderFloat("Particle alpha", &particle_alpha_, 0.0001f, 1.f, "%.4f");
+
+            if (ImGui::CollapsingHeader("Shader"))
+            {
+                particle_shader_->DrawDetails();
+            }
         }
+
         ImGui::End();
     }
 
