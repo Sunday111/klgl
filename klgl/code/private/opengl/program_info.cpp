@@ -67,7 +67,7 @@ void GlProgramInfo::FetchUniforms(GlProgramId program)
     }
 }
 
-void GlProgramInfo::FetchStorageBlocks(GlProgramId program)
+void GlProgramInfo::PrintStorageBlocks(GlProgramId program)
 {
     GLint count = 0;
     glGetProgramInterfaceiv(program.GetValue(), GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &count);
@@ -76,14 +76,14 @@ void GlProgramInfo::FetchStorageBlocks(GlProgramId program)
 
     for (GLint i = 0; i != count; ++i)
     {
-        std::array<GLsizei, 1> results{};
-        const std::array<GLenum, 1> props_to_query{GL_NAME_LENGTH};
+        const std::array<GLenum, 3> props{GL_NAME_LENGTH, GL_BUFFER_BINDING, GL_BUFFER_DATA_SIZE};
+        std::array<GLsizei, props.size()> results{};
         glGetProgramResourceiv(
             program.GetValue(),
             GL_SHADER_STORAGE_BLOCK,
             i,
-            std::ssize(props_to_query),
-            props_to_query.data(),
+            std::ssize(props),
+            props.data(),
             std::ssize(results),
             nullptr,
             results.data());
@@ -91,7 +91,10 @@ void GlProgramInfo::FetchStorageBlocks(GlProgramId program)
         std::string name;
         name.resize(results.front());
         glGetProgramResourceName(program.GetValue(), GL_SHADER_STORAGE_BLOCK, i, results.front(), NULL, name.data());
-        fmt::println("{}: {}", i, name);
+        fmt::println("{}:", i);
+        fmt::println("    name: {}", name);
+        fmt::println("    buffer binding: {}", results[1]);
+        fmt::println("    buffer data size: {}", results[2]);
     }
 }
 

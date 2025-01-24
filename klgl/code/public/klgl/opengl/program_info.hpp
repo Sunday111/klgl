@@ -30,7 +30,7 @@ struct GlProgramInfo
 {
     void FetchVertexAttributes(GlProgramId program);
     void FetchUniforms(GlProgramId program);
-    void FetchStorageBlocks(GlProgramId program);
+    void PrintStorageBlocks(GlProgramId program);
 
     [[nodiscard]] size_t VerifyAndGetVertexAttributeLocation(std::string_view name, GlVertexAttributeType type) const;
 

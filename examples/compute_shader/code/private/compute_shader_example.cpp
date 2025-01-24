@@ -34,7 +34,7 @@ class Painter2dApp : public Application
         OpenGl::SetClearColor({});
         GetWindow().SetSize(1000, 1000);
         GetWindow().SetTitle("Painter 2d");
-        SetTargetFramerate({60});
+        SetTargetFramerate({60.f});
         compute_shader_ = std::make_unique<Shader>("compute_shader_example/compute_shader");
         particle_shader_ = std::make_unique<Shader>("compute_shader_example/particle");
         body_shader_ = std::make_unique<Shader>("compute_shader_example/body");
@@ -202,7 +202,7 @@ class Painter2dApp : public Application
             const auto framerate = static_cast<size_t>(GetFramerate());
             SimpleTypeWidget("Framerate", framerate);
             ImGui::SliderFloat("Time multiplier", &time_step_, 0.0f, 1.f / 10000, "%.6f");
-            ImGui::SliderInt("Time steps per frame", &time_steps_per_frame_, 0, 10);
+            ImGui::SliderInt("Time steps per frame", &time_steps_per_frame_, 0, 40);
             ImGui::SliderFloat("Particle alpha", &particle_alpha_, 0.0001f, 1.f, "%.4f");
 
             if (ImGui::CollapsingHeader("Shader"))
@@ -241,7 +241,7 @@ class Painter2dApp : public Application
     static constexpr Vec3f kBodyAStartPosition{5, 0, 0};
     static constexpr Vec3f kBodyBStartPosition{-5, 0, 0};
 
-    int time_steps_per_frame_ = 10;
+    int time_steps_per_frame_ = 30;
     float rotation_speed_ = 700;
     float angle_ = 0;
     float camera_speed_ = 5.f;
