@@ -12,6 +12,7 @@
 #include "klgl/events/event_listener_method.hpp"
 #include "klgl/events/event_manager.hpp"
 #include "klgl/events/mouse_events.hpp"
+#include "klgl/math/rotator.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/opengl/vertex_attribute_helper.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
@@ -24,7 +25,17 @@ namespace klgl::compute_shader_example
 using namespace edt::lazy_matrix_aliases;  // NOLINT
 using Math = edt::Math;
 
-class Painter2dApp : public Application
+class BodyInfo
+{
+public:
+    Vec3f orbit_center;
+    float orbit_radius;
+    Rotator initial_rotation;
+    Rotator rotation_per_second;
+    Rotator rotation;
+};
+
+class ComputeShaderExampleApp : public Application
 {
     std::tuple<int, int> GetOpenGLVersion() const override { return {4, 5}; }
 
@@ -35,49 +46,53 @@ class Painter2dApp : public Application
         GetWindow().SetSize(1000, 1000);
         GetWindow().SetTitle("Painter 2d");
         SetTargetFramerate({60.f});
+        event_listener_ = events::EventListenerMethodCallbacks<&ComputeShaderExampleApp::OnMouseMove>::CreatePtr(this);
+        GetEventManager().AddEventListener(*event_listener_);
+
         compute_shader_ = std::make_unique<Shader>("compute_shader_example/compute_shader");
         particle_shader_ = std::make_unique<Shader>("compute_shader_example/particle");
         body_shader_ = std::make_unique<Shader>("compute_shader_example/body");
 
-        const size_t a_particle_shader_position =
-            particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_position");
-        const size_t a_particle_shader_velocity =
-            particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_velocity");
-
-        event_listener_ = events::EventListenerMethodCallbacks<&Painter2dApp::OnMouseMove>::CreatePtr(this);
-        GetEventManager().AddEventListener(*event_listener_);
-
-        particels_positions_buffer_ = OpenGl::GenBuffer();
-        particles_velocities_buffer_ = OpenGl::GenBuffer();
-
-        std::vector<Vec3f> velocities(kTotalParticles, Vec3f{});
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particles_velocities_buffer_.GetValue());
-        OpenGl::BufferData(GlBufferType::ShaderStorage, std::span{velocities}, GlUsage::DynamicCopy);
-
-        const auto positions = CalcPositions();
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particels_positions_buffer_.GetValue());
-        OpenGl::BufferData(GlBufferType::ShaderStorage, std::span{positions}, GlUsage::DynamicDraw);
-
         particles_vao_ = OpenGl::GenVertexArray();
         OpenGl::BindVertexArray(particles_vao_);
-        OpenGl::BindBuffer(GlBufferType::Array, particels_positions_buffer_);
-        OpenGl::EnableVertexAttribArray(a_particle_shader_position);
-        VertexBufferHelperStatic<edt::Vec4f, false>::AttributePointer(a_particle_shader_position);
+        {
+            const size_t a_particle_shader_position =
+                particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_position");
+            particels_positions_buffer_ = OpenGl::GenBuffer();
+            const auto positions = CalculateInitialParticePositions();
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particels_positions_buffer_.GetValue());
+            OpenGl::BufferData(GlBufferType::ShaderStorage, std::span{positions}, GlUsage::DynamicDraw);
+            OpenGl::BindBuffer(GlBufferType::Array, particels_positions_buffer_);
+            OpenGl::EnableVertexAttribArray(a_particle_shader_position);
+            VertexBufferHelperStatic<edt::Vec4f, false>::AttributePointer(a_particle_shader_position);
+        }
 
-        OpenGl::BindBuffer(GlBufferType::Array, particles_velocities_buffer_);
-        OpenGl::EnableVertexAttribArray(a_particle_shader_velocity);
-        VertexBufferHelperStatic<edt::Vec4f, false>::AttributePointer(a_particle_shader_velocity);
+        {
+            const size_t a_particle_shader_velocity =
+                particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_velocity");
+            particles_velocities_buffer_ = OpenGl::GenBuffer();
+            std::vector<Vec3f> velocities(kTotalParticles, Vec3f{});
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particles_velocities_buffer_.GetValue());
+            OpenGl::BufferData(GlBufferType::ShaderStorage, std::span{velocities}, GlUsage::DynamicCopy);
+            OpenGl::BindBuffer(GlBufferType::Array, particles_velocities_buffer_);
+            OpenGl::EnableVertexAttribArray(a_particle_shader_velocity);
+            VertexBufferHelperStatic<edt::Vec4f, false>::AttributePointer(a_particle_shader_velocity);
+        }
         OpenGl::BindVertexArray({});
 
         {
+            for (auto& body : bodies_)
+            {
+                body.rotation = body.initial_rotation;
+            }
+
             bodies_positions_buffer_ = OpenGl::GenBuffer();
             OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
-            constexpr std::array data{kBodyAStartPosition, kBodyBStartPosition};
-            OpenGl::BufferData(GlBufferType::Array, std::span{data}, GlUsage::DynamicDraw);
+            OpenGl::BufferData(GlBufferType::Array, UpdateBodiesPositions(), GlUsage::DynamicDraw);
 
             bodies_vao_ = OpenGl::GenVertexArray();
             const size_t a_body_shader_position =
-                particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_position");
+                body_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_position");
             OpenGl::BindVertexArray(bodies_vao_);
             OpenGl::BindBuffer(GlBufferType::Array, bodies_positions_buffer_);
             OpenGl::VertexAttribPointer(
@@ -93,7 +108,7 @@ class Painter2dApp : public Application
         }
     }
 
-    static std::vector<Vec3f> CalcPositions()
+    static std::vector<Vec3f> CalculateInitialParticePositions()
     {
         std::vector<Vec3f> positions(kTotalParticles);
 
@@ -122,18 +137,32 @@ class Painter2dApp : public Application
         return positions;
     }
 
+    std::span<const edt::Vec3f> UpdateBodiesPositions()
+    {
+        bodies_positions_.clear();
+        for (BodyInfo& body : bodies_)
+        {
+            bodies_positions_.push_back(Math::TransformPos(body.rotation.ToMatrix(), Vec3f{body.orbit_radius, 0, 0}));
+        }
+
+        return bodies_positions_;
+    }
+
     void Tick() override
     {
         HandleInput();
 
         for ([[maybe_unused]] const int i : std::views::iota(0, time_steps_per_frame_))
         {
-            angle_ = std::fmod(angle_ + rotation_speed_ * time_step_, 360.f);
+            for (BodyInfo& body : bodies_)
+            {
+                body.rotation += body.rotation_per_second * time_step_;
+                body.rotation.yaw = std::fmod(body.rotation.yaw, 360.f);
+                body.rotation.pitch = std::fmod(body.rotation.pitch, 360.f);
+                body.rotation.roll = std::fmod(body.rotation.roll, 360.f);
+            }
 
-            const auto body_rotation = Math::RotationMatrix3dY(Math::DegToRad(angle_));
-            bodies_positions_.clear();
-            bodies_positions_.push_back(Math::TransformPos(body_rotation, kBodyAStartPosition));
-            bodies_positions_.push_back(Math::TransformPos(body_rotation, kBodyBStartPosition));
+            UpdateBodiesPositions();
 
             // Compute particles
             compute_shader_->Use();
@@ -201,9 +230,36 @@ class Painter2dApp : public Application
             SimpleTypeWidget("Camera speed", camera_speed_);
             const auto framerate = static_cast<size_t>(GetFramerate());
             SimpleTypeWidget("Framerate", framerate);
-            ImGui::SliderFloat("Time multiplier", &time_step_, 0.0f, 1.f / 10000, "%.6f");
+            ImGui::SliderFloat("Time step", &time_step_, 0.0f, 1.f / 10000, "%.6f");
             ImGui::SliderInt("Time steps per frame", &time_steps_per_frame_, 0, 40);
             ImGui::SliderFloat("Particle alpha", &particle_alpha_, 0.0001f, 1.f, "%.4f");
+
+            if (ImGui::CollapsingHeader("Bodies"))
+            {
+                auto rotator_widget = [](std::string_view title, Rotator& rotator)
+                {
+                    if (ImGui::CollapsingHeader(title.data()))
+                    {
+                        SimpleTypeWidget("yaw", rotator.yaw);
+                        SimpleTypeWidget("pitch", rotator.pitch);
+                        SimpleTypeWidget("roll", rotator.roll);
+                    }
+                };
+
+                for (BodyInfo& body : bodies_)
+                {
+                    ImGui::PushID(&body);
+                    if (ImGui::CollapsingHeader("Body"))
+                    {
+                        SimpleTypeWidget("Orbit center", body.orbit_center);
+                        SimpleTypeWidget("Orbit radius", body.orbit_radius);
+                        rotator_widget("Initial rotation", body.initial_rotation);
+                        rotator_widget("Rotation per second", body.rotation_per_second);
+                        rotator_widget("Current rotation", body.rotation);
+                    }
+                    ImGui::PopID();
+                }
+            }
 
             if (ImGui::CollapsingHeader("Shader"))
             {
@@ -238,12 +294,8 @@ class Painter2dApp : public Application
     }
 
     static constexpr size_t kTotalParticles = 1'000'000;
-    static constexpr Vec3f kBodyAStartPosition{5, 0, 0};
-    static constexpr Vec3f kBodyBStartPosition{-5, 0, 0};
 
     int time_steps_per_frame_ = 30;
-    float rotation_speed_ = 700;
-    float angle_ = 0;
     float camera_speed_ = 5.f;
     float time_step_ = 0.f;
     Camera3d camera_{Vec3f{0, 15, 0}, {.yaw = -90, .pitch = 0}};
@@ -274,11 +326,27 @@ class Painter2dApp : public Application
     float particle_alpha_ = 0.1f;
 
     std::unique_ptr<events::IEventListener> event_listener_;
+    std::array<BodyInfo, 2> bodies_{
+        BodyInfo{
+            .orbit_center{0, 0, 0},
+            .orbit_radius = 5,
+            .initial_rotation{.pitch = 0},
+            .rotation_per_second{.yaw = 500, .pitch = 600, .roll = 700},
+            .rotation{},
+        },
+        BodyInfo{
+            .orbit_center{0, 0, 0},
+            .orbit_radius = 5,
+            .initial_rotation{.pitch = 180},
+            .rotation_per_second{.yaw = 500, .pitch = 600, .roll = 700},
+            .rotation{},
+        },
+    };
 };
 
 void Main()
 {
-    Painter2dApp app;
+    ComputeShaderExampleApp app;
     app.Run();
 }
 }  // namespace klgl::compute_shader_example

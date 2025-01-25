@@ -32,6 +32,24 @@ class Rotator
     static constexpr edt::Mat4f ImplYZ(const Rotator& r) { return ImplZ(r).MatMul(ImplY(r)); }
     static constexpr edt::Mat4f ImplXYZ(const Rotator& r) { return ImplYZ(r).MatMul(ImplX(r)); }
 
+    template <typename F>
+    constexpr Rotator& OpFloat(F f) noexcept
+    {
+        yaw = f(yaw);
+        pitch = f(pitch);
+        roll = f(roll);
+        return *this;
+    }
+
+    template <typename F>
+    constexpr Rotator& OpRotator(F f, const Rotator& rhs) noexcept
+    {
+        yaw = f(yaw, rhs.yaw);
+        pitch = f(pitch, rhs.pitch);
+        roll = f(roll, rhs.roll);
+        return *this;
+    }
+
 public:
     [[nodiscard]] constexpr edt::Mat4f ToMatrix() const noexcept
     {
@@ -64,6 +82,72 @@ public:
         m.At<3, 3>() = 1.f;
 
         return m;
+    }
+
+    constexpr Rotator& operator*=(const float x) noexcept
+    {
+        return OpFloat([&](float y) { return x * y; });
+    }
+
+    [[nodiscard]] constexpr Rotator operator*(const float x) const noexcept
+    {
+        Rotator copy = *this;
+        copy *= x;
+        return copy;
+    }
+
+    constexpr Rotator& operator/=(const float x) noexcept
+    {
+        return OpFloat([&](float y) { return y / x; });
+    }
+
+    [[nodiscard]] constexpr Rotator operator/(const float x) const noexcept
+    {
+        Rotator copy = *this;
+        copy /= x;
+        return copy;
+    }
+
+    constexpr Rotator& operator+=(const float x) noexcept
+    {
+        return OpFloat([&](float y) { return y + x; });
+    }
+
+    [[nodiscard]] constexpr Rotator operator+(const float x) const noexcept
+    {
+        Rotator copy = *this;
+        copy += x;
+        return copy;
+    }
+
+    constexpr Rotator& operator-=(const float x) noexcept
+    {
+        return OpFloat([&](float y) { return y - x; });
+    }
+
+    [[nodiscard]] constexpr Rotator operator-(const float x) const noexcept
+    {
+        Rotator copy = *this;
+        copy -= x;
+        return copy;
+    }
+
+    constexpr Rotator& operator+=(const Rotator& rhs) noexcept { return OpRotator(std::plus<>{}, rhs); }
+
+    [[nodiscard]] constexpr Rotator operator+(const Rotator& rhs) const noexcept
+    {
+        Rotator copy = *this;
+        copy += rhs;
+        return copy;
+    }
+
+    constexpr Rotator& operator-=(const Rotator& rhs) noexcept { return OpRotator(std::minus<float>{}, rhs); }
+
+    [[nodiscard]] constexpr Rotator operator-(const Rotator& rhs) const noexcept
+    {
+        Rotator copy = *this;
+        copy -= rhs;
+        return copy;
     }
 
     // Rotation around Z (Up) axis, degrees

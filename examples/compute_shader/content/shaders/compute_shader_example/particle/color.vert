@@ -14,9 +14,9 @@ void main()
 {
     gl_Position = u_mvp * vec4(a_position, 1);
     #if COLOR_FUNCTION == 1
-        vec3 vnorm = normalize(a_velocity);
-        float mc = max(max(vnorm.x, max(vnorm.y, vnorm.z)), 0.1);
-        Color = vec4(vnorm / mc, u_color.a);
+        vec3 v = abs(normalize(a_velocity));
+        float mc = max(max(v.x, max(v.y, v.z)), 0.1);
+        Color = vec4(v / mc, u_color.a);
     #elif COLOR_FUNCTION == 2
         vec4 slow = vec4(1, 0, 0, u_color.a);
         vec4 fast = vec4(1, 1, 1, u_color.a);
