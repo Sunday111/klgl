@@ -31,6 +31,7 @@ public:
     virtual void PostTick();
     virtual void MainLoop();
     virtual void InitializeReflectionTypes();
+    [[nodiscard]] virtual bool WantsToClose() const;
 
     virtual std::tuple<int, int> GetOpenGLVersion() const { return {3, 3}; }
 

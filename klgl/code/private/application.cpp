@@ -209,7 +209,7 @@ void Application::PostTick()
 
 void Application::MainLoop()
 {
-    while (!state_->window_->ShouldClose())
+    while (!WantsToClose())
     {
         ScopeAnnotation frame_annotation("Frame");
         state_->RegisterFrameStartTime();
@@ -224,6 +224,11 @@ void Application::MainLoop()
 void Application::InitializeReflectionTypes()
 {
     RegisterReflectionTypes();
+}
+
+bool Application::WantsToClose() const
+{
+    return state_->window_->ShouldClose();
 }
 
 Window& Application::GetWindow()
