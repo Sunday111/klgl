@@ -147,6 +147,13 @@ enum class GlTextureInternalFormat
     RGBA16UI,
     RGBA32I,
     RGBA32UI,
+
+    DEPTH16,
+    DEPTH24,
+    DEPTH32F,
+    DEPTH24_STENCIL8,
+    DEPTH32F_STENCIL8,
+    STENCIL_INDEX8
 };
 
 enum class GlBufferType

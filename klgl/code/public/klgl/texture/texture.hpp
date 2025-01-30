@@ -19,6 +19,7 @@ public:
     static std::unique_ptr<Texture> CreateEmpty(
         const Vec2<size_t>& resolution,
         const GlTextureInternalFormat format = GlTextureInternalFormat::RGBA8);
+    static std::unique_ptr<Texture> CreateDepthStencil(const Vec2<size_t>& resolution);
 
     ~Texture();
 

@@ -68,13 +68,44 @@ std::unique_ptr<Texture> Texture::CreateEmpty(const Vec2<size_t>& resolution, co
         GL_RGBA,
         GL_UNSIGNED_BYTE,
         nullptr);
-    klgl::ErrorHandling::CheckOpenGlError("OpenGl::TexImage2d");
 
-    OpenGl::SetTextureWrap(GlTargetTextureType::Texture2d, GlTextureWrapAxis::R, GlTextureWrapMode::Repeat);
-    OpenGl::SetTextureWrap(GlTargetTextureType::Texture2d, GlTextureWrapAxis::S, GlTextureWrapMode::Repeat);
-    OpenGl::SetTextureWrap(GlTargetTextureType::Texture2d, GlTextureWrapAxis::T, GlTextureWrapMode::Repeat);
-    OpenGl::SetTextureMagFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
-    OpenGl::SetTextureMinFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
+    OpenGl::SetTextureWrap(tex->type_, GlTextureWrapAxis::R, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureWrap(tex->type_, GlTextureWrapAxis::S, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureWrap(tex->type_, GlTextureWrapAxis::T, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureMagFilter(tex->type_, GlTextureFilter::Nearest);
+    OpenGl::SetTextureMinFilter(tex->type_, GlTextureFilter::Nearest);
+
+    return tex;
+}
+
+std::unique_ptr<Texture> Texture::CreateDepthStencil(const Vec2<size_t>& resolution)
+{
+    ErrorHandling::Ensure(resolution != Vec2<size_t>{}, "Empty texture size!");
+
+    auto tex = std::make_unique<Texture>();
+    tex->texture_ = GlObject<GlTextureId>::CreateFrom(OpenGl::GenTexture());
+    tex->type_ = GlTargetTextureType::Texture2d;
+    tex->resolution_ = resolution;
+    tex->format_ = GlTextureInternalFormat::DEPTH24_STENCIL8;
+    tex->Bind();
+
+    assert(tex->type_ == GlTargetTextureType::Texture2d);
+
+    OpenGl::TexImage2d(
+        tex->type_,
+        0,
+        ToGlValue(tex->format_),
+        resolution.x(),
+        resolution.y(),
+        GL_DEPTH_STENCIL,
+        GL_UNSIGNED_INT_24_8,
+        nullptr);
+
+    OpenGl::SetTextureWrap(tex->type_, GlTextureWrapAxis::R, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureWrap(tex->type_, GlTextureWrapAxis::S, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureWrap(tex->type_, GlTextureWrapAxis::T, GlTextureWrapMode::Repeat);
+    OpenGl::SetTextureMagFilter(tex->type_, GlTextureFilter::Nearest);
+    OpenGl::SetTextureMinFilter(tex->type_, GlTextureFilter::Nearest);
 
     return tex;
 }

@@ -37,7 +37,7 @@ inline constexpr auto kTextureInteralFormatToFormatInfo = []
 
     using T = GlTextureInternalFormat;
 
-    KLGL_ENSURE_ENUM_SIZE(GlTextureInternalFormat, 67);
+    KLGL_ENSURE_ENUM_SIZE(GlTextureInternalFormat, 73);
 
     // Base internal formats
     // See table 1 at https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
@@ -112,10 +112,19 @@ inline constexpr auto kTextureInteralFormatToFormatInfo = []
     add(T::RGBA32I, {.n = 4, .r = 32, .g = 8, .b = 8, .a = 8, .norm = 0, .sign = 1, .fp = 0});
     add(T::RGBA32UI, {.n = 4, .r = 32, .g = 8, .b = 8, .a = 8, .norm = 0, .sign = 0, .fp = 0});
 
+    add(T::DEPTH16, {.n = 1, .r = 16, .g = 0, .b = 0, .a = 0, .norm = 0, .sign = 0, .fp = 0});
+    add(T::DEPTH24, {.n = 1, .r = 24, .g = 0, .b = 0, .a = 0, .norm = 0, .sign = 0, .fp = 0});
+    add(T::DEPTH32F, {.n = 1, .r = 24, .g = 0, .b = 0, .a = 0, .norm = 1, .sign = 0, .fp = 1});
+    add(T::DEPTH24_STENCIL8, {.n = 2, .r = 24, .g = 8, .b = 0, .a = 0, .norm = 0, .sign = 0, .fp = 0});
+    add(T::DEPTH32F_STENCIL8, {.n = 2, .r = 32, .g = 8, .b = 0, .a = 0, .norm = 0, .sign = 0, .fp = 0});
+    add(T::STENCIL_INDEX8, {.n = 1, .r = 8, .g = 0, .b = 0, .a = 0, .norm = 0, .sign = 0, .fp = 0});
+
     // Maybe worth adding compressed formats, idk
 
     return map;
 }();
+
+static_assert(kTextureInteralFormatToFormatInfo.Size() == kTextureInteralFormatToFormatInfo.Capacity());
 
 std::optional<TextureFormatInfo> TextureFormatHelper::TryGetTextureInternalFormatInfo(
     const GlTextureInternalFormat format,

@@ -12,7 +12,7 @@ inline constexpr auto kGlTextureInternalFormatToGlValue = []
     using T = GlTextureInternalFormat;
     OpenGlValueConverter<T, GLint> c;
 
-    KLGL_ENSURE_ENUM_SIZE(T, 67);
+    KLGL_ENSURE_ENUM_SIZE(T, 73);
     c.Add(T::DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
     c.Add(T::DEPTH_STENCIL, GL_DEPTH_STENCIL);
     c.Add(T::RED, GL_RED);
@@ -80,9 +80,18 @@ inline constexpr auto kGlTextureInternalFormatToGlValue = []
     c.Add(T::RGBA16UI, GL_RGBA16UI);
     c.Add(T::RGBA32I, GL_RGBA32I);
     c.Add(T::RGBA32UI, GL_RGBA32UI);
+    c.Add(T::DEPTH16, GL_DEPTH_COMPONENT16);
+    c.Add(T::DEPTH24, GL_DEPTH_COMPONENT24);
+    c.Add(T::DEPTH32F, GL_DEPTH_COMPONENT32F);
+    c.Add(T::DEPTH24_STENCIL8, GL_DEPTH24_STENCIL8);
+    c.Add(T::DEPTH32F_STENCIL8, GL_DEPTH32F_STENCIL8);
+    c.Add(T::STENCIL_INDEX8, GL_STENCIL_INDEX8);
 
     return c;
 }();
+
+static_assert(
+    kGlTextureInternalFormatToGlValue.to_gl_value.Size() == kGlTextureInternalFormatToGlValue.to_gl_value.Capacity());
 }  // namespace klgl::detail
 
 namespace klgl
