@@ -7,7 +7,7 @@
 namespace klgl
 {
 
-enum class GlError
+enum class GlError : uint8_t
 {
     NoError,
     InvalidEnum,
@@ -19,7 +19,7 @@ enum class GlError
     Unknown
 };
 
-enum class GlPixelBufferLayout
+enum class GlPixelBufferLayout : uint8_t
 {
     R,
     R_Int,
@@ -37,7 +37,7 @@ enum class GlPixelBufferLayout
     DepthStencil,
 };
 
-enum class GlPixelBufferChannelType
+enum class GlPixelBufferChannelType : uint8_t
 {
     UByte,
     Float,
@@ -77,7 +77,7 @@ enum class GlTextureFilter : uint8_t
     LinearMipmapLinear,
 };
 
-enum class GlTextureInternalFormat
+enum class GlTextureInternalFormat : uint8_t
 {
     DEPTH_COMPONENT,
     DEPTH_STENCIL,
@@ -156,7 +156,7 @@ enum class GlTextureInternalFormat
     STENCIL_INDEX8
 };
 
-enum class GlBufferType
+enum class GlBufferType : uint8_t
 {
     Array,
     AtomicCounter,
@@ -174,7 +174,7 @@ enum class GlBufferType
     Uniform
 };
 
-enum class GlUsage
+enum class GlUsage : uint8_t
 {
     StreamDraw,
     StreamRead,
@@ -187,7 +187,7 @@ enum class GlUsage
     DynamicCopy
 };
 
-enum class GlPrimitiveType
+enum class GlPrimitiveType : uint8_t
 {
     Points,
     LineStrip,
@@ -203,14 +203,14 @@ enum class GlPrimitiveType
     Patches
 };
 
-enum class GlIndexBufferElementType
+enum class GlIndexBufferElementType : uint8_t
 {
     UnsignedByte,
     UnsignedShort,
     UnsignedInt
 };
 
-enum class GlVertexAttribComponentType
+enum class GlVertexAttribComponentType : uint8_t
 {
     // glVertexAttribPointer and glVertexAttribIPointer
     Byte,
@@ -230,7 +230,7 @@ enum class GlVertexAttribComponentType
     UnsignedInt_10F_11F_11F_Rev,
 };
 
-enum class GlTargetTextureType
+enum class GlTargetTextureType : uint8_t
 {
     Texture1d,
     Texture1dArray,
@@ -245,7 +245,7 @@ enum class GlTargetTextureType
 };
 
 // Specifies the comparison operator used when GL_TEXTURE_COMPARE_MODE is set to GL_COMPARE_REF_TO_TEXTURE.
-enum class GlDepthTextureCompareFunction
+enum class GlDepthTextureCompareFunction : uint8_t
 {
     LessOrEqual,
     GreaterOrEqual,
@@ -257,7 +257,7 @@ enum class GlDepthTextureCompareFunction
     Never,
 };
 
-enum class GlDepthTextureCompareMode
+enum class GlDepthTextureCompareMode : uint8_t
 {
     // Specifies that the interpolated and clamped r texture coordinate should be compared to the value in the currently
     // bound depth texture. Compare function determines how the comparison is evaluated
@@ -267,7 +267,7 @@ enum class GlDepthTextureCompareMode
     None
 };
 
-enum class GlShaderType
+enum class GlShaderType : uint8_t
 {
     Compute,
     Vertex,
@@ -277,7 +277,7 @@ enum class GlShaderType
     Fragment,
 };
 
-enum class GlTextureParameterType
+enum class GlTextureParameterType : uint8_t
 {
     DepthStencilMode,
     BaseLevel,
@@ -300,14 +300,14 @@ enum class GlTextureParameterType
     SwizzleRGBA,
 };
 
-enum class GlCullFaceMode
+enum class GlCullFaceMode : uint8_t
 {
     Front,
     Back,
     Both
 };
 
-enum class GlProgramIntParameter
+enum class GlProgramIntParameter : uint8_t
 {
     DeleteStatus,
     LinkStatus,
@@ -331,7 +331,7 @@ enum class GlProgramIntParameter
     GeometryOutputType
 };
 
-enum class GlVertexAttributeType
+enum class GlVertexAttributeType : uint8_t
 {
     Float,
     FloatVec2,
@@ -369,7 +369,7 @@ enum class GlVertexAttributeType
     DoubleMat4x3
 };
 
-enum class GlUniformType
+enum class GlUniformType : uint8_t
 {
     Float,
     FloatVec2,
@@ -478,6 +478,28 @@ enum class GlUniformType
     UnsignedIntAtomicCounter,
 };
 
+enum class GlFramebufferBindTarget : uint8_t
+{
+    Read,
+    Draw,
+    DrawAndRead
+};
+
+enum class GlFramebufferAttachment : uint8_t
+{
+    Color0,
+    Color1,
+    Color2,
+    Color3,
+    Color4,
+    Color5,
+    Color6,
+    Color7,
+    Depth,
+    Stencil,
+    DepthStencil
+};
+
 }  // namespace klgl
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlError);
@@ -545,3 +567,9 @@ KLGL_MAKE_ENUM_FORMATTER(GlVertexAttributeType);
 
 KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlUniformType);
 KLGL_MAKE_ENUM_FORMATTER(GlUniformType);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlFramebufferBindTarget);
+KLGL_MAKE_ENUM_FORMATTER(GlFramebufferBindTarget);
+
+KLGL_ENUM_AS_INDEX_MAGIC_ENUM(GlFramebufferAttachment);
+KLGL_MAKE_ENUM_FORMATTER(GlFramebufferAttachment);

@@ -28,4 +28,11 @@ struct IdTraits<GlVertexArrayId>
     static constexpr std::string_view generator_name = "glGenVertexArrays";
 };
 
+template <>
+struct IdTraits<GlFramebufferId>
+{
+    static constexpr auto generator = &glGenFramebuffers;
+    static constexpr std::string_view generator_name = "glGenFramebuffers";
+};
+
 }  // namespace klgl::detail

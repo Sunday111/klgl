@@ -162,7 +162,7 @@ public:
     [[nodiscard]] KLGL_OGL_INLINE static GlTextureId GenTexture();
 
     KLGL_OGL_INLINE static void BindTextureNE(GlTargetTextureType target, GlTextureId texture) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BindtextureCE(
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BindTextureCE(
         GlTargetTextureType target,
         GlTextureId texture) noexcept;
     KLGL_OGL_INLINE static void BindTexture(GlTargetTextureType target, GlTextureId texture);
@@ -289,7 +289,43 @@ public:
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteTextureCE(GlTextureId texture) noexcept;
     KLGL_OGL_INLINE static void DeleteTexture(GlTextureId texture);
 
-    /************************************************** Shaders *******************************************************/
+    /************************************************** Framebuffers **************************************************/
+
+    KLGL_OGL_INLINE static void GenFramebuffersNE(const std::span<GlFramebufferId>& framebuffers) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> GenFramebuffersCE(
+        const std::span<GlFramebufferId>& framebuffers) noexcept;
+    KLGL_OGL_INLINE static void GenFramebuffers(const std::span<GlFramebufferId>& framebuffers);
+
+    [[nodiscard]] KLGL_OGL_INLINE static GlFramebufferId GenFramebufferNE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<GlFramebufferId, OpenGlError> GenFramebufferCE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static GlFramebufferId GenFramebuffer();
+
+    KLGL_OGL_INLINE static void BindFramebufferNE(GlFramebufferBindTarget target, GlFramebufferId framebuffer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BindFramebufferCE(
+        GlFramebufferBindTarget target,
+        GlFramebufferId framebuffer) noexcept;
+    KLGL_OGL_INLINE static void BindFramebuffer(GlFramebufferBindTarget target, GlFramebufferId framebuffer);
+
+    KLGL_OGL_INLINE static void FramebufferTexture2DNE(
+        GlFramebufferBindTarget target,
+        GlFramebufferAttachment attachment,
+        GlTargetTextureType textarget,
+        GlTextureId texture,
+        size_t level = 0) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> FramebufferTexture2DCE(
+        GlFramebufferBindTarget target,
+        GlFramebufferAttachment attachment,
+        GlTargetTextureType textarget,
+        GlTextureId texture,
+        size_t level = 0) noexcept;
+    KLGL_OGL_INLINE static void FramebufferTexture2D(
+        GlFramebufferBindTarget target,
+        GlFramebufferAttachment attachment,
+        GlTargetTextureType textarget,
+        GlTextureId texture,
+        size_t level = 0);
+
+    /**************************************************** Shaders *****************************************************/
 
     [[nodiscard]] KLGL_OGL_INLINE static GlShaderId CreateShaderNE(GlShaderType type) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static tl::expected<GlShaderId, OpenGlError> CreateShaderCE(

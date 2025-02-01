@@ -64,6 +64,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/cull_face_mode.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_function.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_mode.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/framebuffer_attachment.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/framebuffer_bind_target.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/index_buffer_element_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/opengl_value_converter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/detail/maps/to_gl_value/pixel_buffer_channel_type.hpp

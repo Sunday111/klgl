@@ -7,6 +7,8 @@
 #include "klgl/opengl/detail/maps/to_gl_value/cull_face_mode.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_function.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/depth_texture_compare_mode.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/framebuffer_attachment.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/framebuffer_bind_target.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/index_buffer_element_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/polygon_mode.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/primitive_type.hpp"
@@ -476,7 +478,7 @@ void OpenGl::BindTextureNE(GlTargetTextureType target, GlTextureId texture) noex
     glBindTexture(ToGlValue(target), texture.GetValue());
 }
 
-std::optional<OpenGlError> OpenGl::BindtextureCE(GlTargetTextureType target, GlTextureId texture) noexcept
+std::optional<OpenGlError> OpenGl::BindTextureCE(GlTargetTextureType target, GlTextureId texture) noexcept
 {
     BindTextureNE(target, texture);
     return Internal::ConsumeError("glBindTexture(target: {}, texture: {})", target, texture.GetValue());
@@ -484,7 +486,7 @@ std::optional<OpenGlError> OpenGl::BindtextureCE(GlTargetTextureType target, GlT
 
 void OpenGl::BindTexture(GlTargetTextureType target, GlTextureId texture)
 {
-    Internal::ThrowIfError(BindtextureCE(target, texture));
+    Internal::ThrowIfError(BindTextureCE(target, texture));
 }
 
 // Set base level
@@ -806,6 +808,106 @@ std::optional<OpenGlError> OpenGl::DeleteTextureCE(GlTextureId texture) noexcept
 void OpenGl::DeleteTexture(GlTextureId texture)
 {
     Internal::ThrowIfError(DeleteTextureCE(texture));
+}
+
+/************************************************** Framebuffers **************************************************/
+
+// Gen many
+
+void OpenGl::GenFramebuffersNE(const std::span<GlFramebufferId>& framebuffers) noexcept
+{
+    Internal::GenManyNE(framebuffers);
+}
+
+std::optional<OpenGlError> OpenGl::GenFramebuffersCE(const std::span<GlFramebufferId>& framebuffers) noexcept
+{
+    return Internal::GenManyCE(framebuffers);
+}
+
+void OpenGl::GenFramebuffers(const std::span<GlFramebufferId>& framebuffers)
+{
+    Internal::GenMany(framebuffers);
+}
+
+// Gen one
+
+GlFramebufferId OpenGl::GenFramebufferNE() noexcept
+{
+    return Internal::GenOneNE<GlFramebufferId>();
+}
+
+tl::expected<GlFramebufferId, OpenGlError> OpenGl::GenFramebufferCE() noexcept
+{
+    return Internal::GenOneCE<GlFramebufferId>();
+}
+
+GlFramebufferId OpenGl::GenFramebuffer()
+{
+    return Internal::GenOne<GlFramebufferId>();
+}
+
+// Bind
+
+void OpenGl::BindFramebufferNE(GlFramebufferBindTarget target, GlFramebufferId framebuffer) noexcept
+{
+    glBindFramebuffer(ToGlValue(target), framebuffer.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::BindFramebufferCE(
+    GlFramebufferBindTarget target,
+    GlFramebufferId framebuffer) noexcept
+{
+    BindFramebufferNE(target, framebuffer);
+    return Internal::ConsumeError("glBindFramebuffer(target: {}, framebuffer: {})", target, framebuffer.GetValue());
+}
+
+void OpenGl::BindFramebuffer(GlFramebufferBindTarget target, GlFramebufferId framebuffer)
+{
+    Internal::ThrowIfError(BindFramebufferCE(target, framebuffer));
+}
+
+// Attach texture
+
+void OpenGl::FramebufferTexture2DNE(
+    GlFramebufferBindTarget target,
+    GlFramebufferAttachment attachment,
+    GlTargetTextureType textarget,
+    GlTextureId texture,
+    size_t level) noexcept
+{
+    glFramebufferTexture2D(
+        ToGlValue(target),
+        ToGlValue(attachment),
+        ToGlValue(textarget),
+        texture.GetValue(),
+        static_cast<GLint>(level));
+}
+
+std::optional<OpenGlError> OpenGl::FramebufferTexture2DCE(
+    GlFramebufferBindTarget target,
+    GlFramebufferAttachment attachment,
+    GlTargetTextureType textarget,
+    GlTextureId texture,
+    size_t level) noexcept
+{
+    FramebufferTexture2DNE(target, attachment, textarget, texture, level);
+    return Internal::ConsumeError(
+        "glFramebufferTexture2D(target: {}, attachment: {}, textarget: {}, texture: {}, level: {})",
+        target,
+        attachment,
+        textarget,
+        texture.GetValue(),
+        level);
+}
+
+void OpenGl::FramebufferTexture2D(
+    GlFramebufferBindTarget target,
+    GlFramebufferAttachment attachment,
+    GlTargetTextureType textarget,
+    GlTextureId texture,
+    size_t level)
+{
+    Internal::ThrowIfError(FramebufferTexture2DCE(target, attachment, textarget, texture, level));
 }
 
 /************************************************** Shaders *******************************************************/

@@ -61,21 +61,20 @@ public:
 
     void CreateFramebuffer()
     {
-        glGenFramebuffers(1, &fbo_);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+        fbo_ = OpenGl::GenFramebuffer();
+        OpenGl::BindFramebuffer(GlFramebufferBindTarget::DrawAndRead, fbo_);
 
         const auto resolution = GetWindow().GetSize().Cast<size_t>();
 
         fbo_color_ = Texture::CreateEmpty(resolution, GlTextureInternalFormat::RGB32F);
+        fbo_color_->Bind();
         OpenGl::SetTextureMinFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
         OpenGl::SetTextureMagFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
-        fbo_color_->Bind();
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER,
-            GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D,
-            fbo_color_->GetTexture().GetValue(),
-            0);
+        OpenGl::FramebufferTexture2D(
+            GlFramebufferBindTarget::DrawAndRead,
+            GlFramebufferAttachment::Color0,
+            GlTargetTextureType::Texture2d,
+            fbo_color_->GetTexture());
 
         unsigned int rbo{};
         glGenRenderbuffers(1, &rbo);
@@ -90,10 +89,8 @@ public:
         ErrorHandling::Ensure(
             glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
             "Incomplete frambuffer!");
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        OpenGl::BindFramebuffer(GlFramebufferBindTarget::DrawAndRead, {});
     }
-
-    ~RenderToTextureExampleApp() override { glDeleteFramebuffers(1, &fbo_); }
 
     void Tick() override
     {
@@ -102,7 +99,7 @@ public:
 
         // Render to texture
         {
-            glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+            OpenGl::BindFramebuffer(GlFramebufferBindTarget::DrawAndRead, fbo_);
             OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
             color_shader_->Use();
@@ -120,7 +117,7 @@ public:
 
         // Render to screen
         {
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            OpenGl::BindFramebuffer(GlFramebufferBindTarget::DrawAndRead, {});
             OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
             textured_quad_shader_->Use();
             textured_quad_shader_->SetUniform(u_textured_quad_shader_texture_, *fbo_color_);
@@ -142,7 +139,7 @@ public:
 
     std::shared_ptr<MeshOpenGL> mesh_;
 
-    GLuint fbo_{};
+    GlFramebufferId fbo_{};
     std::unique_ptr<Texture> fbo_color_{};
     std::unique_ptr<Texture> fbo_depth_stencil_{};
 };
