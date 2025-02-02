@@ -55,36 +55,50 @@ public:
         // Load shader
         color_shader_ = std::make_unique<Shader>("render_to_texture_example/just_color_2d");
         textured_quad_shader_ = std::make_unique<Shader>("render_to_texture_example/textured_quad");
-
-        CreateFramebuffer();
     }
 
-    void CreateFramebuffer()
+    void UpdateFramebuffer()
     {
-        fbo_ = OpenGl::GenFramebuffer();
-        OpenGl::BindFramebuffer(GlFramebufferBindTarget::DrawAndRead, fbo_);
-
         const auto resolution = GetWindow().GetSize().Cast<size_t>();
+        if (resolution == fbo_resolution_) return;
+
+        fbo_resolution_ = resolution;
+        if (fbo_.IsValid())
+        {
+            OpenGl::DeleteFramebuffer(fbo_);
+            fbo_ = {};
+
+            fbo_color_ = nullptr;
+
+            OpenGl::DeleteRenderbuffer(rbo_depth_stencil_);
+            rbo_depth_stencil_ = {};
+        }
+
+        rbo_depth_stencil_ = OpenGl::GenRenderbuffer();
+        OpenGl::BindRenderbuffer(rbo_depth_stencil_);
+        OpenGl::RenderbufferStorage(GlTextureInternalFormat::DEPTH24_STENCIL8, resolution);
 
         fbo_color_ = Texture::CreateEmpty(resolution, GlTextureInternalFormat::RGB32F);
         fbo_color_->Bind();
         OpenGl::SetTextureMinFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
         OpenGl::SetTextureMagFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
+
+        fbo_ = OpenGl::GenFramebuffer();
+        OpenGl::BindFramebuffer(GlFramebufferBindTarget::DrawAndRead, fbo_);
+
+        // Color
         OpenGl::FramebufferTexture2D(
             GlFramebufferBindTarget::DrawAndRead,
             GlFramebufferAttachment::Color0,
             GlTargetTextureType::Texture2d,
             fbo_color_->GetTexture());
 
-        unsigned int rbo{};
-        glGenRenderbuffers(1, &rbo);
-        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-        glRenderbufferStorage(
+        // Depth stencil
+        glFramebufferRenderbuffer(
+            GL_FRAMEBUFFER,
+            GL_DEPTH_STENCIL_ATTACHMENT,
             GL_RENDERBUFFER,
-            GL_DEPTH24_STENCIL8,
-            resolution.Cast<GLsizei>().x(),
-            resolution.Cast<GLsizei>().y());  // use a single renderbuffer object for both a depth AND stencil buffer
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+            rbo_depth_stencil_.GetValue());
 
         ErrorHandling::Ensure(
             glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
@@ -95,6 +109,9 @@ public:
     void Tick() override
     {
         Application::Tick();
+
+        UpdateFramebuffer();
+
         glDisable(GL_DEPTH_TEST);
 
         // Render to texture
@@ -139,9 +156,12 @@ public:
 
     std::shared_ptr<MeshOpenGL> mesh_;
 
+    GlRenderbufferId rbo_depth_stencil_;
     GlFramebufferId fbo_{};
     std::unique_ptr<Texture> fbo_color_{};
     std::unique_ptr<Texture> fbo_depth_stencil_{};
+
+    edt::Vec2<size_t> fbo_resolution_{};
 };
 
 void Main()

@@ -325,6 +325,40 @@ public:
         GlTextureId texture,
         size_t level = 0);
 
+    KLGL_OGL_INLINE static void DeleteFramebufferNE(GlFramebufferId framebuffer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteFramebufferCE(
+        GlFramebufferId framebuffer) noexcept;
+    KLGL_OGL_INLINE static void DeleteFramebuffer(GlFramebufferId framebuffer);
+
+    /************************************************* Renderbuffers **************************************************/
+
+    KLGL_OGL_INLINE static void GenRenderbuffersNE(const std::span<GlRenderbufferId>& renderbuffers) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> GenRenderbuffersCE(
+        const std::span<GlRenderbufferId>& renderbuffers) noexcept;
+    KLGL_OGL_INLINE static void GenRenderbuffers(const std::span<GlRenderbufferId>& renderbuffers);
+
+    [[nodiscard]] KLGL_OGL_INLINE static GlRenderbufferId GenRenderbufferNE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static tl::expected<GlRenderbufferId, OpenGlError> GenRenderbufferCE() noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static GlRenderbufferId GenRenderbuffer();
+
+    KLGL_OGL_INLINE static void BindRenderbufferNE(GlRenderbufferId renderbuffer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> BindRenderbufferCE(
+        GlRenderbufferId renderbuffer) noexcept;
+    KLGL_OGL_INLINE static void BindRenderbuffer(GlRenderbufferId renderbuffer);
+
+    KLGL_OGL_INLINE static void RenderbufferStorageNE(
+        GlTextureInternalFormat format,
+        const edt::Vec2<size_t>& size) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> RenderbufferStorageCE(
+        GlTextureInternalFormat format,
+        const edt::Vec2<size_t>& size) noexcept;
+    KLGL_OGL_INLINE static void RenderbufferStorage(GlTextureInternalFormat format, const edt::Vec2<size_t>& size);
+
+    KLGL_OGL_INLINE static void DeleteRenderbufferNE(GlRenderbufferId renderbuffer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteRenderbufferCE(
+        GlRenderbufferId renderbuffer) noexcept;
+    KLGL_OGL_INLINE static void DeleteRenderbuffer(GlRenderbufferId renderbuffer);
+
     /**************************************************** Shaders *****************************************************/
 
     [[nodiscard]] KLGL_OGL_INLINE static GlShaderId CreateShaderNE(GlShaderType type) noexcept;

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "fmt/format.h"
 #include "fmt/ranges.h"  // IWYU pragma: keep
 #include "identifiers_impl.hpp"
@@ -16,6 +18,7 @@
 #include "klgl/opengl/detail/maps/to_gl_value/shader_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/target_texture_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_filter.hpp"
+#include "klgl/opengl/detail/maps/to_gl_value/texture_internal_format.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_param_type.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_wrap_axis.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/texture_wrap_mode.hpp"
@@ -908,6 +911,121 @@ void OpenGl::FramebufferTexture2D(
     size_t level)
 {
     Internal::ThrowIfError(FramebufferTexture2DCE(target, attachment, textarget, texture, level));
+}
+
+// Delete
+
+void OpenGl::DeleteFramebufferNE(GlFramebufferId framebuffer) noexcept
+{
+    glDeleteFramebuffers(1, &framebuffer.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::DeleteFramebufferCE(GlFramebufferId framebuffer) noexcept
+{
+    DeleteFramebufferNE(framebuffer);
+    return Internal::ConsumeError("glDeleteFramebuffers(framebuffer: {})", framebuffer.GetValue());
+}
+
+void OpenGl::DeleteFramebuffer(GlFramebufferId framebuffer)
+{
+    Internal::ThrowIfError(DeleteFramebufferCE(framebuffer));
+}
+
+/************************************************* RenderBuffers **************************************************/
+
+// Gen many
+
+void OpenGl::GenRenderbuffersNE(const std::span<GlRenderbufferId>& renderbuffers) noexcept
+{
+    Internal::GenManyNE(renderbuffers);
+}
+
+std::optional<OpenGlError> OpenGl::GenRenderbuffersCE(const std::span<GlRenderbufferId>& renderbuffers) noexcept
+{
+    return Internal::GenManyCE(renderbuffers);
+}
+
+void OpenGl::GenRenderbuffers(const std::span<GlRenderbufferId>& renderbuffers)
+{
+    Internal::GenMany(renderbuffers);
+}
+
+// Gen one
+
+GlRenderbufferId OpenGl::GenRenderbufferNE() noexcept
+{
+    return Internal::GenOneNE<GlRenderbufferId>();
+}
+
+tl::expected<GlRenderbufferId, OpenGlError> OpenGl::GenRenderbufferCE() noexcept
+{
+    return Internal::GenOneCE<GlRenderbufferId>();
+}
+
+GlRenderbufferId OpenGl::GenRenderbuffer()
+{
+    return Internal::GenOne<GlRenderbufferId>();
+}
+
+// Bind
+
+void OpenGl::BindRenderbufferNE(GlRenderbufferId renderbuffer) noexcept
+{
+    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::BindRenderbufferCE(GlRenderbufferId renderbuffer) noexcept
+{
+    BindRenderbufferNE(renderbuffer);
+    return Internal::ConsumeError("glBindRenderbuffer(renderbuffer: {})", renderbuffer.GetValue());
+}
+
+void OpenGl::BindRenderbuffer(GlRenderbufferId renderbuffer)
+{
+    Internal::ThrowIfError(BindRenderbufferCE(renderbuffer));
+}
+
+// Storage
+
+void OpenGl::RenderbufferStorageNE(GlTextureInternalFormat format, const edt::Vec2<size_t>& size) noexcept
+{
+    const auto size_i = size.Cast<GLsizei>();
+    glRenderbufferStorage(GL_RENDERBUFFER, ToGlValue(format), size_i.x(), size_i.y());
+}
+
+std::optional<OpenGlError> OpenGl::RenderbufferStorageCE(
+    GlTextureInternalFormat format,
+    const edt::Vec2<size_t>& size) noexcept
+{
+    RenderbufferStorageNE(format, size);
+    return Internal::ConsumeError(
+        "glRenderbufferStorage(internal_format: {}, width: {}, height: {})",
+        format,
+        size.x(),
+        size.y());
+}
+
+void OpenGl::RenderbufferStorage(GlTextureInternalFormat format, const edt::Vec2<size_t>& size)
+{
+    Internal::ThrowIfError(RenderbufferStorageCE(format, size));
+}
+
+// Delete
+
+void OpenGl::DeleteRenderbufferNE(GlRenderbufferId renderbuffer) noexcept
+{
+    glDeleteRenderbuffers(1, &renderbuffer.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::DeleteRenderbufferCE(GlRenderbufferId renderbuffer) noexcept
+{
+    DeleteRenderbufferNE(renderbuffer);
+    return Internal::ConsumeError("glDeleteRenderbuffers(renderbuffer: {})", renderbuffer.GetValue());
+}
+
+void OpenGl::DeleteRenderbuffer(GlRenderbufferId renderbuffer)
+{
+    Internal::ThrowIfError(DeleteRenderbufferCE(renderbuffer));
 }
 
 /************************************************** Shaders *******************************************************/

@@ -35,4 +35,11 @@ struct IdTraits<GlFramebufferId>
     static constexpr std::string_view generator_name = "glGenFramebuffers";
 };
 
+template <>
+struct IdTraits<GlRenderbufferId>
+{
+    static constexpr auto generator = &glGenRenderbuffers;
+    static constexpr std::string_view generator_name = "glGenRenderbuffers";
+};
+
 }  // namespace klgl::detail
