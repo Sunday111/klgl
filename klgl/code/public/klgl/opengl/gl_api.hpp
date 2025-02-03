@@ -325,6 +325,19 @@ public:
         GlTextureId texture,
         size_t level = 0);
 
+    KLGL_OGL_INLINE static void FramebufferRenderbufferNE(
+        GlFramebufferBindTarget target,
+        GlFramebufferAttachment attachment,
+        GlRenderbufferId renderbuffer) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> FramebufferRenderbufferCE(
+        GlFramebufferBindTarget target,
+        GlFramebufferAttachment attachment,
+        GlRenderbufferId renderbuffer) noexcept;
+    KLGL_OGL_INLINE static void FramebufferRenderbuffer(
+        GlFramebufferBindTarget target,
+        GlFramebufferAttachment attachment,
+        GlRenderbufferId renderbuffer);
+
     KLGL_OGL_INLINE static void DeleteFramebufferNE(GlFramebufferId framebuffer) noexcept;
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> DeleteFramebufferCE(
         GlFramebufferId framebuffer) noexcept;

@@ -913,6 +913,37 @@ void OpenGl::FramebufferTexture2D(
     Internal::ThrowIfError(FramebufferTexture2DCE(target, attachment, textarget, texture, level));
 }
 
+// Attach renderbuffer
+
+void OpenGl::FramebufferRenderbufferNE(
+    GlFramebufferBindTarget target,
+    GlFramebufferAttachment attachment,
+    GlRenderbufferId renderbuffer) noexcept
+{
+    glFramebufferRenderbuffer(ToGlValue(target), ToGlValue(attachment), GL_RENDERBUFFER, renderbuffer.GetValue());
+}
+
+std::optional<OpenGlError> OpenGl::FramebufferRenderbufferCE(
+    GlFramebufferBindTarget target,
+    GlFramebufferAttachment attachment,
+    GlRenderbufferId renderbuffer) noexcept
+{
+    FramebufferRenderbufferNE(target, attachment, renderbuffer);
+    return Internal::ConsumeError(
+        "glFramebufferRenderbuffer(target: {}, attachment: {}, renderbuffer: {})",
+        target,
+        attachment,
+        renderbuffer.GetValue());
+}
+
+void OpenGl::FramebufferRenderbuffer(
+    GlFramebufferBindTarget target,
+    GlFramebufferAttachment attachment,
+    GlRenderbufferId renderbuffer)
+{
+    Internal::ThrowIfError(FramebufferRenderbufferCE(target, attachment, renderbuffer));
+}
+
 // Delete
 
 void OpenGl::DeleteFramebufferNE(GlFramebufferId framebuffer) noexcept

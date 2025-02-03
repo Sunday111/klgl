@@ -94,11 +94,10 @@ public:
             fbo_color_->GetTexture());
 
         // Depth stencil
-        glFramebufferRenderbuffer(
-            GL_FRAMEBUFFER,
-            GL_DEPTH_STENCIL_ATTACHMENT,
-            GL_RENDERBUFFER,
-            rbo_depth_stencil_.GetValue());
+        OpenGl::FramebufferRenderbuffer(
+            GlFramebufferBindTarget::DrawAndRead,
+            GlFramebufferAttachment::DepthStencil,
+            rbo_depth_stencil_);
 
         ErrorHandling::Ensure(
             glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
