@@ -12,7 +12,7 @@
 #include "klgl/texture/texture.hpp"
 #include "klgl/window.hpp"
 
-namespace klgl::render_to_texture_example
+namespace klgl::post_processing_example
 {
 
 struct MeshVertex
@@ -21,7 +21,7 @@ struct MeshVertex
     edt::Vec2f texture_coordinates{};
 };
 
-class RenderToTextureExampleApp : public Application
+class PostProcessingExample : public Application
 {
 public:
     void Initialize() override
@@ -30,7 +30,7 @@ public:
 
         OpenGl::SetClearColor({});
         GetWindow().SetSize(1000, 1000);
-        GetWindow().SetTitle("Render to texture");
+        GetWindow().SetTitle("Post-processing effect");
 
         // Create quad mesh
         const auto mesh_data = klgl::ProceduralMeshGenerator::GenerateQuadMesh();
@@ -53,8 +53,8 @@ public:
         klgl::RegisterAttribute<&MeshVertex::texture_coordinates>(1);
 
         // Load shader
-        color_shader_ = std::make_unique<Shader>("render_to_texture_example/just_color_2d");
-        textured_quad_shader_ = std::make_unique<Shader>("render_to_texture_example/textured_quad");
+        color_shader_ = std::make_unique<Shader>("post_processing_example/just_color_2d");
+        textured_quad_shader_ = std::make_unique<Shader>("post_processing_example/textured_quad");
     }
 
     void UpdateFramebuffer()
@@ -165,14 +165,14 @@ public:
 
 void Main()
 {
-    RenderToTextureExampleApp app;
+    PostProcessingExample app;
     app.Run();
 }
 
-}  // namespace klgl::render_to_texture_example
+}  // namespace klgl::post_processing_example
 
 int main()
 {
-    klgl::ErrorHandling::InvokeAndCatchAll(klgl::render_to_texture_example::Main);
+    klgl::ErrorHandling::InvokeAndCatchAll(klgl::post_processing_example::Main);
     return 0;
 }
