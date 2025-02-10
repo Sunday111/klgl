@@ -344,6 +344,10 @@ void Shader::DrawDetails()
         for (ShaderUniform& uniform : uniforms_)
         {
             auto type_info = cppreflection::GetTypeRegistry()->FindType(uniform.GetTypeGUID());
+            if (uniform.GetTypeGUID() == cppreflection::GetStaticTypeGUID<SamplerUniform>())
+            {
+                continue;
+            }
 
             type_info->GetSpecialMembers().copyConstructor(
                 stack_val_arr.data(),  // NOLINT
