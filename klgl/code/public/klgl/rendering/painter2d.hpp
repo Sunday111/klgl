@@ -43,12 +43,21 @@ public:
         Vec4u8 color = Vec4u8{} + 255;
     };
 
+    struct Line2d
+    {
+        Vec2f a{};
+        Vec2f b{};
+        Vec4u8 color = Vec4u8{} + 255;
+        float width = 0.01f;
+    };
+
     void BeginDraw();
     void EndDraw();
 
     void DrawRect(const Rect2d& rect);
     void DrawCircle(const Circle2d& circle);
     void DrawTriangle(const Triangle2d& triangle);
+    void DrawLine(const Line2d& line);
 
     void SetViewMatrix(const Mat3f& view_matrix);
 

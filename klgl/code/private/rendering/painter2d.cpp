@@ -219,6 +219,20 @@ void Painter2d::DrawTriangle(const Triangle2d& triangle)
     self->AddPrimitive(2, triangle.color, m);
 }
 
+void Painter2d::DrawLine(const Line2d& line)
+{
+    const Vec2f ab = line.b - line.a;
+    const Vec2f d = ab.Normalized();
+    const Vec2f x = ab / 2;
+    const Vec2f y = Vec2f{-d.y(), d.x()} * line.width;
+    const Vec2f t = 0.5f * (line.a + line.b);
+    edt::Mat3f m;
+    m.SetColumn(0, Vec3f{x, 0.f});  // axis x (along the line)
+    m.SetColumn(1, Vec3f{y, 0.f});  // axis y
+    m.SetColumn(2, Vec3f{t, 1.f});  // translation
+    self->AddPrimitive(0, line.color, m);
+}
+
 void Painter2d::SetViewMatrix(const Mat3f& view_matrix)
 {
     self->view_matrix_ = view_matrix;
