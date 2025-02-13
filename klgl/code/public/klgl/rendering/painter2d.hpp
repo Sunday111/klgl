@@ -54,9 +54,12 @@ public:
     void BeginDraw();
     void EndDraw();
 
-    void DrawRect(const Rect2d& rect);
-    void DrawCircle(const Circle2d& circle);
-    void DrawTriangle(const Triangle2d& triangle);
+    void RectLines(const Rect2d& rect, float line_width);
+    void TriangleLines(const Triangle2d& triangle, float line_width);
+
+    void FillRect(const Rect2d& rect);
+    void FillCircle(const Circle2d& circle);
+    void FillTriangle(const Triangle2d& triangle);
     void DrawLine(const Line2d& line);
 
     void SetViewMatrix(const Mat3f& view_matrix);

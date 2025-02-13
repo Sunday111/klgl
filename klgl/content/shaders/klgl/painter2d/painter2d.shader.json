@@ -1,6 +1,0 @@
-{
-    "vertex": "painter2d.vert",
-    "fragment": "painter2d.frag",
-    "glsl_version": "330 core",
-    "definitions": []
-}

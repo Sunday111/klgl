@@ -526,7 +526,7 @@ class Painter2dApp : public klgl::Application
             {
                 cell_rect.size *= 0.97f;
             }
-            painter_->DrawRect(cell_rect);
+            painter_->FillRect(cell_rect);
         }
 
         DrawAnimatedRects();
@@ -559,7 +559,7 @@ class Painter2dApp : public klgl::Application
                 .rotation_degrees = std::lerp(a.rotation_degrees, b.rotation_degrees, k),
             };
 
-            painter_->DrawRect(rect);
+            painter_->FillRect(rect);
         }
 
         if (!animations_.empty()) fmt::println("");

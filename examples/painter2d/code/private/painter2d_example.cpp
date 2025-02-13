@@ -31,13 +31,15 @@ class Painter2dApp : public Application
         constexpr edt::Vec4u8 white{255, 255, 255, 255};
 
         painter_->BeginDraw();
-        painter_->DrawRect({.center = {}, .size = {1, 1}, .color = red});
-        painter_->DrawCircle({.center = {-0.3f, 0.3f}, .size = {.2f, .2f}, .color = green});
-        painter_->DrawCircle({.center = {0.3f, 0.3f}, .size = {.2f, .2f}, .color = green});
-        painter_->DrawCircle({.center = {0, -0.25f}, .size = {.8f, .2f}, .color = green});
-        painter_->DrawTriangle({.a = {-0.5, 0.5}, .b = {-0.3f, 0.6f}, .c = {-0.2f, 0.5}, .color = red});
-        painter_->DrawTriangle({.a = {0.5, 0.5}, .b = {0.3f, 0.6f}, .c = {0.2f, 0.5}, .color = red});
-        painter_->DrawTriangle({.a = a, .b = b, .c = c, .color = blue});
+        painter_->FillRect({.center = {}, .size = {1, 1}, .color = red});
+        painter_->RectLines({.center = {}, .size = {1, 1}, .color = white}, 0.1f);
+        painter_->FillCircle({.center = {-0.3f, 0.3f}, .size = {.2f, .2f}, .color = green});
+        painter_->FillCircle({.center = {0.3f, 0.3f}, .size = {.2f, .2f}, .color = green});
+        painter_->FillCircle({.center = {0, -0.25f}, .size = {.8f, .2f}, .color = green});
+        painter_->FillTriangle({.a = {-0.5, 0.5}, .b = {-0.3f, 0.6f}, .c = {-0.2f, 0.5}, .color = red});
+        painter_->FillTriangle({.a = {0.5, 0.5}, .b = {0.3f, 0.6f}, .c = {0.2f, 0.5}, .color = red});
+        painter_->FillTriangle({.a = a, .b = b, .c = c, .color = blue});
+        painter_->TriangleLines({.a = a, .b = b, .c = c, .color = white}, 0.1f);
         painter_->DrawLine({.a = line_a_, .b = line_b_, .color = white, .width = line_width_});
 
         painter_->EndDraw();

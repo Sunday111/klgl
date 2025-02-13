@@ -4,8 +4,6 @@
 #include "EverydayTools/Math/Math.hpp"
 #include "klgl/application.hpp"
 #include "klgl/error_handling.hpp"
-#include "klgl/mesh/mesh_data.hpp"
-#include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/opengl/program_info.hpp"
 #include "klgl/opengl/vertex_attribute_helper.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
@@ -50,22 +48,16 @@ public:
     {
         shader_ = std::make_unique<Shader>("klgl/painter2d");
 
-        // Create quad mesh
-        const auto mesh_data = ProceduralMeshGenerator::GenerateQuadMesh();
+        vao_ = GlObject<GlVertexArrayId>::CreateFrom(OpenGl::GenVertexArray());
+        OpenGl::BindVertexArray(vao_);
 
-        mesh_ =
-            MeshOpenGL::MakeFromData(std::span{mesh_data.vertices}, std::span{mesh_data.indices}, mesh_data.topology);
-        mesh_->Bind();
+        vbo_ = GlObject<GlBufferId>::CreateFrom(OpenGl::GenBuffer());
+        OpenGl::BindBuffer(GlBufferType::Array, vbo_);
 
         const auto& program_info = shader_->GetInfo();
-        a_vertex_ = program_info.VerifyAndGetVertexAttributeLocation<Vec2f>("a_vertex");
         a_type_ = program_info.VerifyAndGetVertexAttributeLocation<uint8_t>("a_type");
         a_color_ = program_info.VerifyAndGetVertexAttributeLocation<Vec4f>("a_color");
         a_transform_ = program_info.VerifyAndGetVertexAttributeLocation<Mat3f>("a_transform");
-
-        // Vertex buffer attributes
-        OpenGl::EnableVertexAttribArray(a_vertex_);
-        VertexBufferHelperStatic<edt::Vec2f, false, true>::AttributePointer(a_vertex_);
     }
 
     void BeginDraw()
@@ -90,7 +82,8 @@ public:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         shader_->SendUniforms();
-        mesh_->Bind();
+
+        OpenGl::BindVertexArray(vao_);
 
         for (size_t batch_index = 0; batch_index != type_batches_.size(); ++batch_index)
         {
@@ -104,7 +97,7 @@ public:
             color_batches_[batch_index].Send(a_color_, update_range);
             transform_batches_[batch_index].Send(a_transform_, update_range);
 
-            mesh_->DrawInstanced(num_locally_used);
+            OpenGl::DrawArraysInstanced(GlPrimitiveType::Points, 0, 1, num_locally_used);
         }
     }
 
@@ -140,16 +133,17 @@ public:
     std::vector<Batch<Vec4u8, true, true>> color_batches_;
     std::vector<Batch<Mat3f>> transform_batches_;
 
+    GlObject<GlVertexArrayId> vao_;
+    GlObject<GlBufferId> vbo_;
+
     Application* app_ = nullptr;
     std::unique_ptr<Shader> shader_;
-    std::shared_ptr<MeshOpenGL> mesh_;
 
     bool drawing = false;
     size_t num_primitives = 0;
-    size_t a_vertex_ = 0;
-    size_t a_type_ = 1;
-    size_t a_color_ = 2;
-    size_t a_transform_ = 3;
+    size_t a_transform_ = 0;
+    size_t a_color_ = 1;
+    size_t a_type_ = 2;
     UniformHandle u_view_ = UniformHandle("u_view");
     Mat3f view_matrix_ = Mat3f::Identity();
 };
@@ -168,7 +162,34 @@ void Painter2d::EndDraw()
     self->EndDraw();
 }
 
-void Painter2d::DrawRect(const Rect2d& rect)
+void Painter2d::RectLines(const Rect2d& rect, [[maybe_unused]] float line_width)
+{
+    auto m = edt::Math::ScaleMatrix(rect.size / 2);
+    if (rect.rotation_degrees != 0.f)
+    {
+        const float radians = edt::Math::DegToRad(rect.rotation_degrees);
+        m = edt::Math::RotationMatrix2d(radians).MatMul(m);
+    }
+
+    m = edt::Math::TranslationMatrix(rect.center).MatMul(m);
+    self->AddPrimitive(3, rect.color, m);
+}
+
+void Painter2d::TriangleLines(const Triangle2d& triangle, [[maybe_unused]] float line_width)
+{
+    const Vec2f i = (triangle.b - triangle.a) / 2;
+    const Vec2f j = (triangle.c - triangle.a) / 2;
+    const Vec2f t = (triangle.b + triangle.c) / 2;
+
+    Mat3f m;
+    m.SetColumn(0, Vec3f{i, 0});
+    m.SetColumn(1, Vec3f{j, 0});
+    m.SetColumn(2, Vec3f(t, 1));
+
+    self->AddPrimitive(4, triangle.color, m);
+}
+
+void Painter2d::FillRect(const Rect2d& rect)
 {
     auto m = edt::Math::ScaleMatrix(rect.size / 2);
     if (rect.rotation_degrees != 0.f)
@@ -181,7 +202,7 @@ void Painter2d::DrawRect(const Rect2d& rect)
     self->AddPrimitive(0, rect.color, m);
 }
 
-void Painter2d::DrawCircle(const Circle2d& circle)
+void Painter2d::FillCircle(const Circle2d& circle)
 {
     auto m = edt::Math::ScaleMatrix(circle.size / 2.f);
     if (circle.rotation_degrees != 0.f)
@@ -195,7 +216,7 @@ void Painter2d::DrawCircle(const Circle2d& circle)
     self->AddPrimitive(1, circle.color, m);
 }
 
-void Painter2d::DrawTriangle(const Triangle2d& triangle)
+void Painter2d::FillTriangle(const Triangle2d& triangle)
 {
     // The transformation below is an inlined version of the following algorithm:
     // 1. Translate by 1 so that bottom left corner in screen space (point A) becomes 0, 0
