@@ -58,6 +58,7 @@ public:
         a_type_ = program_info.VerifyAndGetVertexAttributeLocation<uint8_t>("a_type");
         a_color_ = program_info.VerifyAndGetVertexAttributeLocation<Vec4f>("a_color");
         a_transform_ = program_info.VerifyAndGetVertexAttributeLocation<Mat3f>("a_transform");
+        a_params_ = program_info.VerifyAndGetVertexAttributeLocation<Vec2f>("a_params");
     }
 
     void BeginDraw()
@@ -96,6 +97,7 @@ public:
             type_batches_[batch_index].Send(a_type_, update_range);
             color_batches_[batch_index].Send(a_color_, update_range);
             transform_batches_[batch_index].Send(a_transform_, update_range);
+            param_batches_[batch_index].Send(a_params_, update_range);
 
             OpenGl::DrawArraysInstanced(GlPrimitiveType::Points, 0, 1, num_locally_used);
         }
@@ -103,7 +105,7 @@ public:
 
     void EnsureBeganDrawing() { ErrorHandling::Ensure(drawing, "Did not start drawing session!"); }
 
-    void AddPrimitive(uint8_t shape, const Vec4u8& color, const Mat3f& transform)
+    void AddPrimitive(uint8_t shape, const Vec4u8& color, const Mat3f& transform, const Vec2f& params)
     {
         EnsureBeganDrawing();
 
@@ -112,6 +114,7 @@ public:
             type_batches_.emplace_back();
             color_batches_.emplace_back();
             transform_batches_.emplace_back();
+            param_batches_.emplace_back();
         }
 
         const size_t index_in_batch = num_primitives % kBatchSize;
@@ -127,11 +130,15 @@ public:
 
         auto& transform_batch = transform_batches_[batch_index];
         transform_batch.values[index_in_batch] = transform.Transposed();
+
+        auto& param_batch = param_batches_[batch_index];
+        param_batch.values[index_in_batch] = params;
     }
 
     std::vector<Batch<uint8_t, false>> type_batches_;
     std::vector<Batch<Vec4u8, true, true>> color_batches_;
     std::vector<Batch<Mat3f>> transform_batches_;
+    std::vector<Batch<Vec2f>> param_batches_;
 
     GlObject<GlVertexArrayId> vao_;
     GlObject<GlBufferId> vbo_;
@@ -144,6 +151,7 @@ public:
     size_t a_transform_ = 0;
     size_t a_color_ = 1;
     size_t a_type_ = 2;
+    size_t a_params_ = 3;
     UniformHandle u_view_ = UniformHandle("u_view");
     Mat3f view_matrix_ = Mat3f::Identity();
 };
@@ -162,7 +170,7 @@ void Painter2d::EndDraw()
     self->EndDraw();
 }
 
-void Painter2d::RectLines(const Rect2d& rect, [[maybe_unused]] float line_width)
+void Painter2d::RectLines(const Rect2d& rect, float line_width)
 {
     auto m = edt::Math::ScaleMatrix(rect.size / 2);
     if (rect.rotation_degrees != 0.f)
@@ -172,10 +180,10 @@ void Painter2d::RectLines(const Rect2d& rect, [[maybe_unused]] float line_width)
     }
 
     m = edt::Math::TranslationMatrix(rect.center).MatMul(m);
-    self->AddPrimitive(3, rect.color, m);
+    self->AddPrimitive(3, rect.color, m, {line_width, 0.f});
 }
 
-void Painter2d::TriangleLines(const Triangle2d& triangle, [[maybe_unused]] float line_width)
+void Painter2d::TriangleLines(const Triangle2d& triangle, LineWidth line_width)
 {
     const Vec2f i = (triangle.b - triangle.a) / 2;
     const Vec2f j = (triangle.c - triangle.a) / 2;
@@ -186,7 +194,7 @@ void Painter2d::TriangleLines(const Triangle2d& triangle, [[maybe_unused]] float
     m.SetColumn(1, Vec3f{j, 0});
     m.SetColumn(2, Vec3f(t, 1));
 
-    self->AddPrimitive(4, triangle.color, m);
+    self->AddPrimitive(4, triangle.color, m, {line_width.inner, line_width.outer});
 }
 
 void Painter2d::FillRect(const Rect2d& rect)
@@ -199,7 +207,7 @@ void Painter2d::FillRect(const Rect2d& rect)
     }
 
     m = edt::Math::TranslationMatrix(rect.center).MatMul(m);
-    self->AddPrimitive(0, rect.color, m);
+    self->AddPrimitive(0, rect.color, m, {});
 }
 
 void Painter2d::FillCircle(const Circle2d& circle)
@@ -213,7 +221,7 @@ void Painter2d::FillCircle(const Circle2d& circle)
 
     m = edt::Math::TranslationMatrix(circle.center).MatMul(m);
 
-    self->AddPrimitive(1, circle.color, m);
+    self->AddPrimitive(1, circle.color, m, {});
 }
 
 void Painter2d::FillTriangle(const Triangle2d& triangle)
@@ -237,7 +245,7 @@ void Painter2d::FillTriangle(const Triangle2d& triangle)
     m.SetColumn(1, Vec3f{j, 0});
     m.SetColumn(2, Vec3f(t, 1));
 
-    self->AddPrimitive(2, triangle.color, m);
+    self->AddPrimitive(2, triangle.color, m, {});
 }
 
 void Painter2d::DrawLine(const Line2d& line)
@@ -251,7 +259,7 @@ void Painter2d::DrawLine(const Line2d& line)
     m.SetColumn(0, Vec3f{x, 0.f});  // axis x (along the line)
     m.SetColumn(1, Vec3f{y, 0.f});  // axis y
     m.SetColumn(2, Vec3f{t, 1.f});  // translation
-    self->AddPrimitive(0, line.color, m);
+    self->AddPrimitive(0, line.color, m, {});
 }
 
 void Painter2d::SetViewMatrix(const Mat3f& view_matrix)

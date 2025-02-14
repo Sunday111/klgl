@@ -11,6 +11,7 @@ uniform mat3 u_view;
 in mat3 vs_transform[1];
 in vec4 vs_color[1];
 in uint vs_type[1];
+in vec2 vs_params[1];
 
 flat out vec4 gs_color;
 flat out uint gs_type;
@@ -53,10 +54,9 @@ void EmitRectLines(float line_width) {
 }
 
 
-void EmitTriangleLines(float line_width) {
+void EmitTriangleLines(float inner_line_width, float outer_line_width) {
     // Not texture coordinates for now.
     // In general it would require to do this process second time for texture coords and doesn't make a lot of sense for lines
-    float half_width = line_width * 0.5f;
 
     vec2 va = (vs_transform[0] * vec3(-1, -1, 1)).xy;
     vec2 vb = (vs_transform[0] * vec3( 1, -1, 1)).xy;
@@ -75,19 +75,19 @@ void EmitTriangleLines(float line_width) {
     vec2 c = sc / lc;
 
     float a_dot_c = dot(a, c);
-    float j = lb * half_width / sqrt(1 - a_dot_c * a_dot_c);
+    float j = lb / sqrt(1 - a_dot_c * a_dot_c);
 
     // inner directions
     vec2 a_dir = j * (a - c) / lb;
     vec2 b_dir = j * (b - a) / lc;
     vec2 c_dir = j * (c - b) / la;
 
-    vec2 a_inner = va + a_dir;
-    vec2 b_inner = vb + b_dir;
-    vec2 c_inner = vc + c_dir;
-    vec2 a_outer = va - a_dir;
-    vec2 b_outer = vb - b_dir;
-    vec2 c_outer = vc - c_dir;
+    vec2 a_inner = va + inner_line_width * a_dir;
+    vec2 b_inner = vb + inner_line_width * b_dir;
+    vec2 c_inner = vc + inner_line_width * c_dir;
+    vec2 a_outer = va - outer_line_width * a_dir;
+    vec2 b_outer = vb - outer_line_width * b_dir;
+    vec2 c_outer = vc - outer_line_width * c_dir;
 
     EmitOne_World(a_outer);
     EmitOne_World(b_outer);
@@ -110,6 +110,8 @@ void EmitTriangleLines(float line_width) {
 
 void main()
 {
+    vec2 p = vs_params[0];
+
     gs_color = vs_color[0];
     gs_type = vs_type[0];
 
@@ -120,11 +122,11 @@ void main()
         break;
 
     case 3u:
-        EmitRectLines(0.01f);
+        EmitRectLines(p.x);
         break;
 
     case 4u:
-        EmitTriangleLines(0.01f);
+        EmitTriangleLines(p.x, p.y);
         break;
 
     default:

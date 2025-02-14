@@ -51,11 +51,17 @@ public:
         float width = 0.01f;
     };
 
+    struct LineWidth
+    {
+        float inner = 0;
+        float outer = 0;
+    };
+
     void BeginDraw();
     void EndDraw();
 
     void RectLines(const Rect2d& rect, float line_width);
-    void TriangleLines(const Triangle2d& triangle, float line_width);
+    void TriangleLines(const Triangle2d& triangle, LineWidth line_width);
 
     void FillRect(const Rect2d& rect);
     void FillCircle(const Circle2d& circle);
