@@ -60,7 +60,7 @@ public:
     void BeginDraw();
     void EndDraw();
 
-    void RectLines(const Rect2d& rect, float line_width);
+    void RectLines(const Rect2d& rect, LineWidth line_width);
     void TriangleLines(const Triangle2d& triangle, LineWidth line_width);
 
     void FillRect(const Rect2d& rect);

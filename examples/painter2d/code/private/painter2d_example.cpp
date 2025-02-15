@@ -32,7 +32,7 @@ class Painter2dApp : public Application
 
         painter_->BeginDraw();
         painter_->FillRect({.center = {}, .size = {1, 1}, .color = red});
-        painter_->RectLines({.center = {}, .size = {1, 1}, .color = white}, 0.1f);
+        painter_->RectLines({.center = {}, .size = {1, 1}, .color = white}, {0.01f});
         painter_->FillCircle({.center = {-0.3f, 0.3f}, .size = {.2f, .2f}, .color = green});
         painter_->FillCircle({.center = {0.3f, 0.3f}, .size = {.2f, .2f}, .color = green});
         painter_->FillCircle({.center = {0, -0.25f}, .size = {.8f, .2f}, .color = green});

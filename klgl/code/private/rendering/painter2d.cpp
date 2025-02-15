@@ -170,7 +170,7 @@ void Painter2d::EndDraw()
     self->EndDraw();
 }
 
-void Painter2d::RectLines(const Rect2d& rect, float line_width)
+void Painter2d::RectLines(const Rect2d& rect, LineWidth line_width)
 {
     auto m = edt::Math::ScaleMatrix(rect.size / 2);
     if (rect.rotation_degrees != 0.f)
@@ -180,7 +180,7 @@ void Painter2d::RectLines(const Rect2d& rect, float line_width)
     }
 
     m = edt::Math::TranslationMatrix(rect.center).MatMul(m);
-    self->AddPrimitive(3, rect.color, m, {line_width, 0.f});
+    self->AddPrimitive(3, rect.color, m, {line_width.inner, line_width.outer});
 }
 
 void Painter2d::TriangleLines(const Triangle2d& triangle, LineWidth line_width)
