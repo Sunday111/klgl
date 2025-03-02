@@ -4,7 +4,7 @@
 
 #include "ass/enum_map.hpp"
 #include "ass/fixed_unordered_map.hpp"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 
 namespace klgl::detail
 {
