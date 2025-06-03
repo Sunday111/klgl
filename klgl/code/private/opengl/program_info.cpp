@@ -82,9 +82,9 @@ void GlProgramInfo::PrintStorageBlocks(GlProgramId program)
             program.GetValue(),
             GL_SHADER_STORAGE_BLOCK,
             i,
-            std::ssize(props),
+            static_cast<GLsizei>(props.size()),
             props.data(),
-            std::ssize(results),
+            static_cast<GLsizei>(results.size()),
             nullptr,
             results.data());
 

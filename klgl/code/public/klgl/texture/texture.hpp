@@ -25,9 +25,12 @@ public:
 
     void Bind() const;
 
-    template <GlPixelBufferLayout layout, detail::ChannelType T, size_t extent = std::dynamic_extent>
-    void SetPixels(
-        std::span<const edt::Matrix<T, detail::kPixelBufferLayoutToNumChannels.Get(layout), 1>, extent> pixel_data)
+    template <
+        GlPixelBufferLayout layout,
+        detail::ChannelType T,
+        size_t extent = std::dynamic_extent,
+        size_t num_ch = detail::kPixelBufferLayoutToNumChannels.Get(layout)>
+    void SetPixels(std::span<const edt::Matrix<T, num_ch, 1>, extent> pixel_data)
     {
         SetPixels(
             {
@@ -38,8 +41,12 @@ public:
         );
     }
 
-    template <GlPixelBufferLayout layout, detail::ChannelType T, size_t extent = std::dynamic_extent>
-        requires(detail::kPixelBufferLayoutToNumChannels.Get(layout) == 1)
+    template <
+        GlPixelBufferLayout layout,
+        detail::ChannelType T,
+        size_t extent = std::dynamic_extent,
+        size_t num_ch = detail::kPixelBufferLayoutToNumChannels.Get(layout)>
+        requires(num_ch == 1)
     void SetPixels(std::span<const T, extent> pixel_data)
     {
         SetPixels(
