@@ -162,6 +162,7 @@ class FractalApp : public klgl::Application
             if (ImGui::CollapsingHeader("Colors"))
             {
                 bool has_changes = false;
+
                 for (size_t color_index = 0; color_index != settings_.colors.size(); ++color_index)
                 {
                     constexpr int color_edit_flags = ImGuiColorEditFlags_DefaultOptions_ |
@@ -177,16 +178,6 @@ class FractalApp : public klgl::Application
 
                         if (ImGui::SliderFloat("Pos", &color_positions[color_index], 0.0f, 1.f))
                         {
-                            for (size_t i = 0; i != color_index; ++i)
-                            {
-                                color_positions[i] = std::min(color_positions[i], color_positions[color_index]);
-                            }
-
-                            for (size_t i = color_index + 1; i != settings_.colors.size(); ++i)
-                            {
-                                color_positions[i] = std::max(color_positions[i], color_positions[color_index]);
-                            }
-
                             has_changes = true;
                         }
                     }
@@ -194,9 +185,21 @@ class FractalApp : public klgl::Application
 
                 has_changes |= ImGui::Checkbox("Interpolate colors", &settings_.interpolate_colors);
 
-                ImGui::InputInt("Color Seed: 1234", &settings_.color_seed);
+                bool randomize = false;
+
+                if (ImGui::InputInt("Color Seed:", &settings_.color_seed))
+                {
+                    randomize = true;
+                }
+
                 ImGui::SameLine();
                 if (ImGui::Button("Randomize"))
+                {
+                    randomize = true;
+                    settings_.color_seed = std::bit_cast<int>(std::random_device()());
+                }
+
+                if (randomize)
                 {
                     std::mt19937 rnd(static_cast<unsigned>(settings_.color_seed));
                     std::uniform_real_distribution<float> color_distr(0, 1.0f);
@@ -210,13 +213,22 @@ class FractalApp : public klgl::Application
 
                 if (has_changes)
                 {
+                    const size_t num_colors = settings_.colors.size();
+                    std::vector<size_t> indices(num_colors);
+                    for (size_t i = 0; i != num_colors; ++i) indices[i] = i;
+
+                    auto proj = [&](size_t i) -> float&
+                    {
+                        return color_positions[i];
+                    };
+                    std::ranges::sort(indices, std::less{}, proj);
+
                     for (size_t iteration = 0; iteration != u_color_table.size(); ++iteration)
                     {
                         float fi = static_cast<float>(iteration) / static_cast<float>(u_color_table.size() - 1);
                         const auto last = color_positions.size() - 1;
-                        auto left = static_cast<size_t>(
-                            std::distance(color_positions.begin(), std::ranges::lower_bound(color_positions, fi)));
-                        if (left >= last) left = last - 1;
+                        auto li = std::ranges::lower_bound(indices, fi, std::less{}, proj);
+                        auto left = std::distance(li, indices.end()) < 2 ? last - 1 : *li;
                         auto right = left + 1;
 
                         if (settings_.interpolate_colors)
@@ -236,9 +248,8 @@ class FractalApp : public klgl::Application
                     // settings_.settings_applied = false;
                 }
             }
-
-            ImGui::End();
         }
+        ImGui::End();
     }
 
     klgl::UniformHandle u_screen_to_world_ = klgl::UniformHandle("u_screen_to_world");

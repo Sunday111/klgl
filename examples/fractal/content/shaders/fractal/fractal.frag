@@ -10,8 +10,8 @@ void main()
     // Julia constant 
     vec2 c = u_julia_constant;
 
-    // Map to complex plane
-    vec2 z = (u_screen_to_world * vec3(gl_FragCoord.xy, 1)).xy;
+    vec2 world = (u_screen_to_world * vec3(gl_FragCoord.xy, 1)).xy; 
+    vec2 z = world;
 
     // Julia set iteration
     int i = 0;
@@ -24,6 +24,9 @@ void main()
         z = p;
         ++i;
     }
+
+    // float pp = MAX_ITERATIONS * dot(normalize(world), vec2(1, 0));
+    // FragColor = vec4(uColorTable[(int(pp) + i) % MAX_ITERATIONS], 1.0);
 
     FragColor = vec4(uColorTable[i], 1.0);
 }
