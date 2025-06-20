@@ -234,7 +234,7 @@ class FractalApp : public klgl::Application
                         if (settings_.interpolate_colors)
                         {
                             float t = (fi - color_positions[left]) / (color_positions[right] - color_positions[left]);
-                            auto color = t * (settings_.colors[right] - settings_.colors[left]);
+                            auto color = edt::Math::Lerp(settings_.colors[left], settings_.colors[right], t);
                             shader_->SetUniform(u_color_table[iteration], color);
                         }
                         else
