@@ -1,9 +1,9 @@
 in vec4 Color;
 out vec4 FragColor;
 
-
 uniform mat3 u_screen_to_world;
 uniform vec2 u_julia_constant;
+uniform vec3 uColorTable[MAX_ITERATIONS + 1];
 
 void main()
 {
@@ -14,19 +14,16 @@ void main()
     vec2 z = (u_screen_to_world * vec3(gl_FragCoord.xy, 1)).xy;
 
     // Julia set iteration
-    int maxIter = 200;
-    int i;
-    for (i = 0; i < maxIter; i++) {
-        float x = (z.x * z.x - z.y * z.y) + c.x;
-        float y = (2.0 * z.x * z.y) + c.y;
+    int i = 0;
+    while (i != MAX_ITERATIONS) {
+        vec2 p = c + vec2(
+            z.x * z.x - z.y * z.y,
+            2 * z.x * z.y);
 
-        if (x * x + y * y > 4.0) break;
-        z = vec2(x, y);
+        if (dot(p, p) > 4) break;
+        z = p;
+        ++i;
     }
 
-    // Smooth coloring
-    float t = float(i) / float(maxIter);
-    vec3 color = vec3(0.5 + 0.5 * cos(6.2831 * t + vec3(0.0, 0.33, 0.67)));
-
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(uColorTable[i], 1.0);
 }
