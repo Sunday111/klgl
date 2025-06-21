@@ -32,6 +32,11 @@ public:
     [[nodiscard]] const GlProgramInfo& GetInfo() const { return info_; }
 
     void Compile(std::string& buffer);
+    void Compile()
+    {
+        std::string buffer;
+        Compile(buffer);
+    }
     [[nodiscard]] std::optional<uint32_t> FindUniformLocation(const char*) const noexcept;
     [[nodiscard]] uint32_t GetUniformLocation(const char*) const;
     void DrawDetails();
@@ -102,7 +107,7 @@ private:
     GlProgramInfo info_;
     GlObject<GlProgramId> program_;
     bool definitions_initialized_ : 1 = false;
-    bool need_recompile_ : 1 = false;
+    bool need_recompile_ : 1 = true;
 };
 
 template <typename T>

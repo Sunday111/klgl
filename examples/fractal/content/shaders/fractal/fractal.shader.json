@@ -9,6 +9,16 @@
             "name": "MAX_ITERATIONS",
             "type": "int",
             "default": 200
+        },
+        {
+            "name": "INSIDE_OUT_SPACE",
+            "type": "int",
+            "default": 1
+        },
+        {
+            "name": "COLOR_MODE",
+            "type": "int",
+            "default": 0
         }
     ]
 }

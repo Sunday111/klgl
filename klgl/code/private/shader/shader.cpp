@@ -148,6 +148,8 @@ static constexpr auto kExtensionToShaderType = []()
 
 void Shader::Compile(std::string& buffer)
 {
+    if (!need_recompile_) return;
+
     program_ = {};
 
     auto shader_dir = shaders_dir_ / path_;
@@ -399,12 +401,13 @@ void Shader::SetDefineValue(DefineHandle& handle, edt::GUID type_guid, std::span
 {
     UpdateDefineHandle(handle);
     ShaderDefine& define = defines_[handle.index];
-    define.SetValue(value);
-    need_recompile_ = true;
 
-    [[unlikely]] if (define.type_guid != type_guid)
+    klgl::ErrorHandling::Ensure(define.type_guid == type_guid, "Type mismatch");
+
+    if (!std::ranges::equal(value, define.value))
     {
-        throw std::runtime_error(fmt::format("wrong type"));
+        define.SetValue(value);
+        need_recompile_ = true;
     }
 }
 

@@ -27,19 +27,67 @@ struct FractalParams
     float c = 0.3f;
     float d = 0.5f;
     float time = 0.0f;
-    bool use_current_time = false;
+    bool use_current_time = true;
     int color_seed = 1234;
     bool interpolate_colors = true;
     std::array<edt::Vec3f, 10> colors;
+    std::vector<float> color_positions;
+    bool inside_out_space = true;
+    bool changed = true;
+    int color_mode = 0;
+
+    void RandomizeColors()
+    {
+        std::mt19937 rnd(static_cast<unsigned>(color_seed));
+        std::uniform_real_distribution<float> color_distr(0, 1.0f);
+
+        for (auto& color : colors)
+        {
+            color = color.Transform([&](float) { return color_distr(rnd); });
+        }
+    }
 
     edt::Vec2f MakeJuliaConstant(float current_time)
     {
-        if (use_current_time)
-        {
-            time = current_time;
-        }
-
+        if (use_current_time) time = current_time;
         return edt::Vec2f{a * std::cos(time * c), b * std::sin(time * d)};
+    }
+
+    template <typename Callback>
+    void ComputeColors(size_t n, Callback cb) const
+    {
+        std::vector<size_t> indices(colors.size());
+        for (size_t i = 0; i != colors.size(); ++i) indices[i] = i;
+
+        constexpr std::less pred{};
+        auto proj = [&](size_t i) -> const float&
+        {
+            return color_positions[i];
+        };
+
+        std::ranges::sort(indices, pred, proj);
+
+        const size_t last = color_positions.size() - 1;
+        for (size_t i = 0; i != n; ++i)
+        {
+            const float fi = static_cast<float>(i) / static_cast<float>(n - 1);
+            const auto li = std::ranges::lower_bound(indices, fi, pred, proj);
+            const auto left = std::distance(li, indices.end()) < 2 ? last - 1 : *li;
+            const auto right = left + 1;
+
+            if (interpolate_colors)
+            {
+                float t = (fi - color_positions[left]) / (color_positions[right] - color_positions[left]);
+                auto color = edt::Math::Lerp(colors[left], colors[right], t);
+                cb(i, color);
+            }
+            else
+            {
+                bool use_left = fi - color_positions[left] < color_positions[right] - fi;
+                auto color = colors[use_left ? left : right];
+                cb(i, color);
+            }
+        }
     }
 };
 
@@ -76,20 +124,22 @@ class FractalApp : public klgl::Application
 
         // Load shader
         shader_ = std::make_unique<klgl::Shader>("fractal");
+
         auto max_iterations_def = *shader_->FindDefine(klgl::Name("MAX_ITERATIONS"));
         max_iterations = static_cast<size_t>(shader_->GetDefineValue<int>(max_iterations_def));
         shader_->Use();
 
+        settings_.RandomizeColors();
         u_color_table.resize(max_iterations + 1);
-        color_positions.resize(settings_.colors.size(), 0.f);
+        settings_.color_positions.resize(settings_.colors.size(), 0.f);
 
-        float delta = 1.f / static_cast<float>(color_positions.size() - 1);
-        for (size_t i = 1; i != color_positions.size() - 1; ++i)
+        float delta = 1.f / static_cast<float>(settings_.color_positions.size() - 1);
+        for (size_t i = 1; i != settings_.color_positions.size() - 1; ++i)
         {
-            color_positions[i] = static_cast<float>(i) * delta;
+            settings_.color_positions[i] = static_cast<float>(i) * delta;
         }
 
-        color_positions.back() = 1.f;
+        settings_.color_positions.back() = 1.f;
         size_t uniforms_count = u_color_table.size();
         for (size_t i = 0; i != uniforms_count; ++i)
         {
@@ -121,15 +171,19 @@ class FractalApp : public klgl::Application
     void Tick() override
     {
         klgl::Application::Tick();
+        ApplySettings();
 
         HandleInput();
         viewport_.MatchWindowSize(GetWindow().GetSize2f());
         render_transforms_.Update(camera_, viewport_);
 
         shader_->Use();
+
         shader_->SetUniform(u_screen_to_world_, render_transforms_.screen_to_world.Transposed());
-        // shader_->SetUniform(u_time_, GetTimeSeconds());
         shader_->SetUniform(u_julia_constant, settings_.MakeJuliaConstant(GetTimeSeconds()));
+        if (u_resolution_) shader_->SetUniform(*u_resolution_, GetWindow().GetSize2f());
+        if (u_time_) shader_->SetUniform(*u_time_, GetTimeSeconds());
+
         shader_->SendUniforms();
 
         mesh_->BindAndDraw();
@@ -139,17 +193,33 @@ class FractalApp : public klgl::Application
 
     void OnMouseScroll(const klgl::events::OnMouseScroll& event)
     {
-        if (!ImGui::GetIO().WantCaptureMouse)
-        {
-            zoom_power_ += event.value.y();
-            camera_.zoom = std::max(std::pow(1.1f, zoom_power_), 0.1f);
-        }
+        if (ImGui::GetIO().WantCaptureMouse) return;
+
+        zoom_power_ += event.value.y();
+        camera_.zoom = std::max(std::pow(1.1f, zoom_power_), 0.1f);
+    }
+
+    void ApplySettings()
+    {
+        if (!std::exchange(settings_.changed, false)) return;
+
+        shader_->SetDefineValue<int>(def_inside_out_space, settings_.inside_out_space ? 1 : 0);
+        shader_->SetDefineValue<int>(def_color_mode, settings_.color_mode);
+        shader_->Compile();
+
+        u_resolution_ = shader_->FindUniform(klgl::Name("u_resolution"));
+        u_time_ = shader_->FindUniform(klgl::Name("u_time"));
+
+        settings_.ComputeColors(
+            u_color_table.size(),
+            [&](size_t index, const edt::Vec3f& color) { shader_->SetUniform(u_color_table[index], color); });
     }
 
     void DrawGUI()
     {
         if (ImGui::Begin("Settings"))
         {
+            auto& c = settings_.changed;
             if (ImGui::CollapsingHeader("Julia constant"))
             {
                 ImGui::SliderFloat("a", &settings_.a, 0.00001f, 1.f);
@@ -159,10 +229,11 @@ class FractalApp : public klgl::Application
                 ImGui::Checkbox("use current time", &settings_.use_current_time);
             }
 
+            c |= ImGui::Checkbox("Inside out space", &settings_.inside_out_space);
+            c |= ImGui::SliderInt("Color Mode", &settings_.color_mode, 0, 2);
+
             if (ImGui::CollapsingHeader("Colors"))
             {
-                bool has_changes = false;
-
                 for (size_t color_index = 0; color_index != settings_.colors.size(); ++color_index)
                 {
                     constexpr int color_edit_flags = ImGuiColorEditFlags_DefaultOptions_ |
@@ -170,20 +241,16 @@ class FractalApp : public klgl::Application
                     auto& color = settings_.colors[color_index];
                     ImGui::PushID(&color);
                     auto pop_on_exit = klgl::OnScopeLeave(&ImGui::PopID);
-                    has_changes |= ImGui::ColorEdit3("Color", color.data(), color_edit_flags);
+                    c |= ImGui::ColorEdit3("Color", color.data(), color_edit_flags);
 
                     if (color_index != 0 && color_index != settings_.colors.size() - 1)
                     {
                         ImGui::SameLine();
-
-                        if (ImGui::SliderFloat("Pos", &color_positions[color_index], 0.0f, 1.f))
-                        {
-                            has_changes = true;
-                        }
+                        c |= ImGui::SliderFloat("Pos", &settings_.color_positions[color_index], 0.0f, 1.f);
                     }
                 }
 
-                has_changes |= ImGui::Checkbox("Interpolate colors", &settings_.interpolate_colors);
+                c |= ImGui::Checkbox("Interpolate colors", &settings_.interpolate_colors);
 
                 bool randomize = false;
 
@@ -201,60 +268,21 @@ class FractalApp : public klgl::Application
 
                 if (randomize)
                 {
-                    std::mt19937 rnd(static_cast<unsigned>(settings_.color_seed));
-                    std::uniform_real_distribution<float> color_distr(0, 1.0f);
-
-                    for (auto& color : settings_.colors)
-                    {
-                        color = color.Transform([&](float) { return color_distr(rnd); });
-                    }
-                    has_changes = true;
-                }
-
-                if (has_changes)
-                {
-                    const size_t num_colors = settings_.colors.size();
-                    std::vector<size_t> indices(num_colors);
-                    for (size_t i = 0; i != num_colors; ++i) indices[i] = i;
-
-                    auto proj = [&](size_t i) -> float&
-                    {
-                        return color_positions[i];
-                    };
-                    std::ranges::sort(indices, std::less{}, proj);
-
-                    for (size_t iteration = 0; iteration != u_color_table.size(); ++iteration)
-                    {
-                        float fi = static_cast<float>(iteration) / static_cast<float>(u_color_table.size() - 1);
-                        const auto last = color_positions.size() - 1;
-                        auto li = std::ranges::lower_bound(indices, fi, std::less{}, proj);
-                        auto left = std::distance(li, indices.end()) < 2 ? last - 1 : *li;
-                        auto right = left + 1;
-
-                        if (settings_.interpolate_colors)
-                        {
-                            float t = (fi - color_positions[left]) / (color_positions[right] - color_positions[left]);
-                            auto color = edt::Math::Lerp(settings_.colors[left], settings_.colors[right], t);
-                            shader_->SetUniform(u_color_table[iteration], color);
-                        }
-                        else
-                        {
-                            bool use_left = fi - color_positions[left] < color_positions[right] - fi;
-                            auto color = settings_.colors[use_left ? left : right];
-                            shader_->SetUniform(u_color_table[iteration], color);
-                        }
-                    }
-
-                    // settings_.settings_applied = false;
+                    settings_.RandomizeColors();
+                    c = true;
                 }
             }
         }
         ImGui::End();
     }
 
+    klgl::DefineHandle def_inside_out_space{klgl::Name("INSIDE_OUT_SPACE")};
+    klgl::DefineHandle def_color_mode{klgl::Name("COLOR_MODE")};
+    std::optional<klgl::UniformHandle> u_time_;
+    std::optional<klgl::UniformHandle> u_resolution_;
     klgl::UniformHandle u_screen_to_world_ = klgl::UniformHandle("u_screen_to_world");
     klgl::UniformHandle u_julia_constant = klgl::UniformHandle("u_julia_constant");
-    // klgl::UniformHandle u_time_ = klgl::UniformHandle("u_time");
+    std::vector<klgl::UniformHandle> u_color_table;
 
     std::unique_ptr<klgl::events::IEventListener> event_listener_;
     std::shared_ptr<klgl::Shader> shader_;
@@ -266,8 +294,6 @@ class FractalApp : public klgl::Application
     klgl::RenderTransforms2d render_transforms_;
     klgl::Viewport viewport_;
     FractalParams settings_;
-    std::vector<klgl::UniformHandle> u_color_table;
-    std::vector<float> color_positions;
 };
 
 void Main()
