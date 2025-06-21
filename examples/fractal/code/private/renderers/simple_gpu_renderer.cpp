@@ -1,11 +1,10 @@
 #include "simple_gpu_renderer.hpp"
 
-#include "fractal_app.hpp"
+#include "fractal_settings.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
-#include "klgl/window.hpp"
 
 SimpleGpuRenderer::SimpleGpuRenderer()
 {
@@ -39,33 +38,33 @@ SimpleGpuRenderer::SimpleGpuRenderer()
 
 SimpleGpuRenderer::~SimpleGpuRenderer() noexcept = default;
 
-void SimpleGpuRenderer::Render(FractalApp& app)
+void SimpleGpuRenderer::Render(FractalSettings& settings)
 {
     shader_->Use();
 
-    render_transforms_.Update(app.settings_.camera, app.settings_.viewport);
+    render_transforms_.Update(settings.camera, settings.viewport);
 
     shader_->SetUniform(u_screen_to_world_, render_transforms_.screen_to_world.Transposed());
-    shader_->SetUniform(u_julia_constant, app.settings_.MakeJuliaConstant(app.GetTimeSeconds()));
-    if (u_resolution_) shader_->SetUniform(*u_resolution_, app.GetWindow().GetSize2f());
-    if (u_time_) shader_->SetUniform(*u_time_, app.GetTimeSeconds());
+    shader_->SetUniform(u_julia_constant, settings.MakeJuliaConstant());
+    if (u_resolution_) shader_->SetUniform(*u_resolution_, settings.viewport.size);
+    if (u_time_) shader_->SetUniform(*u_time_, settings.time);
 
     shader_->SendUniforms();
     mesh_->BindAndDraw();
 }
 
-void SimpleGpuRenderer::ApplySettings(FractalApp& app)
+void SimpleGpuRenderer::ApplySettings(FractalSettings& settings)
 {
-    if (!std::exchange(app.settings_.changed, false)) return;
+    if (!std::exchange(settings.changed, false)) return;
 
-    shader_->SetDefineValue<int>(def_inside_out_space, app.settings_.inside_out_space ? 1 : 0);
-    shader_->SetDefineValue<int>(def_color_mode, app.settings_.color_mode);
+    shader_->SetDefineValue<int>(def_inside_out_space, settings.inside_out_space ? 1 : 0);
+    shader_->SetDefineValue<int>(def_color_mode, settings.color_mode);
     shader_->Compile();
 
     u_resolution_ = shader_->FindUniform(klgl::Name("u_resolution"));
     u_time_ = shader_->FindUniform(klgl::Name("u_time"));
 
-    app.settings_.ComputeColors(
+    settings.ComputeColors(
         u_color_table.size(),
         [&](size_t index, const edt::Vec3f& color) { shader_->SetUniform(u_color_table[index], color); });
 }

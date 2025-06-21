@@ -2,8 +2,7 @@
 
 #include <random>
 
-
-void FractalParams::RandomizeColors()
+void FractalSettings::RandomizeColors()
 {
     std::mt19937 rnd(static_cast<unsigned>(color_seed));
     std::uniform_real_distribution<float> color_distr(0, 1.0f);
@@ -14,8 +13,7 @@ void FractalParams::RandomizeColors()
     }
 }
 
-edt::Vec2f FractalParams::MakeJuliaConstant(float current_time)
+edt::Vec2f FractalSettings::MakeJuliaConstant() const
 {
-    if (use_current_time) time = current_time;
     return edt::Vec2f{a * std::cos(time * c), b * std::sin(time * d)};
 }

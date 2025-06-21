@@ -65,12 +65,15 @@ void FractalApp::HandleInput()
 void FractalApp::Tick()
 {
     klgl::Application::Tick();
-    renderer_->ApplySettings(*this);
 
     HandleInput();
-    settings_.viewport.MatchWindowSize(GetWindow().GetSize2f());
-
-    renderer_->Render(*this);
+    settings_.SetCurrentTime(GetTimeSeconds());
+    settings_.SetViewport(klgl::Viewport{
+        .position = {},
+        .size = GetWindow().GetSize2f(),
+    });
+    renderer_->ApplySettings(settings_);
+    renderer_->Render(settings_);
 
     DrawGUI();
 }

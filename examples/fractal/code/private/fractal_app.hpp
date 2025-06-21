@@ -33,5 +33,5 @@ public:
     std::unique_ptr<klgl::events::IEventListener> event_listener_;
     float zoom_power_ = 0.f;
     float move_speed_ = 0.5f;
-    FractalParams settings_;
+    FractalSettings settings_;
 };

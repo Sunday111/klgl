@@ -21,8 +21,8 @@ public:
     explicit SimpleGpuRenderer();
     ~SimpleGpuRenderer() noexcept override;
 
-    void Render(FractalApp& app) override;
-    void ApplySettings(FractalApp&) override;
+    void Render(FractalSettings&) override;
+    void ApplySettings(FractalSettings&) override;
 
     klgl::DefineHandle def_inside_out_space{klgl::Name("INSIDE_OUT_SPACE")};
     klgl::DefineHandle def_max_iterations{klgl::Name("MAX_ITERATIONS")};

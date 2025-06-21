@@ -44,6 +44,13 @@ public:
         size = window_size;
     }
 
+    [[nodiscard]] constexpr bool operator==(const Viewport& rhs) const noexcept
+    {
+        return position == rhs.position && size == rhs.size;
+    }
+
+    [[nodiscard]] constexpr bool operator!=(const Viewport& rhs) const noexcept { return !(*this == rhs); }
+
     void UseInOpenGL();
 
     edt::Vec2f position;

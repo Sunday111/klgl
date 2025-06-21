@@ -7,7 +7,7 @@
 
 #include "klgl/camera/camera_2d.hpp"
 
-struct FractalParams
+struct FractalSettings
 {
     float a = 0.7785f;
     float b = 0.7785f;
@@ -27,7 +27,25 @@ struct FractalParams
 
     void RandomizeColors();
 
-    edt::Vec2f MakeJuliaConstant(float current_time);
+    void SetCurrentTime(float current_time)
+    {
+        if (use_current_time)
+        {
+            time = current_time;
+            changed = true;
+        }
+    }
+
+    void SetViewport(const klgl::Viewport& new_viewport)
+    {
+        if (new_viewport != viewport)
+        {
+            viewport = new_viewport;
+            changed = true;
+        }
+    }
+
+    edt::Vec2f MakeJuliaConstant() const;
 
     template <typename Callback>
     void ComputeColors(size_t n, Callback cb) const
