@@ -10,6 +10,7 @@
 #include "klgl/events/mouse_events.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/window.hpp"
+#include "renderers/counting_renderer.hpp"
 #include "renderers/simple_gpu_renderer.hpp"
 
 FractalApp::FractalApp() = default;
@@ -97,6 +98,19 @@ void FractalApp::Tick()
 
     if (ImGui::Begin("Settings"))
     {
+        if (ImGui::SliderInt("Renderer Kind", &renderer_kind_, 0, 1))
+        {
+            settings_.changed = true;
+            switch (renderer_kind_)
+            {
+            case 0:
+                renderer_ = std::make_unique<SimpleGpuRenderer>(kMaxIterations);
+                break;
+            case 1:
+                renderer_ = std::make_unique<CountingRenderer>(kMaxIterations);
+                break;
+            }
+        }
         screenshot = ImGui::Button("Screenshot to clipboard");
         ImGui::SameLine();
         ImGui::Checkbox("With interface", &screenshot_with_ui);

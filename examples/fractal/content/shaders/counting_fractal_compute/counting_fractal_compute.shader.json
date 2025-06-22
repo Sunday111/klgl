@@ -1,0 +1,15 @@
+{
+    "glsl_version": "430",
+    "definitions": [
+        {
+            "name": "MAX_ITERATIONS",
+            "type": "int",
+            "default": 200
+        },
+        {
+            "name": "INSIDE_OUT_SPACE",
+            "type": "int",
+            "default": 1
+        }
+    ]
+}

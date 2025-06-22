@@ -1,21 +1,21 @@
-out vec4 FragColor;
+layout(local_size_x = 16, local_size_y = 16) in;
+
+// Bind pixel counter buffer
+layout(std430, binding = 0) buffer PixelBuffer {
+    uint visit_counts[];
+};
 
 uniform mat3 u_screen_to_world;
+uniform mat3 u_world_to_screen;
 uniform vec2 u_resolution;
 uniform vec2 u_julia_constant;
-uniform vec3 uColorTable[MAX_ITERATIONS + 1];
 
 #if INSIDE_OUT_SPACE
 vec2 insideOutWarp(vec2 pos, vec2 center, float strength) {
     vec2 dir = pos - center;
     float dist = length(dir);
-    
-    // Avoid division by zero
     if (dist < 0.001) return pos;
-
-    // Inversion formula: radius squared over distance
     float invertedDist = strength / dist;
-
     return center + normalize(dir) * invertedDist;
 }
 #endif
@@ -24,12 +24,16 @@ vec2 screen_point_to_world(vec2 screen) {
     return (u_screen_to_world * vec3(screen, 1)).xy;
 }
 
-void main()
-{
+void main() {
+    ivec2 start_pixel = ivec2(gl_GlobalInvocationID.xy);
+
+    // Guard against overflow
+    if (start_pixel.x >= u_resolution.x || start_pixel.y >= u_resolution.y) return;
+
     // Julia constant 
     vec2 c = u_julia_constant;
 
-    vec2 world = screen_point_to_world(gl_FragCoord.xy);
+    vec2 world = screen_point_to_world(vec2(start_pixel.xy) + 0.5f);
 
 #if INSIDE_OUT_SPACE
     vec2 world_center = screen_point_to_world(u_resolution / 2);
@@ -39,23 +43,16 @@ void main()
 #endif
 
     // Julia set iteration
-    int i = 0;
-    while (i != MAX_ITERATIONS) {
+    uint i = 0;
+    for (; i != MAX_ITERATIONS; ++i) {
         vec2 p = c + vec2(
             z.x * z.x - z.y * z.y,
             2 * z.x * z.y);
 
-        if (dot(p, p) > 4) break;
         z = p;
-        ++i;
+        if (dot(p, p) > 4) break;
     }
 
-#if COLOR_MODE == 1
-    float pp = MAX_ITERATIONS * dot(normalize(world), vec2(1, 0));
-    FragColor = vec4(uColorTable[(int(pp) + i) % MAX_ITERATIONS], 1.0);
-#elif COLOR_MODE == 2
-    FragColor = vec4(uColorTable[(int(MAX_ITERATIONS * (world.x + world.y)) + i) % MAX_ITERATIONS], 1.0);
-#else
-    FragColor = vec4(uColorTable[i], 1.0);
-#endif
+    int index = int(start_pixel.y * u_resolution.x + start_pixel.x);
+    atomicAdd(visit_counts[index], i);
 }

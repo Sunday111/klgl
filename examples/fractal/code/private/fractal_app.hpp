@@ -19,6 +19,8 @@ public:
     FractalApp();
     ~FractalApp() noexcept override;
 
+    std::tuple<int, int> GetOpenGLVersion() const override { return {4, 5}; }
+
     static constexpr size_t kMaxIterations = 200;
 
     void Initialize() override;
@@ -30,6 +32,7 @@ public:
     void OnMouseScroll(const klgl::events::OnMouseScroll& event);
     std::vector<edt::Vec4u8> CaptureScreenshot() const;
 
+    int renderer_kind_ = 0;
     std::unique_ptr<FractalRenderer> renderer_;
     std::unique_ptr<InterpolationWidget> interpolation_widget_;
 
