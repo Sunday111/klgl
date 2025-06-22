@@ -1,11 +1,6 @@
 {
     "definitions": [
         {
-            "name": "COLORS_COUNT",
-            "type": "int",
-            "default": 10
-        },
-        {
             "name": "MAX_ITERATIONS",
             "type": "int",
             "default": 200

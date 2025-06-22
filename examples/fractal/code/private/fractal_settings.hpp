@@ -2,28 +2,32 @@
 
 #include <EverydayTools/Math/Math.hpp>
 #include <EverydayTools/Math/Matrix.hpp>
-#include <array>
 #include <vector>
 
 #include "klgl/camera/camera_2d.hpp"
 
-struct FractalSettings
+class FractalSettings
 {
+public:
+    explicit FractalSettings(size_t num_colors);
+
     float a = 0.7785f;
     float b = 0.7785f;
     float c = 0.3f;
     float d = 0.5f;
     float time = 0.0f;
     bool use_current_time = true;
+    bool interpolate_with_hsv = false;
     int color_seed = 1234;
     bool interpolate_colors = true;
-    std::array<edt::Vec3f, 10> colors;
+    std::vector<edt::Vec3f> colors;
     std::vector<float> color_positions;
     bool inside_out_space = true;
     bool changed = true;
     int color_mode = 0;
     klgl::Camera2d camera;
     klgl::Viewport viewport;
+    size_t num_colors;
 
     void RandomizeColors();
 
@@ -45,7 +49,13 @@ struct FractalSettings
         }
     }
 
+    void DistributePositionsUniformly();
+
     edt::Vec2f MakeJuliaConstant() const;
+
+    void DrawGUI();
+
+    edt::Vec3f LerpColors(edt::Vec3f a, edt::Vec3f b, float t) const;
 
     template <typename Callback>
     void ComputeColors(size_t n, Callback cb) const
@@ -61,18 +71,27 @@ struct FractalSettings
 
         std::ranges::sort(indices, pred, proj);
 
-        const size_t last = color_positions.size() - 1;
         for (size_t i = 0; i != n; ++i)
         {
             const float fi = static_cast<float>(i) / static_cast<float>(n - 1);
-            const auto li = std::ranges::lower_bound(indices, fi, pred, proj);
-            const auto left = std::distance(li, indices.end()) < 2 ? last - 1 : *li;
-            const auto right = left + 1;
+            size_t left = indices.front();
+            size_t right = indices.back();
+
+            for (size_t j = 1; j != indices.size(); ++j)
+            {
+                size_t k = indices[j];
+                if (color_positions[k] > fi)
+                {
+                    right = k;
+                    left = indices[j - 1];
+                    break;
+                }
+            }
 
             if (interpolate_colors)
             {
                 float t = (fi - color_positions[left]) / (color_positions[right] - color_positions[left]);
-                auto color = edt::Math::Lerp(colors[left], colors[right], t);
+                auto color = LerpColors(colors[left], colors[right], t);
                 cb(i, color);
             }
             else

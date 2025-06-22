@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/clipboard.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/clipboard_windows.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/fractal_app.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/fractal_app.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/fractal_example_main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/fractal_settings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/fractal_settings.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/interpolation_widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/interpolation_widget.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/fractal_renderer.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/simple_gpu_renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/simple_gpu_renderer.hpp)

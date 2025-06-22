@@ -1,9 +1,10 @@
 #include "fractal_app.hpp"
 
 #include <klgl/template/on_scope_leave.hpp>
-#include <random>
 
+#include "clipboard.hpp"
 #include "imgui.h"
+#include "interpolation_widget.hpp"
 #include "klgl/events/event_listener_method.hpp"
 #include "klgl/events/event_manager.hpp"
 #include "klgl/events/mouse_events.hpp"
@@ -26,19 +27,10 @@ void FractalApp::Initialize()
     SetTargetFramerate(30.f);
 
     renderer_ = std::make_unique<SimpleGpuRenderer>();
-
-    // Load shader
+    interpolation_widget_ = std::make_unique<InterpolationWidget>(201);
 
     settings_.RandomizeColors();
-    settings_.color_positions.resize(settings_.colors.size(), 0.f);
-
-    float delta = 1.f / static_cast<float>(settings_.color_positions.size() - 1);
-    for (size_t i = 1; i != settings_.color_positions.size() - 1; ++i)
-    {
-        settings_.color_positions[i] = static_cast<float>(i) * delta;
-    }
-
-    settings_.color_positions.back() = 1.f;
+    settings_.DistributePositionsUniformly();
 }
 
 void FractalApp::HandleInput()
@@ -62,20 +54,56 @@ void FractalApp::HandleInput()
     }
 }
 
+std::vector<edt::Vec4u8> FractalApp::CaptureScreenshot() const
+{
+    std::vector<edt::Vec4u8> pixels;
+    auto size = GetWindow().GetSize();
+    pixels.resize(size.x() * size.y());
+    klgl::OpenGl::ReadPixels(0, 0, size.x(), size.y(), GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+    return pixels;
+}
+
 void FractalApp::Tick()
 {
     klgl::Application::Tick();
 
     HandleInput();
     settings_.SetCurrentTime(GetTimeSeconds());
+
     settings_.SetViewport(klgl::Viewport{
         .position = {},
         .size = GetWindow().GetSize2f(),
     });
-    renderer_->ApplySettings(settings_);
+    if (settings_.changed)
+    {
+        renderer_->ApplySettings(settings_);
+        settings_.changed = false;
+    }
     renderer_->Render(settings_);
 
-    DrawGUI();
+    if (screenshot)
+    {
+        glReadBuffer(screenshot_with_ui ? GL_FRONT : GL_BACK);
+        auto resolution = GetWindow().GetSize();
+        auto pixels = CaptureScreenshot();
+        Clipboard::AddImage(resolution.Cast<size_t>(), pixels);
+        screenshot = false;
+    }
+
+    klgl::Viewport widget_viewport;
+    widget_viewport.MatchWindowSize(GetWindow().GetSize2f());
+    widget_viewport.size.y() = 50.f;
+    interpolation_widget_->Render(widget_viewport, settings_);
+
+    if (ImGui::Begin("Settings"))
+    {
+        screenshot = ImGui::Button("Screenshot to clipboard");
+        ImGui::SameLine();
+        ImGui::Checkbox("With interface", &screenshot_with_ui);
+
+        settings_.DrawGUI();
+    }
+    ImGui::End();
 }
 
 void FractalApp::OnMouseScroll(const klgl::events::OnMouseScroll& event)
@@ -84,65 +112,4 @@ void FractalApp::OnMouseScroll(const klgl::events::OnMouseScroll& event)
 
     zoom_power_ += event.value.y();
     settings_.camera.zoom = std::max(std::pow(1.1f, zoom_power_), 0.1f);
-}
-
-void FractalApp::DrawGUI()
-{
-    if (ImGui::Begin("Settings"))
-    {
-        auto& c = settings_.changed;
-        if (ImGui::CollapsingHeader("Julia constant"))
-        {
-            ImGui::SliderFloat("a", &settings_.a, 0.00001f, 1.f);
-            ImGui::SliderFloat("b", &settings_.b, 0.00001f, 1.f);
-            ImGui::SliderFloat("c", &settings_.c, 0.00001f, 1.f);
-            ImGui::SliderFloat("d", &settings_.d, 0.00001f, 1.f);
-            ImGui::Checkbox("use current time", &settings_.use_current_time);
-        }
-
-        c |= ImGui::Checkbox("Inside out space", &settings_.inside_out_space);
-        c |= ImGui::SliderInt("Color Mode", &settings_.color_mode, 0, 2);
-
-        if (ImGui::CollapsingHeader("Colors"))
-        {
-            for (size_t color_index = 0; color_index != settings_.colors.size(); ++color_index)
-            {
-                constexpr int color_edit_flags =
-                    ImGuiColorEditFlags_DefaultOptions_ | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel;
-                auto& color = settings_.colors[color_index];
-                ImGui::PushID(&color);
-                auto pop_on_exit = klgl::OnScopeLeave(&ImGui::PopID);
-                c |= ImGui::ColorEdit3("Color", color.data(), color_edit_flags);
-
-                if (color_index != 0 && color_index != settings_.colors.size() - 1)
-                {
-                    ImGui::SameLine();
-                    c |= ImGui::SliderFloat("Pos", &settings_.color_positions[color_index], 0.0f, 1.f);
-                }
-            }
-
-            c |= ImGui::Checkbox("Interpolate colors", &settings_.interpolate_colors);
-
-            bool randomize = false;
-
-            if (ImGui::InputInt("Color Seed:", &settings_.color_seed))
-            {
-                randomize = true;
-            }
-
-            ImGui::SameLine();
-            if (ImGui::Button("Randomize"))
-            {
-                randomize = true;
-                settings_.color_seed = std::bit_cast<int>(std::random_device()());
-            }
-
-            if (randomize)
-            {
-                settings_.RandomizeColors();
-                c = true;
-            }
-        }
-    }
-    ImGui::End();
 }

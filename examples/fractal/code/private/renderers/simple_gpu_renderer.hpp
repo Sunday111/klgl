@@ -21,8 +21,8 @@ public:
     explicit SimpleGpuRenderer();
     ~SimpleGpuRenderer() noexcept override;
 
-    void Render(FractalSettings&) override;
-    void ApplySettings(FractalSettings&) override;
+    void Render(const FractalSettings&) override;
+    void ApplySettings(const FractalSettings&) override;
 
     klgl::DefineHandle def_inside_out_space{klgl::Name("INSIDE_OUT_SPACE")};
     klgl::DefineHandle def_max_iterations{klgl::Name("MAX_ITERATIONS")};
@@ -38,5 +38,5 @@ public:
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
     klgl::RenderTransforms2d render_transforms_;
 
-    std::shared_ptr<klgl::Shader> shader_;
+    std::shared_ptr<klgl::Shader> fractal_shader_;
 };
