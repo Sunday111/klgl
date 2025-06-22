@@ -18,7 +18,7 @@ struct MeshOpenGL;
 class SimpleGpuRenderer : public FractalRenderer
 {
 public:
-    explicit SimpleGpuRenderer();
+    explicit SimpleGpuRenderer(size_t max_iterations);
     ~SimpleGpuRenderer() noexcept override;
 
     void Render(const FractalSettings&) override;

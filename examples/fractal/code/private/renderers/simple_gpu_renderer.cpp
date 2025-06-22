@@ -6,7 +6,7 @@
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
 
-SimpleGpuRenderer::SimpleGpuRenderer()
+SimpleGpuRenderer::SimpleGpuRenderer(size_t max_iterations_) : max_iterations(max_iterations_)
 {
     // Create quad mesh
     const auto mesh_data = klgl::ProceduralMeshGenerator::GenerateQuadMesh();
@@ -25,8 +25,8 @@ SimpleGpuRenderer::SimpleGpuRenderer()
         nullptr);
 
     fractal_shader_ = std::make_unique<klgl::Shader>("fractal");
+    fractal_shader_->SetDefineValue(def_max_iterations, static_cast<int>(max_iterations));
 
-    max_iterations = static_cast<size_t>(fractal_shader_->GetDefineValue<int>(def_max_iterations));
     u_color_table.resize(max_iterations + 1);
 
     for (size_t i = 0; i != u_color_table.size(); ++i)

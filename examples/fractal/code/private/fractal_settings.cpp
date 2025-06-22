@@ -3,6 +3,7 @@
 #include <bit>
 #include <klgl/error_handling.hpp>
 #include <klgl/template/on_scope_leave.hpp>
+#include <optional>
 #include <random>
 
 #include "imgui.h"
@@ -153,12 +154,14 @@ edt::Vec2f FractalSettings::MakeJuliaConstant() const
     return out;
 }
 
-edt::Vec3f LerpHSV(edt::Vec3f a, edt::Vec3f b, float t)
+[[nodiscard]] edt::Vec3f LerpHSV(edt::Vec3f a, edt::Vec3f b, float t) noexcept
 {
     float x = a[0] / 360, y = b[0] / 360;
-    float delta = std::fmod(y - x + 1, 1.0f);
-    if (delta > 0.5f) delta -= 1.0f;
-    float h = 360.f * std::fmod(x + t * delta, 1.0f);
+    float delta = std::fmod(y - x + 1, 1.f);
+    if (delta > 0.5f) delta -= 1;
+    float h = std::fmod(x + t * delta, 1.f);
+    if (h < 0) h += 1;
+    h *= 360.f;
 
     return edt::Vec3f{h, std::lerp(a[1], b[1], t), std::lerp(a[2], b[2], t)};
 }
@@ -185,10 +188,11 @@ void FractalSettings::DrawGUI()
     }
 
     changed |= ImGui::Checkbox("Inside out space", &inside_out_space);
-    changed |= ImGui::SliderInt("Color Mode", &color_mode, 0, 3);
+    changed |= ImGui::SliderInt("Color Mode", &color_mode, 0, 2);
 
     if (ImGui::CollapsingHeader("Colors"))
     {
+        std::optional<size_t> index_to_remove, index_to_add;
         for (size_t color_index = 0; color_index != colors.size(); ++color_index)
         {
             constexpr int color_edit_flags =
@@ -198,11 +202,37 @@ void FractalSettings::DrawGUI()
             auto pop_on_exit = klgl::OnScopeLeave(&ImGui::PopID);
             changed |= ImGui::ColorEdit3("Color", color.data(), color_edit_flags);
 
+            if (color_index != 0)
+            {
+                ImGui::SameLine();
+                if (ImGui::Button("+")) index_to_add = color_index;
+            }
+
             if (color_index != 0 && color_index != colors.size() - 1)
             {
                 ImGui::SameLine();
+                if (ImGui::Button("-")) index_to_remove = color_index;
+
+                ImGui::SameLine();
                 changed |= ImGui::SliderFloat("Pos", &color_positions[color_index], 0.0f, 1.f);
             }
+        }
+
+        if (index_to_remove)
+        {
+            colors.erase(std::next(colors.begin(), static_cast<int>(*index_to_remove)));
+            color_positions.erase(std::next(color_positions.begin(), static_cast<int>(*index_to_remove)));
+        }
+
+        if (index_to_add && index_to_add != 0)
+        {
+            size_t right = *index_to_add;
+            size_t left = right - 1;
+            auto color = LerpColors(colors[left], colors[right], 0.5f);
+            colors.insert(std::next(colors.begin(), static_cast<int>(right)), color);
+
+            float position = std::lerp(color_positions[left], color_positions[right], 0.5f);
+            color_positions.insert(std::next(color_positions.begin(), static_cast<int>(right)), position);
         }
 
         changed |= ImGui::Checkbox("Interpolate colors", &interpolate_colors);

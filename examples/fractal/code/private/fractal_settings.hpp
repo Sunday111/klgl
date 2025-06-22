@@ -17,9 +17,9 @@ public:
     float d = 0.5f;
     float time = 0.0f;
     bool use_current_time = true;
-    bool interpolate_with_hsv = false;
     int color_seed = 1234;
     bool interpolate_colors = true;
+    bool interpolate_with_hsv = true;
     std::vector<edt::Vec3f> colors;
     std::vector<float> color_positions;
     bool inside_out_space = true;

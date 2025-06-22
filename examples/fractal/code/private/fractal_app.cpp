@@ -26,8 +26,8 @@ void FractalApp::Initialize()
     GetWindow().SetTitle("Fractal");
     SetTargetFramerate(30.f);
 
-    renderer_ = std::make_unique<SimpleGpuRenderer>();
-    interpolation_widget_ = std::make_unique<InterpolationWidget>(201);
+    renderer_ = std::make_unique<SimpleGpuRenderer>(kMaxIterations);
+    interpolation_widget_ = std::make_unique<InterpolationWidget>(kMaxIterations + 1);
 
     settings_.RandomizeColors();
     settings_.DistributePositionsUniformly();

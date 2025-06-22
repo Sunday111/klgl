@@ -19,6 +19,8 @@ public:
     FractalApp();
     ~FractalApp() noexcept override;
 
+    static constexpr size_t kMaxIterations = 200;
+
     void Initialize() override;
 
     void HandleInput();
