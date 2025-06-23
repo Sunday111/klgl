@@ -1,4 +1,4 @@
-#include "simple_gpu_renderer.hpp"
+#include "simple_cpu_renderer.hpp"
 
 #include "fractal_settings.hpp"
 #include "klgl/mesh/mesh_data.hpp"
@@ -6,7 +6,7 @@
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
 
-SimpleGpuRenderer::SimpleGpuRenderer(size_t max_iterations_) : max_iterations(max_iterations_)
+SimpleCpuRenderer::SimpleCpuRenderer(size_t max_iterations_) : max_iterations(max_iterations_)
 {
     // Create quad mesh
     const auto mesh_data = klgl::ProceduralMeshGenerator::GenerateQuadMesh();
@@ -36,9 +36,9 @@ SimpleGpuRenderer::SimpleGpuRenderer(size_t max_iterations_) : max_iterations(ma
     }
 }
 
-SimpleGpuRenderer::~SimpleGpuRenderer() noexcept = default;
+SimpleCpuRenderer::~SimpleCpuRenderer() noexcept = default;
 
-void SimpleGpuRenderer::Render(const FractalSettings& settings)
+void SimpleCpuRenderer::Render(const FractalSettings& settings)
 {
     klgl::OpenGl::SetViewport(settings.viewport);
     fractal_shader_->Use();
@@ -54,7 +54,7 @@ void SimpleGpuRenderer::Render(const FractalSettings& settings)
     mesh_->BindAndDraw();
 }
 
-void SimpleGpuRenderer::ApplySettings(const FractalSettings& settings)
+void SimpleCpuRenderer::ApplySettings(const FractalSettings& settings)
 {
     fractal_shader_->SetDefineValue(def_inside_out_space, settings.inside_out_space ? 1 : 0);
     fractal_shader_->SetDefineValue(def_color_mode, settings.color_mode);

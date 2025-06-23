@@ -24,7 +24,7 @@ InterpolationWidget::InterpolationWidget(size_t num_colors)
         sizeof(edt::Vec2f),
         nullptr);
 
-    shader_ = std::make_unique<klgl::Shader>("interpolation_widget");
+    shader_ = std::make_unique<klgl::Shader>("fractal_example/interpolation_widget");
     shader_->SetDefineValue(def_colors_count, static_cast<int>(num_colors));
     shader_->Compile();
 

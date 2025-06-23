@@ -27,10 +27,10 @@ CountingRenderer::CountingRenderer(size_t max_iterations_) : max_iterations(max_
         sizeof(edt::Vec2f),
         nullptr);
 
-    compute_shader_ = std::make_unique<klgl::Shader>("counting_fractal_compute");
+    compute_shader_ = std::make_unique<klgl::Shader>("fractal_example/counting_fractal_compute");
     counters_vao_ = klgl::GlObject<klgl::GlVertexArrayId>::CreateFrom(klgl::OpenGl::GenVertexArray());
 
-    draw_shader_ = std::make_unique<klgl::Shader>("counting_fractal");
+    draw_shader_ = std::make_unique<klgl::Shader>("fractal_example/counting_fractal");
 
     u_color_table.resize(max_iterations + 1);
 
