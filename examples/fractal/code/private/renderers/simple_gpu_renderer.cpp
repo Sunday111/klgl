@@ -60,8 +60,9 @@ void SimpleGpuRenderer::Render(const FractalSettings& settings)
 
 void SimpleGpuRenderer::ApplySettings(const FractalSettings& settings)
 {
-    fractal_shader_->SetDefineValue<int>(def_inside_out_space, settings.inside_out_space ? 1 : 0);
-    fractal_shader_->SetDefineValue<int>(def_color_mode, settings.color_mode);
+    fractal_shader_->SetDefineValue(def_inside_out_space, settings.inside_out_space ? 1 : 0);
+    fractal_shader_->SetDefineValue(def_color_mode, settings.color_mode);
+    fractal_shader_->SetDefineValue(def_complex_power, settings.complex_power);
     fractal_shader_->Compile();
 
     u_resolution_ = fractal_shader_->FindUniform(klgl::Name("u_resolution"));

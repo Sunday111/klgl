@@ -24,6 +24,13 @@ vec2 screen_point_to_world(vec2 screen) {
     return (u_screen_to_world * vec3(screen, 1)).xy;
 }
 
+vec2 complexMult(vec2 a, vec2 b) {
+    return vec2(
+        a.x * b.x - a.y * b.y,
+        a.x * b.y + a.y * b.x
+    );
+}
+
 void main()
 {
     // Julia constant 
@@ -41,9 +48,14 @@ void main()
     // Julia set iteration
     int i = 0;
     while (i != MAX_ITERATIONS) {
-        vec2 p = c + vec2(
-            z.x * z.x - z.y * z.y,
-            2 * z.x * z.y);
+        vec2 p = z;
+
+        #pragma unroll
+        for (int j = 1; j < COMPLEX_POWER; ++j) {
+            p = complexMult(p, z);
+        }
+
+        p += c;
 
         if (dot(p, p) > 4) break;
         z = p;

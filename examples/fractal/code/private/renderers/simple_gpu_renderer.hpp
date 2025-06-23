@@ -27,6 +27,7 @@ public:
     klgl::DefineHandle def_inside_out_space{klgl::Name("INSIDE_OUT_SPACE")};
     klgl::DefineHandle def_max_iterations{klgl::Name("MAX_ITERATIONS")};
     klgl::DefineHandle def_color_mode{klgl::Name("COLOR_MODE")};
+    klgl::DefineHandle def_complex_power{klgl::Name("COMPLEX_POWER")};
     std::optional<klgl::UniformHandle> u_time_;
     std::optional<klgl::UniformHandle> u_resolution_;
     klgl::UniformHandle u_screen_to_world_ = klgl::UniformHandle("u_screen_to_world");

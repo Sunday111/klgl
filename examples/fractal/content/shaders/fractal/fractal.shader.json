@@ -14,6 +14,11 @@
             "name": "COLOR_MODE",
             "type": "int",
             "default": 0
+        },
+        {
+            "name": "COMPLEX_POWER",
+            "type": "int",
+            "default": 2
         }
     ]
 }

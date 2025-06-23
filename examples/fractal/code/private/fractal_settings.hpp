@@ -25,6 +25,7 @@ public:
     bool inside_out_space = true;
     bool changed = true;
     int color_mode = 0;
+    int complex_power = 2;
     klgl::Camera2d camera;
     klgl::Viewport viewport;
     size_t num_colors;
