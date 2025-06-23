@@ -8,6 +8,7 @@
 #include <concepts>
 #include <utility>
 
+#include "klgl/camera/viewport.hpp"
 #include "klgl/events/event_manager.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/debug/gl_debug_messenger.hpp"
@@ -180,11 +181,7 @@ void Application::Run()
 
 void Application::PreTick()
 {
-    OpenGl::Viewport(
-        0,
-        0,
-        static_cast<GLint>(state_->window_->GetWidth()),
-        static_cast<GLint>(state_->window_->GetHeight()));
+    OpenGl::SetViewport(Viewport::FromWindowSize(state_->window_->GetSize()));
 
     OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 

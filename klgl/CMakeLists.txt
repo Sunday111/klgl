@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/application.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/camera/camera_2d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/camera/camera_3d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/error_handling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/events/event_manager.cpp
@@ -32,6 +31,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/application.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/camera/camera_2d.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/camera/camera_3d.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/camera/viewport.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/error_handling.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/detail.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/event_listener.hpp

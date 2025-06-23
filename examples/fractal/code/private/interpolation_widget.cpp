@@ -40,12 +40,7 @@ InterpolationWidget::~InterpolationWidget() noexcept = default;
 
 void InterpolationWidget::Render(const klgl::Viewport& viewport, const FractalSettings& settings)
 {
-    klgl::OpenGl::Viewport(
-        static_cast<GLint>(viewport.position.x()),
-        static_cast<GLint>(viewport.position.y()),
-        static_cast<GLsizei>(viewport.size.x()),
-        static_cast<GLsizei>(viewport.size.y()));
-
+    klgl::OpenGl::SetViewport(viewport);
     shader_->Use();
     settings.ComputeColors(
         u_color_table.size(),

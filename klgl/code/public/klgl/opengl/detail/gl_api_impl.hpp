@@ -3,6 +3,7 @@
 #include "fmt/format.h"
 #include "fmt/ranges.h"  // IWYU pragma: keep
 #include "identifiers_impl.hpp"
+#include "klgl/camera/viewport.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/detail/maps/gl_value_to_gl_error.hpp"
 #include "klgl/opengl/detail/maps/to_gl_value/buffer_type.hpp"
@@ -2197,20 +2198,27 @@ void OpenGl::EnableBlending()
     Internal::ThrowIfError(EnableBlendingCE());
 }
 
-void OpenGl::ViewportNE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept
+void OpenGl::SetViewportNE(const Viewport& viewport) noexcept
 {
-    glViewport(x, y, width, height);
+    auto p = viewport.position.Cast<GLint>();
+    auto s = viewport.size.Cast<GLsizei>();
+    glViewport(p.x(), p.y(), s.x(), s.y());
 }
 
-std::optional<OpenGlError> OpenGl::ViewportCE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept
+std::optional<OpenGlError> OpenGl::SetViewportCE(const Viewport& viewport) noexcept
 {
-    ViewportNE(x, y, width, height);
-    return Internal::ConsumeError("glViewport(x: {}, y: {}, width: {}, height {})", x, y, width, height);
+    SetViewportNE(viewport);
+    return Internal::ConsumeError(
+        "glViewport(x: {}, y: {}, width: {}, height {})",
+        viewport.position.x(),
+        viewport.position.y(),
+        viewport.size.x(),
+        viewport.size.y());
 }
 
-void OpenGl::Viewport(GLint x, GLint y, GLsizei width, GLsizei height)
+void OpenGl::SetViewport(const klgl::Viewport& viewport)
 {
-    Internal::ThrowIfError(ViewportCE(x, y, width, height));
+    Internal::ThrowIfError(SetViewportCE(viewport));
 }
 
 void OpenGl::GenerateMipmapNE(GLenum target) noexcept

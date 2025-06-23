@@ -15,6 +15,8 @@
 namespace klgl
 {
 
+class Viewport;
+
 using namespace edt::lazy_matrix_aliases;  // NOLINT
 
 // This class wraps OpenGL calls
@@ -753,10 +755,9 @@ public:
     [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> EnableBlendingCE() noexcept;
     KLGL_OGL_INLINE static void EnableBlending();
 
-    KLGL_OGL_INLINE static void ViewportNE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept;
-    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError>
-    ViewportCE(GLint x, GLint y, GLsizei width, GLsizei height) noexcept;
-    KLGL_OGL_INLINE static void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
+    KLGL_OGL_INLINE static void SetViewportNE(const Viewport& viewport) noexcept;
+    [[nodiscard]] KLGL_OGL_INLINE static std::optional<OpenGlError> SetViewportCE(const Viewport& viewport) noexcept;
+    KLGL_OGL_INLINE static void SetViewport(const Viewport& viewport);
 
     KLGL_OGL_INLINE static void GenerateMipmapNE(GLenum target) noexcept;
     KLGL_OGL_INLINE static void GenerateMipmap(GLenum target);

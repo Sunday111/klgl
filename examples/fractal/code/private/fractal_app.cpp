@@ -73,7 +73,7 @@ void FractalApp::Tick()
 
     settings_.SetViewport(klgl::Viewport{
         .position = {},
-        .size = GetWindow().GetSize2f(),
+        .size = GetWindow().GetSize(),
     });
     if (settings_.changed)
     {
@@ -92,8 +92,8 @@ void FractalApp::Tick()
     }
 
     klgl::Viewport widget_viewport;
-    widget_viewport.MatchWindowSize(GetWindow().GetSize2f());
-    widget_viewport.size.y() = 50.f;
+    widget_viewport.MatchWindowSize(GetWindow().GetSize());
+    widget_viewport.size.y() = 50;
     interpolation_widget_->Render(widget_viewport, settings_);
 
     if (ImGui::Begin("Settings"))

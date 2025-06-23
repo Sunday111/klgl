@@ -40,18 +40,14 @@ SimpleGpuRenderer::~SimpleGpuRenderer() noexcept = default;
 
 void SimpleGpuRenderer::Render(const FractalSettings& settings)
 {
-    klgl::OpenGl::Viewport(
-        static_cast<GLint>(settings.viewport.position.x()),
-        static_cast<GLint>(settings.viewport.position.y()),
-        static_cast<GLsizei>(settings.viewport.size.x()),
-        static_cast<GLsizei>(settings.viewport.size.y()));
+    klgl::OpenGl::SetViewport(settings.viewport);
     fractal_shader_->Use();
 
     render_transforms_.Update(settings.camera, settings.viewport);
 
     fractal_shader_->SetUniform(u_screen_to_world_, render_transforms_.screen_to_world.Transposed());
     fractal_shader_->SetUniform(u_julia_constant, settings.MakeJuliaConstant());
-    if (u_resolution_) fractal_shader_->SetUniform(*u_resolution_, settings.viewport.size);
+    if (u_resolution_) fractal_shader_->SetUniform(*u_resolution_, settings.viewport.size.Cast<float>());
     if (u_time_) fractal_shader_->SetUniform(*u_time_, settings.time);
 
     fractal_shader_->SendUniforms();

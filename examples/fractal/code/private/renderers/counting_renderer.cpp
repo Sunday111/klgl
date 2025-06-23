@@ -45,11 +45,7 @@ CountingRenderer::~CountingRenderer() noexcept = default;
 
 void CountingRenderer::Render(const FractalSettings& settings)
 {
-    klgl::OpenGl::Viewport(
-        static_cast<GLint>(settings.viewport.position.x()),
-        static_cast<GLint>(settings.viewport.position.y()),
-        static_cast<GLsizei>(settings.viewport.size.x()),
-        static_cast<GLsizei>(settings.viewport.size.y()));
+    klgl::OpenGl::SetViewport(settings.viewport);
 
     render_transforms_.Update(settings.camera, settings.viewport);
 
@@ -59,7 +55,7 @@ void CountingRenderer::Render(const FractalSettings& settings)
     {
         compute_shader_->SetUniform(*u_compute_world_to_screen_, render_transforms_.world_to_screen.Transposed());
     }
-    compute_shader_->SetUniform(u_compute_resolution_, settings.viewport.size);
+    compute_shader_->SetUniform(u_compute_resolution_, settings.viewport.size.Cast<float>());
     compute_shader_->SetUniform(u_compute_julia_constant_, settings.MakeJuliaConstant());
     compute_shader_->SendUniforms();
 
@@ -78,42 +74,8 @@ void CountingRenderer::Render(const FractalSettings& settings)
     glDispatchCompute((resolution.x() + groupSize - 1) / groupSize, (resolution.y() + groupSize - 1) / groupSize, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
 
-    // {  // Bind the buffer for reading
-
-    //     // Map the buffer to client memory
-    //     void* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-    //     assert(ptr);
-
-    //     // Interpret as uint32_t
-    //     uint32_t* data = static_cast<uint32_t*>(ptr);
-
-    //     // Count frequencies
-    //     std::unordered_map<uint32_t, size_t> frequencies;
-    //     uint32_t sum = 0;
-    //     for (size_t i = 0; i < current_counters_vao_size_; ++i)
-    //     {
-    //         ++frequencies[data[i]];  // NOLINT
-    //         sum += data[i];          // NOLINT
-    //     }
-
-    //     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
-    //     // Optional: sort by value or frequency
-    //     std::vector<std::pair<uint32_t, size_t>> sorted(frequencies.begin(), frequencies.end());
-    //     std::sort(sorted.begin(), sorted.end());
-
-    //     // Print results
-    //     for (const auto& [val, freq] : sorted)
-    //     {
-    //         fmt::println("{}, {}", val, freq);
-    //     }
-    //     fmt::println("{}x{}", resolution.x(), resolution.y());
-    //     fmt::println("sum: {}", sum);
-    //     fmt::println("empty: {}", frequencies[0]);
-    // }
-
     draw_shader_->Use();
-    draw_shader_->SetUniform(u_draw_resolution_, settings.viewport.size);
+    draw_shader_->SetUniform(u_draw_resolution_, settings.viewport.size.Cast<float>());
     draw_shader_->SendUniforms();
     mesh_->BindAndDraw();
 }
