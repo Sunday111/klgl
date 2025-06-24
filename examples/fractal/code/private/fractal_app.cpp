@@ -11,6 +11,7 @@
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/window.hpp"
 #include "renderers/counting_renderer.hpp"
+#include "renderers/simple_cpu_renderer.hpp"
 #include "renderers/simple_gpu_renderer.hpp"
 
 FractalApp::FractalApp() = default;
@@ -98,7 +99,7 @@ void FractalApp::Tick()
 
     if (ImGui::Begin("Settings"))
     {
-        if (ImGui::SliderInt("Renderer Kind", &renderer_kind_, 0, 1))
+        if (ImGui::SliderInt("Renderer Kind", &renderer_kind_, 0, 2))
         {
             settings_.changed = true;
             switch (renderer_kind_)
@@ -108,6 +109,9 @@ void FractalApp::Tick()
                 break;
             case 1:
                 renderer_ = std::make_unique<CountingRenderer>(kMaxIterations);
+                break;
+            case 2:
+                renderer_ = std::make_unique<SimpleCpuRenderer>(kMaxIterations);
                 break;
             }
         }

@@ -1,17 +1,16 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 #include <vector>
 
 #include "fractal_renderer.hpp"
 #include "klgl/camera/camera_2d.hpp"
-#include "klgl/shader/define_handle.hpp"
 #include "klgl/shader/uniform_handle.hpp"
 
 namespace klgl
 {
 class Shader;
+class Texture;
 struct MeshOpenGL;
 }  // namespace klgl
 
@@ -24,20 +23,16 @@ public:
     void Render(const FractalSettings&) override;
     void ApplySettings(const FractalSettings&) override;
 
-    klgl::DefineHandle def_inside_out_space{klgl::Name("INSIDE_OUT_SPACE")};
-    klgl::DefineHandle def_max_iterations{klgl::Name("MAX_ITERATIONS")};
-    klgl::DefineHandle def_color_mode{klgl::Name("COLOR_MODE")};
-    klgl::DefineHandle def_complex_power{klgl::Name("COMPLEX_POWER")};
-    std::optional<klgl::UniformHandle> u_time_;
-    std::optional<klgl::UniformHandle> u_resolution_;
-    klgl::UniformHandle u_screen_to_world_ = klgl::UniformHandle("u_screen_to_world");
-    klgl::UniformHandle u_julia_constant = klgl::UniformHandle("u_julia_constant");
-    std::vector<klgl::UniformHandle> u_color_table;
-
     size_t max_iterations{};
 
     std::shared_ptr<klgl::MeshOpenGL> mesh_;
     klgl::RenderTransforms2d render_transforms_;
+    std::unique_ptr<klgl::Texture> texture_;
 
-    std::shared_ptr<klgl::Shader> fractal_shader_;
+    std::shared_ptr<klgl::Shader> shader_;
+    klgl::UniformHandle u_texture_{"u_texture"};
+    size_t a_vertex_{};
+    size_t a_tex_coord_{};
+    std::vector<edt::Vec3f> pallette;
+    std::vector<edt::Vec3f> image_buffer_;
 };

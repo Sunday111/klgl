@@ -1,6 +1,0 @@
-{
-    "vertex": "textured_quad_2d.vert",
-    "fragment": "textured_quad_2d.frag",
-    "glsl_version": "330 core",
-    "definitions": []
-}

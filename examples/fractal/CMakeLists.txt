@@ -13,6 +13,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/counting_renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/counting_renderer.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/fractal_renderer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/simple_cpu_renderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/simple_cpu_renderer.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/simple_gpu_renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/renderers/simple_gpu_renderer.hpp)
 add_executable(klgl_fractal_example ${module_source_files})
