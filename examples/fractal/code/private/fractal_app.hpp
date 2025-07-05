@@ -4,6 +4,7 @@
 
 #include "fractal_settings.hpp"
 #include "klgl/application.hpp"
+#include "klgl/ui/imgui_value_combo.hpp"
 
 namespace klgl::events
 {
@@ -32,7 +33,6 @@ public:
     void OnMouseScroll(const klgl::events::OnMouseScroll& event);
     std::vector<edt::Vec4u8> CaptureScreenshot() const;
 
-    int renderer_kind_ = 0;
     std::unique_ptr<FractalRenderer> renderer_;
     std::unique_ptr<InterpolationWidget> interpolation_widget_;
 
@@ -42,4 +42,13 @@ public:
     FractalSettings settings_{10};
     bool screenshot = false;
     bool screenshot_with_ui = false;
+
+    template <typename T>
+    [[nodiscard]] static std::unique_ptr<FractalRenderer> RendererFactoryFn(size_t num_iterations)
+    {
+        return std::make_unique<T>(num_iterations);
+    }
+
+    using RendererFactory = std::unique_ptr<FractalRenderer> (*)(size_t iterations);
+    klgl::ImGuiValueCombo<RendererFactory> renderer_combo_{"Renderer"};
 };

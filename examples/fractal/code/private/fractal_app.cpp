@@ -1,5 +1,6 @@
 #include "fractal_app.hpp"
 
+#include <klgl/error_handling.hpp>
 #include <klgl/template/on_scope_leave.hpp>
 
 #include "clipboard.hpp"
@@ -33,6 +34,10 @@ void FractalApp::Initialize()
 
     settings_.RandomizeColors();
     settings_.DistributePositionsUniformly();
+
+    renderer_combo_.EmplaceItem("Simple GPU", RendererFactoryFn<SimpleGpuRenderer>);
+    renderer_combo_.EmplaceItem("Counting", RendererFactoryFn<CountingRenderer>);
+    renderer_combo_.EmplaceItem("Simple CPU", RendererFactoryFn<SimpleCpuRenderer>);
 }
 
 void FractalApp::HandleInput()
@@ -99,22 +104,12 @@ void FractalApp::Tick()
 
     if (ImGui::Begin("Settings"))
     {
-        if (ImGui::SliderInt("Renderer Kind", &renderer_kind_, 0, 2))
+        if (renderer_combo_.Draw())
         {
+            renderer_ = renderer_combo_.GetSelectedItem()(kMaxIterations);
             settings_.changed = true;
-            switch (renderer_kind_)
-            {
-            case 0:
-                renderer_ = std::make_unique<SimpleGpuRenderer>(kMaxIterations);
-                break;
-            case 1:
-                renderer_ = std::make_unique<CountingRenderer>(kMaxIterations);
-                break;
-            case 2:
-                renderer_ = std::make_unique<SimpleCpuRenderer>(kMaxIterations);
-                break;
-            }
         }
+
         screenshot = ImGui::Button("Screenshot to clipboard");
         ImGui::SameLine();
         ImGui::Checkbox("With interface", &screenshot_with_ui);

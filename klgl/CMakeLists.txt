@@ -26,6 +26,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/texture/procedural_texture_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/texture/texture.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/texture/texture_format_helper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ui/simple_imgui_combo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ui/type_id_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/application.hpp
@@ -120,6 +121,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture_format_helper.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/imgui_helpers.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/simple_imgui_combo.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/simple_type_widget.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/type_id_widget_minimal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/window.hpp)
