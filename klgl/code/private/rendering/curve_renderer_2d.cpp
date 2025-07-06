@@ -13,7 +13,7 @@ CurveRenderer2d::~CurveRenderer2d() = default;
 
 void CurveRenderer2d::Init()
 {
-    shader_ = std::make_unique<klgl::Shader>("curve_example/curve2d");
+    shader_ = std::make_unique<klgl::Shader>("klgl/curve2d");
 }
 
 void CurveRenderer2d::GenIndices(const uint32_t n)

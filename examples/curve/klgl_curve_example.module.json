@@ -1,8 +1,6 @@
 {
     "ModuleType": "Executable",
-    "CopyDirectoriesAfterBuild": [
-        "content"
-    ],
+    "CopyDirectoriesAfterBuild": [],
     "Dependencies": {
         "Public": [
             "klgl"
