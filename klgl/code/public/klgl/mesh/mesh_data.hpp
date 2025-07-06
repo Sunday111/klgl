@@ -13,9 +13,10 @@ class MeshOpenGL
 public:
     static void ValidateIndicesCountForTopology(const GlPrimitiveType topology, const size_t num_indices);
 
-    template <typename Vertex, size_t VE = std::dynamic_extent, size_t IE = std::dynamic_extent>
+    template <typename Vertex, typename Index, size_t VE = std::dynamic_extent, size_t IE = std::dynamic_extent>
+        requires std::same_as<std::remove_const_t<Index>, uint32_t>
     static std::unique_ptr<MeshOpenGL>
-    MakeFromData(std::span<Vertex, VE> vertices, std::span<const uint32_t, IE> indices, GlPrimitiveType topology)
+    MakeFromData(std::span<Vertex, VE> vertices, std::span<Index, IE> indices, GlPrimitiveType topology)
     {
         ValidateIndicesCountForTopology(topology, indices.size());
 
@@ -29,7 +30,7 @@ public:
         OpenGl::BindBuffer(GlBufferType::Array, mesh->vbo);
         OpenGl::BufferData(GlBufferType::Array, vertices, GlUsage::StaticDraw);
         OpenGl::BindBuffer(GlBufferType::ElementArray, mesh->ebo);
-        OpenGl::BufferData(GlBufferType::ElementArray, std::span{indices}, GlUsage::StaticDraw);
+        OpenGl::BufferData(GlBufferType::ElementArray, indices, GlUsage::StaticDraw);
 
         mesh->elements_count = indices.size();
         mesh->topology = topology;

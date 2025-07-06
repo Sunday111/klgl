@@ -19,6 +19,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/glfw/glfw_state.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/os/os.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/reflection/reflection_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/rendering/curve_renderer_2d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/rendering/painter2d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_define.cpp
@@ -101,6 +102,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/reflection_utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/register_types.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/rendering/curve_renderer_2d.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/rendering/painter2d.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/define_handle.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/sampler_uniform.hpp
@@ -121,6 +123,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture_format_helper.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/imgui_helpers.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/imgui_value_combo.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/simple_imgui_combo.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/simple_type_widget.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/type_id_widget_minimal.hpp

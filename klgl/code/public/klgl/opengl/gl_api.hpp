@@ -33,6 +33,7 @@ class OpenGl
 
 public:
     [[nodiscard]] KLGL_OGL_INLINE static GlError GetError() noexcept;
+    KLGL_OGL_INLINE static void ThrowIfError();
 
     /************************************************** Buffers *******************************************************/
 

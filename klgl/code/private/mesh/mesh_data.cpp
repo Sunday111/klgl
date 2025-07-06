@@ -1,5 +1,7 @@
 #include "klgl/mesh/mesh_data.hpp"
 
+#include <ass/enum_set.hpp>
+
 #include "klgl/error_handling.hpp"
 
 namespace klgl
@@ -9,6 +11,22 @@ void MeshOpenGL::ValidateIndicesCountForTopology(const GlPrimitiveType topology,
 {
     switch (topology)
     {
+    case GlPrimitiveType::Lines:
+        ErrorHandling::Ensure(
+            num_indices % 2 == 0,
+            "Topology is {} but the number of indices is not a multiple of 2 ({} % 2 != 0)",
+            topology,
+            num_indices);
+        break;
+
+    case GlPrimitiveType::LineStrip:
+        ErrorHandling::Ensure(
+            num_indices > 1,
+            "Topology is {} but the number of indices is less than 2 ({} < 2)",
+            topology,
+            num_indices);
+        break;
+
     case GlPrimitiveType::Triangles:
         ErrorHandling::Ensure(
             num_indices % 3 == 0,
@@ -21,6 +39,9 @@ void MeshOpenGL::ValidateIndicesCountForTopology(const GlPrimitiveType topology,
             num_indices > 2,
             "Topology is GL_TRIANGLE_FAN but the number of indices is less than 3 ({})",
             num_indices);
+        break;
+
+    case klgl::GlPrimitiveType::Patches:
         break;
 
     default:
@@ -36,7 +57,13 @@ void MeshOpenGL::Bind() const
 
 void MeshOpenGL::Draw() const
 {
-    assert(topology == GlPrimitiveType::Triangles || topology == GlPrimitiveType::TriangleFan);
+    constexpr auto allowed = ass::MakeEnumSet(
+        GlPrimitiveType::Triangles,
+        GlPrimitiveType::TriangleFan,
+        GlPrimitiveType::Lines,
+        GlPrimitiveType::LineStrip,
+        GlPrimitiveType::Patches);
+    assert(allowed.Contains(topology));
     OpenGl::DrawElements(topology, elements_count, GlIndexBufferElementType::UnsignedInt, nullptr);
 }
 

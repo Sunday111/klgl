@@ -221,6 +221,11 @@ GlError OpenGl::GetError() noexcept
     return kGlValueToGlError.GetAtIndex(map_idx);
 }
 
+void OpenGl::ThrowIfError()
+{
+    Internal::ThrowIfError(Internal::ConsumeError(""));
+}
+
 /************************************************** Buffers *******************************************************/
 
 // Gen many
