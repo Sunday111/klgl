@@ -20,8 +20,6 @@ void CurveRenderer2d::GenIndices(const uint32_t n)
 {
     klgl::ErrorHandling::Ensure(n > 1, "Need at least 2 points for a curve");
 
-    indices.resize((n - 1) * 4);
-
     if (n == 2)
     {
         // Just two points. Repeat the firt and the last index
@@ -30,6 +28,7 @@ void CurveRenderer2d::GenIndices(const uint32_t n)
     }
 
     // At least 3 points.
+    indices.resize((n - 1) * 4);
 
     // Duplicate the first point
     uint32_t j = 0;

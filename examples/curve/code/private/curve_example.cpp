@@ -39,7 +39,7 @@ class CurveApp : public Application
 
         OpenGl::SetClearColor({});
         GetWindow().SetSize(1000, 1000);
-        GetWindow().SetTitle("Painter 2d");
+        GetWindow().SetTitle("Curve Example");
 
         control_points_ = edt::Math::GenerateSpiralPoints(100, {2, 2});
 
@@ -77,6 +77,7 @@ class CurveApp : public Application
                 {.position = {1, -1}, .color = {0, 0, 1, 0}},
             };
             curve_renderer_2_.SetPoints(vertices);
+            curve_renderer_2_.thickness_ = 20.f;
         }
 
         OpenGl::EnableBlending();
