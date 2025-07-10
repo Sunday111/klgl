@@ -4,6 +4,7 @@ uniform mat3 u_screen_to_world;
 uniform vec2 u_resolution;
 uniform vec2 u_julia_constant;
 uniform vec3 uColorTable[MAX_ITERATIONS + 1];
+uniform float u_fractal_power;
 
 #if INSIDE_OUT_SPACE
 vec2 insideOutWarp(vec2 pos, vec2 center, float strength) {
@@ -31,6 +32,17 @@ vec2 complexMult(vec2 a, vec2 b) {
     );
 }
 
+vec2 complexPower(vec2 z, float a) {
+    float r = length(z);
+    float theta = atan(z.x, z.y);
+    float r_pow_a = pow(r, a);
+    float a_theta = a * theta;
+    return r_pow_a * vec2(
+        cos(a_theta),
+        sin(a_theta)
+    );
+}
+
 void main()
 {
     // Julia constant 
@@ -48,15 +60,7 @@ void main()
     // Julia set iteration
     int i = 0;
     while (i != MAX_ITERATIONS) {
-        vec2 p = z;
-
-        #pragma unroll
-        for (int j = 1; j < COMPLEX_POWER; ++j) {
-            p = complexMult(p, z);
-        }
-
-        p += c;
-
+        vec2 p = complexPower(z, u_fractal_power) + c;
         if (dot(p, p) > 4) break;
         z = p;
         ++i;

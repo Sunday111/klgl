@@ -48,11 +48,6 @@ SimpleCpuRenderer::SimpleCpuRenderer(size_t max_iterations_) : max_iterations(ma
 
 SimpleCpuRenderer::~SimpleCpuRenderer() noexcept = default;
 
-[[nodiscard]] static edt::Vec2f ComplexMult(edt::Vec2f a, edt::Vec2f b)
-{
-    return {a.x() * b.x() - a.y() * b.y(), a.x() * b.y() + a.y() * b.x()};
-}
-
 void SimpleCpuRenderer::Render(const FractalSettings& settings)
 {
     klgl::OpenGl::SetViewport(settings.viewport);
@@ -80,15 +75,7 @@ void SimpleCpuRenderer::Render(const FractalSettings& settings)
             size_t i = 0;
             while (i != max_iterations)
             {
-                edt::Vec2f p = z;
-
-                for (int j = 1; j < settings.complex_power; ++j)
-                {
-                    p = ComplexMult(p, z);
-                }
-
-                p += c;
-
+                auto p = edt::Math::ComplexPower(z, settings.fractal_power).value_or(edt::Vec2f{}) + c;
                 if (p.SquaredLength() > 4) break;
                 z = p;
                 ++i;

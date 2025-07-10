@@ -70,6 +70,7 @@ void CurveRenderer2d::SetPoints(std::span<const ControlPoint> points)
 
 void CurveRenderer2d::Draw(Vec2f viewport_size, const Mat3f& world_to_view)
 {
+    if (!shader_) return;
     mesh_->Bind();
     glPatchParameteri(GL_PATCH_VERTICES, 4);
     glLineWidth(1.f);

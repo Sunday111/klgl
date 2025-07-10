@@ -32,6 +32,7 @@ public:
     std::optional<klgl::UniformHandle> u_resolution_;
     klgl::UniformHandle u_screen_to_world_ = klgl::UniformHandle("u_screen_to_world");
     klgl::UniformHandle u_julia_constant = klgl::UniformHandle("u_julia_constant");
+    klgl::UniformHandle u_fractal_power = klgl::UniformHandle("u_fractal_power");
     std::vector<klgl::UniformHandle> u_color_table;
 
     size_t max_iterations{};

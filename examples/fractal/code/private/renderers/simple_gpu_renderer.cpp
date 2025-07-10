@@ -47,6 +47,7 @@ void SimpleGpuRenderer::Render(const FractalSettings& settings)
 
     fractal_shader_->SetUniform(u_screen_to_world_, render_transforms_.screen_to_world.Transposed());
     fractal_shader_->SetUniform(u_julia_constant, settings.MakeJuliaConstant());
+    fractal_shader_->SetUniform(u_fractal_power, settings.fractal_power);
     if (u_resolution_) fractal_shader_->SetUniform(*u_resolution_, settings.viewport.size.Cast<float>());
     if (u_time_) fractal_shader_->SetUniform(*u_time_, settings.time);
 
@@ -58,7 +59,6 @@ void SimpleGpuRenderer::ApplySettings(const FractalSettings& settings)
 {
     fractal_shader_->SetDefineValue(def_inside_out_space, settings.inside_out_space ? 1 : 0);
     fractal_shader_->SetDefineValue(def_color_mode, settings.color_mode);
-    fractal_shader_->SetDefineValue(def_complex_power, settings.complex_power);
     fractal_shader_->Compile();
 
     u_resolution_ = fractal_shader_->FindUniform(klgl::Name("u_resolution"));

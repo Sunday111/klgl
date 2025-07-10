@@ -188,7 +188,7 @@ void FractalSettings::DrawGUI()
     }
 
     changed |= ImGui::Checkbox("Inside out space", &inside_out_space);
-    changed |= ImGui::SliderInt("Complex Power", &complex_power, 2, 10);
+    changed |= ImGui::SliderFloat("Fractal Power", &fractal_power, -10, 10);
     changed |= ImGui::SliderInt("Color Mode", &color_mode, 0, 2);
 
     if (ImGui::CollapsingHeader("Colors"))
