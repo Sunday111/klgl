@@ -90,7 +90,7 @@ void GlProgramInfo::PrintStorageBlocks(GlProgramId program)
 
         std::string name;
         name.resize(static_cast<size_t>(results.front()));
-        glGetProgramResourceName(program.GetValue(), GL_SHADER_STORAGE_BLOCK, i, results.front(), NULL, name.data());
+        glGetProgramResourceName(program.GetValue(), GL_SHADER_STORAGE_BLOCK, i, results.front(), nullptr, name.data());
         fmt::println("{}:", i);
         fmt::println("    name: {}", name);
         fmt::println("    buffer binding: {}", results[1]);

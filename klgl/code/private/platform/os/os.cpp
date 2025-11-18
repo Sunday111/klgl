@@ -9,7 +9,7 @@ namespace klgl::os
 std::filesystem::path GetExecutableDir()
 {
     WCHAR path[MAX_PATH];
-    GetModuleFileNameW(NULL, path, MAX_PATH);
+    GetModuleFileNameW(nullptr, path, MAX_PATH);
     const size_t index = std::wstring_view(path).find_last_of(L"\\/");
     path[index] = L'\0';
     return path;

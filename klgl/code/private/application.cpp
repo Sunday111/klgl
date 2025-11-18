@@ -80,6 +80,7 @@ struct Application::State
         }
     }
 
+    bool auto_clear_ = true;
     TimePoint app_start_time_{};
     static constexpr size_t kFrameTimeHistorySize = 128;
     std::array<TimePoint, kFrameTimeHistorySize> frame_start_time_history_{};
@@ -183,7 +184,10 @@ void Application::PreTick()
 {
     OpenGl::SetViewport(Viewport::FromWindowSize(state_->window_->GetSize()));
 
-    OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    if (state_->auto_clear_)
+    {
+        OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -221,6 +225,11 @@ void Application::MainLoop()
 void Application::InitializeReflectionTypes()
 {
     RegisterReflectionTypes();
+}
+
+void Application::SetAutoClear(bool enabled)
+{
+    state_->auto_clear_ = enabled;
 }
 
 bool Application::WantsToClose() const

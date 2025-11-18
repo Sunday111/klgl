@@ -57,7 +57,7 @@ void MeshOpenGL::Bind() const
 
 void MeshOpenGL::Draw() const
 {
-    constexpr auto allowed = ass::MakeEnumSet(
+    [[maybe_unused]] constexpr auto allowed = ass::MakeEnumSet(
         GlPrimitiveType::Triangles,
         GlPrimitiveType::TriangleFan,
         GlPrimitiveType::Lines,
