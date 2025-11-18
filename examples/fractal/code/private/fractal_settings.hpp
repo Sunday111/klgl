@@ -6,26 +6,26 @@
 
 #include "klgl/camera/camera_2d.hpp"
 
+using namespace edt::lazy_matrix_aliases;  // NOLINT
+
 class FractalSettings
 {
 public:
     explicit FractalSettings(size_t num_colors);
 
-    float a = 0.7785f;
-    float b = 0.7785f;
-    float c = 0.3f;
-    float d = 0.5f;
+    Vec2f fractal_constant{-0.4f, 0.6f};
+
     float time = 0.0f;
     bool use_current_time = true;
     int color_seed = 1234;
     bool interpolate_colors = true;
     bool interpolate_with_hsv = true;
-    std::vector<edt::Vec3f> colors;
+    std::vector<Vec3f> colors;
     std::vector<float> color_positions;
-    bool inside_out_space = true;
+    bool inside_out_space = false;
     bool changed = true;
     int color_mode = 0;
-    float fractal_power = 1.f;
+    Vec2f fractal_power{2.f, 0.f};
     klgl::Camera2d camera;
     klgl::Viewport viewport;
     size_t num_colors;
@@ -52,11 +52,9 @@ public:
 
     void DistributePositionsUniformly();
 
-    edt::Vec2f MakeJuliaConstant() const;
-
     void DrawGUI();
 
-    edt::Vec3f LerpColors(edt::Vec3f a, edt::Vec3f b, float t) const;
+    Vec3f LerpColors(Vec3f a, Vec3f b, float t) const;
 
     template <typename Callback>
     void ComputeColors(size_t n, Callback cb) const

@@ -4,7 +4,7 @@ uniform mat3 u_screen_to_world;
 uniform vec2 u_resolution;
 uniform vec2 u_julia_constant;
 uniform vec3 uColorTable[MAX_ITERATIONS + 1];
-uniform float u_fractal_power;
+uniform vec2 u_fractal_power;
 
 #if INSIDE_OUT_SPACE
 vec2 insideOutWarp(vec2 pos, vec2 center, float strength) {
@@ -32,15 +32,30 @@ vec2 complexMult(vec2 a, vec2 b) {
     );
 }
 
-vec2 complexPower(vec2 z, float a) {
-    float r = length(z);
-    float theta = atan(z.x, z.y);
-    float r_pow_a = pow(r, a);
-    float a_theta = a * theta;
-    return r_pow_a * vec2(
-        cos(a_theta),
-        sin(a_theta)
-    );
+vec2 complexExp(vec2 z)
+{
+    return exp(z.x) * vec2(cos(z.y), sin(z.y));
+}
+
+vec2 complexPower(vec2 base, vec2 power) {
+    float r = length(base);
+    float theta = atan(base.x, base.y);
+    vec2 log_z = vec2(log(r), theta);
+    vec2 exponent = complexMult(power, log_z);
+    return complexExp(exponent);
+}
+
+vec3 getColor(float smoothIteration) {
+    float index = clamp(smoothIteration, 0.0, float(MAX_ITERATIONS));
+    int lower = int(floor(index));
+    int upper = min(lower + 1, MAX_ITERATIONS);
+
+    float t = index - float(lower); // fractional part
+
+    vec3 colorLower = uColorTable[lower];
+    vec3 colorUpper = uColorTable[upper];
+
+    return mix(colorLower, colorUpper, t);
 }
 
 void main()
@@ -71,6 +86,16 @@ void main()
     FragColor = vec4(uColorTable[(int(pp) + i) % MAX_ITERATIONS], 1.0);
 #elif COLOR_MODE == 2
     FragColor = vec4(uColorTable[(int(MAX_ITERATIONS * (world.x + world.y)) + i) % MAX_ITERATIONS], 1.0);
+#elif COLOR_MODE == 3
+    float smooth_iteration = float(i) - log2(max(1.0f, log2(sqrt(length(z)))));
+    float maxIterF = float(MAX_ITERATIONS);
+    vec3 color = getColor(smooth_iteration);
+    FragColor = vec4(color, 1.0);
+#elif COLOR_MODE == 4
+    float smooth_iteration = float(i) - log2(log2(length(z)));
+    float maxIterF = float(MAX_ITERATIONS);
+    vec3 color = getColor(smooth_iteration);
+    FragColor = vec4(color, 1.0);
 #else
     FragColor = vec4(uColorTable[i], 1.0);
 #endif

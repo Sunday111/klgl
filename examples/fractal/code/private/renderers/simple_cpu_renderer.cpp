@@ -58,7 +58,6 @@ void SimpleCpuRenderer::Render(const FractalSettings& settings)
     auto num_pixels = w * h;
     image_buffer_.resize(num_pixels);
 
-    auto julia_constant = settings.MakeJuliaConstant();
     for (size_t y = 0; y != h; ++y)
     {
         for (size_t x = 0; x != w; ++x)
@@ -67,7 +66,6 @@ void SimpleCpuRenderer::Render(const FractalSettings& settings)
             edt::Vec2<size_t> frag_coord_u{x, y};
             auto frag_coord_f = frag_coord_u.Cast<float>();
 
-            auto c = julia_constant;
             auto world = edt::Math::TransformPos(render_transforms_.screen_to_world, frag_coord_f);
 
             auto z = world;
@@ -75,7 +73,7 @@ void SimpleCpuRenderer::Render(const FractalSettings& settings)
             size_t i = 0;
             while (i != max_iterations)
             {
-                auto p = edt::Math::ComplexPower(z, settings.fractal_power).value_or(edt::Vec2f{}) + c;
+                auto p = edt::Math::ComplexPower(z, settings.fractal_power) + settings.fractal_constant;
                 if (p.SquaredLength() > 4) break;
                 z = p;
                 ++i;

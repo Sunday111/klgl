@@ -46,7 +46,7 @@ void SimpleGpuRenderer::Render(const FractalSettings& settings)
     render_transforms_.Update(settings.camera, settings.viewport);
 
     fractal_shader_->SetUniform(u_screen_to_world_, render_transforms_.screen_to_world.Transposed());
-    fractal_shader_->SetUniform(u_julia_constant, settings.MakeJuliaConstant());
+    fractal_shader_->SetUniform(u_julia_constant, settings.fractal_constant);
     fractal_shader_->SetUniform(u_fractal_power, settings.fractal_power);
     if (u_resolution_) fractal_shader_->SetUniform(*u_resolution_, settings.viewport.size.Cast<float>());
     if (u_time_) fractal_shader_->SetUniform(*u_time_, settings.time);

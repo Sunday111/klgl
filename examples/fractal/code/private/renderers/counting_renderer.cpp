@@ -56,7 +56,7 @@ void CountingRenderer::Render(const FractalSettings& settings)
         compute_shader_->SetUniform(*u_compute_world_to_screen_, render_transforms_.world_to_screen.Transposed());
     }
     compute_shader_->SetUniform(u_compute_resolution_, settings.viewport.size.Cast<float>());
-    compute_shader_->SetUniform(u_compute_julia_constant_, settings.MakeJuliaConstant());
+    compute_shader_->SetUniform(u_compute_julia_constant_, settings.fractal_constant);
     compute_shader_->SendUniforms();
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, counters_buffer_.GetId().GetValue());

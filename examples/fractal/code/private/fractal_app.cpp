@@ -124,5 +124,5 @@ void FractalApp::OnMouseScroll(const klgl::events::OnMouseScroll& event)
     if (ImGui::GetIO().WantCaptureMouse) return;
 
     zoom_power_ += event.value.y();
-    settings_.camera.zoom = std::max(std::pow(1.1f, zoom_power_), 0.1f);
+    settings_.camera.zoom = std::max(std::pow(1.05f, zoom_power_), std::numeric_limits<float>::min());
 }
