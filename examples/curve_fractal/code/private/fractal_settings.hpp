@@ -6,40 +6,28 @@
 
 #include "klgl/camera/camera_2d.hpp"
 
+using namespace edt::lazy_matrix_aliases;  // NOLINT
+
 class FractalSettings
 {
 public:
     explicit FractalSettings(size_t num_colors);
 
-    float a = 0.7785f;
-    float b = 0.7785f;
-    float c = 0.3f;
-    float d = 0.5f;
     float time = 0.0f;
-    bool use_current_time = true;
     int color_seed = 1234;
     bool interpolate_colors = true;
     bool interpolate_with_hsv = true;
     std::vector<edt::Vec3f> colors;
     std::vector<float> color_positions;
-    bool inside_out_space = false;
     bool changed = true;
+    Vec2f fractal_constant{0.529f, 0.508f};
+    Vec2f fractal_power{6.f, 0.f};
     int color_mode = 0;
-    int complex_power = 2;
     klgl::Camera2d camera;
     klgl::Viewport viewport;
     size_t num_colors;
 
     void RandomizeColors();
-
-    void SetCurrentTime(float current_time)
-    {
-        if (use_current_time)
-        {
-            time = current_time;
-            changed = true;
-        }
-    }
 
     void SetViewport(const klgl::Viewport& new_viewport)
     {
@@ -51,8 +39,6 @@ public:
     }
 
     void DistributePositionsUniformly();
-
-    edt::Vec2f MakeJuliaConstant() const;
 
     void DrawGUI();
 

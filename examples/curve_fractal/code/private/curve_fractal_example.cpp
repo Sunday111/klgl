@@ -1,7 +1,6 @@
 #include <imgui.h>
 
 #include <EverydayTools/Math/Math.hpp>
-#include <atomic>
 #include <klgl/events/event_listener_interface.hpp>
 #include <klgl/events/event_listener_method.hpp>
 #include <klgl/events/event_manager.hpp>
@@ -10,6 +9,7 @@
 #include <klgl/opengl/vertex_attribute_helper.hpp>
 #include <klgl/shader/shader.hpp>
 #include <klgl/template/register_attribute.hpp>
+#include <klgl/texture/texture.hpp>
 #include <random>
 #include <thread>
 
@@ -17,6 +17,7 @@
 #include "klgl/application.hpp"
 #include "klgl/camera/camera_2d.hpp"
 #include "klgl/error_handling.hpp"
+#include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/rendering/curve_renderer_2d.hpp"
@@ -25,39 +26,96 @@
 namespace klgl::curve_example
 {
 
-[[nodiscard]] static edt::Vec2f ComplexMult(edt::Vec2f a, edt::Vec2f b)
-{
-    return {a.x() * b.x() - a.y() * b.y(), a.x() * b.y() + a.y() * b.x()};
-}
-
 using namespace edt::lazy_matrix_aliases;  // NOLINT
+
+class Framebuffer
+{
+public:
+    void Bind(GlFramebufferBindTarget target = GlFramebufferBindTarget::DrawAndRead)
+    {
+        OpenGl::BindFramebuffer(target, fbo);
+    }
+
+    void CreateWithResolution(const edt::Vec2<size_t>& resolution)
+    {
+        if (fbo.IsValid())
+        {
+            OpenGl::DeleteFramebuffer(fbo);
+            fbo = {};
+
+            depth_stencil = nullptr;
+
+            OpenGl::DeleteRenderbuffer(rbo_depth_stencil);
+            rbo_depth_stencil = {};
+        }
+
+        rbo_depth_stencil = OpenGl::GenRenderbuffer();
+        OpenGl::BindRenderbuffer(rbo_depth_stencil);
+        OpenGl::RenderbufferStorage(GlTextureInternalFormat::DEPTH24_STENCIL8, resolution);
+
+        color = Texture::CreateEmpty(resolution, GlTextureInternalFormat::RGB32F);
+        color->Bind();
+        OpenGl::SetTextureMinFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
+        OpenGl::SetTextureMagFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Nearest);
+        for (const auto axis : ass::EnumSet<GlTextureWrapAxis>::Full())
+        {
+            OpenGl::SetTextureWrap(GlTargetTextureType::Texture2d, axis, GlTextureWrapMode::ClampToBorder);
+        }
+
+        fbo = OpenGl::GenFramebuffer();
+        Bind();
+
+        // Color
+        OpenGl::FramebufferTexture2D(
+            GlFramebufferBindTarget::DrawAndRead,
+            GlFramebufferAttachment::Color0,
+            GlTargetTextureType::Texture2d,
+            color->GetTexture());
+
+        // Depth stencil
+        OpenGl::FramebufferRenderbuffer(
+            GlFramebufferBindTarget::DrawAndRead,
+            GlFramebufferAttachment::DepthStencil,
+            rbo_depth_stencil);
+
+        ErrorHandling::Ensure(
+            glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
+            "Incomplete frambuffer!");
+        OpenGl::BindFramebuffer(GlFramebufferBindTarget::DrawAndRead, {});
+    }
+
+    GlRenderbufferId rbo_depth_stencil;
+    GlFramebufferId fbo{};
+    std::unique_ptr<Texture> color{};
+    std::unique_ptr<Texture> depth_stencil{};
+};
 
 class CurveFractalApp : public Application
 {
+    static constexpr edt::Vec2<size_t> kFramebufferResolution{3840, 2160};
     std::tuple<int, int> GetOpenGLVersion() const override { return {4, 3}; }
-    static constexpr size_t kMaxCurves = 100'000;
+    static constexpr size_t kMaxCurves = 10'000;
 
     void Initialize() override
     {
         Application::Initialize();
 
+        SetAutoClear(false);
+
         event_listener_ = klgl::events::EventListenerMethodCallbacks<&CurveFractalApp::OnMouseScroll>::CreatePtr(this);
         GetEventManager().AddEventListener(*event_listener_);
 
         OpenGl::SetClearColor({});
-        GetWindow().SetSize(1000, 1000);
+        GetWindow().SetSize(kFramebufferResolution.x(), kFramebufferResolution.y());
         GetWindow().SetTitle("Curve Fractal");
 
         OpenGl::EnableBlending();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         constexpr Vec2f eye{0, 0};
-        constexpr float sample_extent = 1.f;
+        constexpr float sample_extent = 3.f;
         constexpr edt::FloatRange2Df world_range =
             edt::FloatRange2Df::FromMinMax(eye - sample_extent, eye + sample_extent);
-
-        static constexpr Vec2<size_t> kNumSamples{800000, 800000};
-        produced_curves_points_.resize(kMaxCurves);
 
         auto thread_tile = world_range.Extent() / 2.f;
         for (size_t x = 0; x != 4; ++x)
@@ -66,15 +124,21 @@ class CurveFractalApp : public Application
             {
                 auto tile_min = Vec2<size_t>{x, y}.Cast<float>() * thread_tile + world_range.Min();
                 auto thread_range = edt::FloatRange2Df::FromMinMax(tile_min, tile_min + thread_tile);
-                producer_thread_.emplace_back(&CurveFractalApp::ProducerThread, this, thread_range, kNumSamples / 4);
+                producer_thread_.emplace_back(&CurveFractalApp::ProducerThread, this, thread_range);
             }
         }
+        textured_quad_shader_ = std::make_unique<Shader>("post_processing_example/textured_quad");
+        framebuffer_.CreateWithResolution({3840, 2160});
+        framebuffer_.color->Bind();
+        klgl::OpenGl::SetTextureMagFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Linear);
+        klgl::OpenGl::SetTextureMinFilter(GlTargetTextureType::Texture2d, GlTextureFilter::Linear);
+
+        CreateQuadMesh();
     }
 
-    void ProducerThread(const edt::FloatRange2Df world_range, const edt::Vec2<size_t> num_samples)
+    void ProducerThread(const edt::FloatRange2Df world_range)
     {
-        constexpr size_t max_iterations = 200;
-        const auto world_step = 2 * world_range.Extent() / num_samples.Cast<float>();
+        constexpr size_t max_iterations = 2000;
 
         FractalSettings settings{10};
         settings.camera = camera;
@@ -82,87 +146,121 @@ class CurveFractalApp : public Application
         settings.color_seed = std::bit_cast<int>(std::random_device()());
         settings.RandomizeColors();
         settings.DistributePositionsUniformly();
-        settings.inside_out_space = true;
-        settings.complex_power = 8;
-        auto julia_constant = settings.MakeJuliaConstant();
+
+        std::mt19937_64 rnd{static_cast<unsigned>(settings.color_seed)};
+        std::uniform_real_distribution<float> x_distr(world_range.Min().x(), world_range.Max().x());
+        std::uniform_real_distribution<float> y_distr(world_range.Min().y(), world_range.Max().y());
 
         std::vector<CurveRenderer2d::ControlPoint> points;
         std::vector<edt::Vec3f> pallette;
+        pallette.resize(max_iterations + 1);
+        settings.ComputeColors(
+            pallette.size(),
+            [&](size_t index, const edt::Vec3f& color) { pallette[index] = color; });
 
-        for (size_t iy = 0; iy != num_samples.y(); ++iy)
+        while (true)
         {
-            for (size_t ix = 0; ix != num_samples.x(); ++ix)
+            Vec2f world{x_distr(rnd), y_distr(rnd)};
+
+            auto z = world;
+
+            points.clear();
+            points.push_back({
+                .position = z,
+            });
+
+            size_t i = 0;
+            while (i != max_iterations)
             {
-                auto c = julia_constant;
-                auto world = world_range.Min() + Vec2<size_t>{ix, iy}.Cast<float>() * world_step;
-
-                auto z = world;
-
-                points.clear();
+                edt::Vec2f p = edt::Math::ComplexPower(z, settings.fractal_power) + settings.fractal_constant;
                 points.push_back({
-                    .position = z,
+                    .position = edt::Vec2f{z.y(), -z.x()},
                 });
 
-                size_t i = 0;
-                while (i != max_iterations)
+                if (p.SquaredLength() > world_range.Extent().SquaredLength()) break;
+                z = p;
+                ++i;
+            }
+
+            if (size_t num_points = points.size(); num_points > 2)
+            {
+                for (size_t pi = 0; pi != points.size(); ++pi)
                 {
-                    edt::Vec2f p = z;
-
-                    for (int j = 1; j < settings.complex_power; ++j)
-                    {
-                        p = ComplexMult(p, z);
-                    }
-
-                    p += c;
-                    points.push_back({
-                        .position = edt::Vec2f{z.y(), -z.x()},
-                    });
-
-                    if (p.SquaredLength() > 4) break;
-                    z = p;
-                    ++i;
+                    auto& point = points[pi];
+                    point.color = Vec4f(pallette[pi], 1);
+                    point.color.w() = (static_cast<float>(pi) / static_cast<float>(num_points)) * 0.2f;
                 }
 
-                if (size_t num_points = points.size(); num_points > 25)
+                while (true)
                 {
-                    pallette.resize(num_points);
-                    settings.ComputeColors(
-                        pallette.size(),
-                        [&](size_t index, const edt::Vec3f& color) { pallette[index] = color; });
-
-                    for (size_t pi = 0; pi != points.size(); ++pi)
+                    std::scoped_lock lock{mutex_};
+                    if (num_produced_ == produced_curves_points_.size())
                     {
-                        auto& point = points[pi];
-                        point.color = Vec4f(pallette[pi], 1);
-                        point.color.w() = (static_cast<float>(pi) / static_cast<float>(num_points)) * 0.2f;
+                        std::this_thread::yield();
                     }
-
+                    else
                     {
-                        std::scoped_lock lock{mutex_};
-                        uint32_t num = num_produced_;
-                        if (num == kMaxCurves) return;
-                        uint32_t idx = num_produced_.fetch_add(1);
-                        produced_curves_points_[idx] = std::move(points);
+                        produced_curves_points_[num_produced_++] = std::move(points);
+                        break;
                     }
                 }
             }
         }
     }
 
+    void CreateQuadMesh()
+    {
+        struct MeshVertex
+        {
+            edt::Vec2f position{};
+            edt::Vec2f texture_coordinates{};
+        };
+
+        // Create quad mesh
+        const auto mesh_data = klgl::ProceduralMeshGenerator::GenerateQuadMesh();
+
+        std::vector<MeshVertex> vertices;
+        vertices.reserve(mesh_data.vertices.size());
+        for (size_t i = 0; i != mesh_data.vertices.size(); ++i)
+        {
+            vertices.emplace_back(MeshVertex{
+                .position = mesh_data.vertices[i],
+                .texture_coordinates = mesh_data.texture_coordinates[i],
+            });
+        }
+
+        quad_ = klgl::MeshOpenGL::MakeFromData(std::span{vertices}, std::span{mesh_data.indices}, mesh_data.topology);
+        quad_->Bind();
+
+        // Declare vertex buffer layout
+        klgl::RegisterAttribute<&MeshVertex::position>(0);
+        klgl::RegisterAttribute<&MeshVertex::texture_coordinates>(1);
+    }
+
     void Tick() override
     {
+        framebuffer_.Bind();
+        klgl::OpenGl::SetViewport(klgl::Viewport::FromWindowSize(kFramebufferResolution.Cast<uint32_t>()));
+
+        glDisable(GL_DEPTH_TEST);
+        if (first_clear_)
         {
-            const uint32_t num_produced = num_produced_;
-            while (curves_.size() < num_produced)
+            OpenGl::Clear(GL_COLOR_BUFFER_BIT);
+            first_clear_ = false;
+        }
+
+        {
+            std::scoped_lock lock{mutex_};
+            constexpr size_t kMaxCurvesPerFrame = 100;
+            const size_t num_curves = std::min(kMaxCurvesPerFrame, num_produced_);
+            for (auto& points : std::span{produced_curves_points_}.first(num_produced_).last(num_curves))
             {
-                size_t idx = curves_.size();
                 auto& curve = curves_.emplace_back(std::make_unique<klgl::CurveRenderer2d>());
                 curve->thickness_ = 1.f;
-                auto& points = produced_curves_points_[idx];
                 curve->SetPoints(points);
                 points.clear();
-                points.shrink_to_fit();
             }
+            num_produced_ -= num_curves;
         }
 
         auto viewport = Viewport::FromWindowSize(GetWindow().GetSize());
@@ -172,6 +270,18 @@ class CurveFractalApp : public Application
         {
             curve->Draw(viewport.size.Cast<float>(), render_transforms.world_to_view);
         }
+
+        curves_.clear();
+
+        auto& texture = *framebuffer_.color;
+        OpenGl::BindFramebuffer(GlFramebufferBindTarget::DrawAndRead, {});
+        klgl::OpenGl::SetViewport(klgl::Viewport::FromWindowSize(GetWindow().GetSize()));
+        OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        textured_quad_shader_->Use();
+        textured_quad_shader_->SetUniform(u_textured_quad_shader_texture_, texture);
+        textured_quad_shader_->SendUniforms();
+        texture.Bind();
+        quad_->BindAndDraw();
 
         HandleInput();
     }
@@ -212,13 +322,21 @@ class CurveFractalApp : public Application
     float move_speed_ = 0.5f;
     float zoom_power_ = 0.f;
 
+    bool first_clear_ = true;
+
     std::vector<std::jthread> producer_thread_;
 
-    std::vector<std::vector<CurveRenderer2d::ControlPoint>> produced_curves_points_;
-    std::atomic<uint32_t> num_produced_;
+    size_t num_produced_ = 0;
+    std::array<std::vector<CurveRenderer2d::ControlPoint>, kMaxCurves> produced_curves_points_;
     std::mutex mutex_;
 
     std::vector<std::unique_ptr<CurveRenderer2d>> curves_;
+
+    std::shared_ptr<Shader> textured_quad_shader_;
+    UniformHandle u_textured_quad_shader_texture_ = UniformHandle("u_texture");
+    std::shared_ptr<MeshOpenGL> quad_;
+
+    Framebuffer framebuffer_;
 };
 
 void Main()

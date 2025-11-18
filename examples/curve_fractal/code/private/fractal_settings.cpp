@@ -3,6 +3,7 @@
 #include <bit>
 #include <klgl/error_handling.hpp>
 #include <klgl/template/on_scope_leave.hpp>
+#include <klgl/ui/simple_type_widget.hpp>
 #include <optional>
 #include <random>
 
@@ -40,11 +41,6 @@ void FractalSettings::DistributePositionsUniformly()
     changed = true;
 }
 
-edt::Vec2f FractalSettings::MakeJuliaConstant() const
-{
-    return edt::Vec2f{a * std::cos(time * c), b * std::sin(time * d)};
-}
-
 [[nodiscard]] constexpr edt::Vec3f rgb2hsv(edt::Vec3f in)
 {
     edt::Vec3f out;
@@ -57,13 +53,13 @@ edt::Vec2f FractalSettings::MakeJuliaConstant() const
 
     out[2] = max;  // v
     float delta = max - min;
-    if (delta < 0.00001)
+    if (delta < 0.00001f)
     {
         out[1] = 0;
         out[0] = 0;  // undefined, maybe nan?
         return out;
     }
-    if (max > 0.0)
+    if (max > 0.0f)
     {                            // NOTE: if Max is == 0, this divide would cause a crash
         out[1] = (delta / max);  // s
     }
@@ -89,9 +85,9 @@ edt::Vec2f FractalSettings::MakeJuliaConstant() const
         out[0] = 4 + (in[0] - in[1]) / delta;  // between magenta & cyan
     }
 
-    out[0] *= 60.0;  // degrees
+    out[0] *= 60.0f;  // degrees
 
-    if (out[0] < 0.0) out[0] += 360.0;
+    if (out[0] < 0) out[0] += 360;
 
     return out;
 }
@@ -100,7 +96,7 @@ edt::Vec2f FractalSettings::MakeJuliaConstant() const
 {
     edt::Vec3f out;
 
-    if (in[1] <= 0.0)
+    if (in[1] <= 0.f)
     {  // < is bogus, just shuts up warnings
         out[0] = in[2];
         out[1] = in[2];
@@ -108,8 +104,8 @@ edt::Vec2f FractalSettings::MakeJuliaConstant() const
         return out;
     }
     float hh = in[0];
-    if (hh >= 360.0) hh = 0.0;
-    hh /= 60.0;
+    if (hh >= 360.f) hh = 0;
+    hh /= 60;
     auto i = static_cast<int64_t>(hh);
     float ff = hh - static_cast<float>(i);
     float p = in[2] * (1 - in[1]);
@@ -178,17 +174,8 @@ edt::Vec3f FractalSettings::LerpColors(edt::Vec3f from, edt::Vec3f to, float t) 
 
 void FractalSettings::DrawGUI()
 {
-    if (ImGui::CollapsingHeader("Julia constant"))
-    {
-        ImGui::SliderFloat("a", &a, 0.00001f, 1.f);
-        ImGui::SliderFloat("b", &b, 0.00001f, 1.f);
-        ImGui::SliderFloat("c", &c, 0.00001f, 1.f);
-        ImGui::SliderFloat("d", &d, 0.00001f, 1.f);
-        ImGui::Checkbox("use current time", &use_current_time);
-    }
-
-    changed |= ImGui::Checkbox("Inside out space", &inside_out_space);
-    changed |= ImGui::SliderInt("Complex Power", &complex_power, 2, 10);
+    changed |= klgl::SimpleTypeWidget("Constant", fractal_constant);
+    // changed |= klgl::SimpleTypeWidget("Fractal Power", &fractal_power);
     changed |= ImGui::SliderInt("Color Mode", &color_mode, 0, 2);
 
     if (ImGui::CollapsingHeader("Colors"))
