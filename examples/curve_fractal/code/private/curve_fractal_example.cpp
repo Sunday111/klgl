@@ -10,6 +10,7 @@
 #include <klgl/shader/shader.hpp>
 #include <klgl/template/register_attribute.hpp>
 #include <klgl/texture/texture.hpp>
+#include <mutex>
 #include <random>
 #include <thread>
 

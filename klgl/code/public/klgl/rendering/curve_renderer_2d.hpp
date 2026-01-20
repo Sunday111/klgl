@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "EverydayTools/math/Matrix.hpp"
+#include "EverydayTools/Math/Matrix.hpp"
 #include "klgl/shader/uniform_handle.hpp"
 
 namespace klgl

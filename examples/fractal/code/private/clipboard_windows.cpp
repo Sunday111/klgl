@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include <functional>
 
 #include "Windows.h"  // IWYU pragma: keep
@@ -51,3 +53,5 @@ void Clipboard::AddImage(edt::Vec2<size_t> size, std::span<const edt::Vec4u8> pi
     SetClipboardData(CF_DIB, std::exchange(hMem, nullptr));
     CloseClipboard();
 }
+
+#endif
