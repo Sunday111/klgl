@@ -179,6 +179,8 @@ class PendulumApp : public Application
                 .color = Vec4f(edt::Math::GetRainbowColors(GetTimeSeconds()).Cast<float>() / 256, 1.f)});
     }
 
+    std::tuple<int, int> GetOpenGLVersion() const override { return {4, 3}; }
+
     void Tick() override
     {
         constexpr edt::Vec4u8 red{255, 0, 0, 255};
@@ -224,18 +226,18 @@ class PendulumApp : public Application
         painter_->EndDraw();
 
         // dirty, I know
-        ssize_t max_cuve_points = 3000;
+        int64_t max_cuve_points = 3000;
         curve_points_.erase(
             curve_points_.begin(),
             curve_points_.begin() +
-                static_cast<ssize_t>(std::max<ssize_t>(std::ssize(curve_points_), max_cuve_points) - max_cuve_points));
+                static_cast<int64_t>(std::max<int64_t>(std::ssize(curve_points_), max_cuve_points) - max_cuve_points));
 
         for (size_t i = 1; auto& p : curve_points_)
         {
             p.color.w() = static_cast<float>(i++) / static_cast<float>(curve_points_.size());
         }
 
-        if (curve_points_.size() > 1)
+        if (curve_points_.size() > 10)
         {
             curve_renderer_.SetPoints(curve_points_);
             curve_renderer_.Draw(viewport.size.Cast<float>(), render_transforms_.world_to_view);
