@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <concepts>
+#include <string>
 #include <utility>
 
 #include "klgl/camera/viewport.hpp"
@@ -29,6 +30,7 @@ struct Application::State
     GlfwState glfw_;
     std::unique_ptr<Window> window_;
     std::filesystem::path executable_dir_;
+    std::string imgui_ini_filename_;
 
     void InitTime()
     {
@@ -153,6 +155,8 @@ void Application::Initialize()
 
     glfwSwapInterval(0);
     ImGui::CreateContext();
+    state_->imgui_ini_filename_ = (state_->executable_dir_ / "imgui.ini").string();
+    ImGui::GetIO().IniFilename = state_->imgui_ini_filename_.c_str();
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(state_->window_->GetGlfwWindow(), true);
     ImGui_ImplOpenGL3_Init("#version 130");
