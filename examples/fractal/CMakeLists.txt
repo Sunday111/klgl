@@ -26,4 +26,4 @@ target_include_directories(klgl_fractal_example PRIVATE ${CMAKE_CURRENT_SOURCE_D
 add_custom_target(klgl_fractal_example_copy_files ALL
     ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/content" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content
 )
-add_dependencies(klgl_fractal_example_copy_files klgl_fractal_example)
+add_dependencies(klgl_fractal_example klgl_fractal_example_copy_files)

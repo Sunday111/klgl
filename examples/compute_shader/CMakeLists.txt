@@ -10,4 +10,4 @@ target_include_directories(klgl_compute_shader_example PRIVATE ${CMAKE_CURRENT_S
 add_custom_target(klgl_compute_shader_example_copy_files ALL
     ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/content" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content
 )
-add_dependencies(klgl_compute_shader_example_copy_files klgl_compute_shader_example)
+add_dependencies(klgl_compute_shader_example klgl_compute_shader_example_copy_files)

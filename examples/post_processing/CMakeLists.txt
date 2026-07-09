@@ -10,4 +10,4 @@ target_include_directories(klgl_post_processing_example PRIVATE ${CMAKE_CURRENT_
 add_custom_target(klgl_post_processing_example_copy_files ALL
     ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/content" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content
 )
-add_dependencies(klgl_post_processing_example_copy_files klgl_post_processing_example)
+add_dependencies(klgl_post_processing_example klgl_post_processing_example_copy_files)
