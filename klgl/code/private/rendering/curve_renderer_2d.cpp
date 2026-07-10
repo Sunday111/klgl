@@ -1,5 +1,7 @@
 #include "klgl/rendering/curve_renderer_2d.hpp"
 
+#include <algorithm>
+
 #include "klgl/error_handling.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
@@ -20,36 +22,20 @@ void CurveRenderer2d::GenIndices(const uint32_t n)
 {
     klgl::ErrorHandling::Ensure(n > 1, "Need at least 2 points for a curve");
 
-    if (n == 2)
+    // Each Catmull-Rom patch needs four control points. Keep one additional
+    // point on either side so the tessellation stage can evaluate the exact
+    // adjacent generated segment at patch boundaries as well.
+    indices.resize((n - 1) * 6);
+    size_t output_index = 0;
+    for (uint32_t segment = 0; segment != n - 1; ++segment)
     {
-        // Just two points. Repeat the firt and the last index
-        indices = {0, 0, 1, 1};
-        return;
+        for (int32_t offset = -2; offset <= 3; ++offset)
+        {
+            const int32_t point = static_cast<int32_t>(segment) + offset;
+            indices[output_index++] =
+                static_cast<uint32_t>(std::clamp(point, int32_t{0}, static_cast<int32_t>(n - 1)));
+        }
     }
-
-    // At least 3 points.
-    indices.resize((n - 1) * 4);
-
-    // Duplicate the first point
-    uint32_t j = 0;
-    indices[j++] = 0;
-    indices[j++] = 0;
-    indices[j++] = 1;
-    indices[j++] = 2;
-
-    const auto num_inner = (n - 3) * 4;
-    for (uint32_t i = 0; i != num_inner; ++i)
-    {
-        indices[j++] = i / 4 + i % 4;
-    }
-
-    // Duplicate the last point
-    indices[j++] = n - 3;
-    indices[j++] = n - 2;
-    indices[j++] = n - 1;
-    indices[j++] = n - 1;
-
-    klgl::ErrorHandling::Ensure(j == indices.size(), "Internal logic err");
 }
 
 void CurveRenderer2d::SetPoints(std::span<const ControlPoint> points)
@@ -72,12 +58,13 @@ void CurveRenderer2d::Draw(Vec2f viewport_size, const Mat3f& world_to_view)
 {
     if (!shader_) return;
     mesh_->Bind();
-    glPatchParameteri(GL_PATCH_VERTICES, 4);
+    glPatchParameteri(GL_PATCH_VERTICES, 6);
     glLineWidth(1.f);
     shader_->Use();
     shader_->SetUniform(u_transform_, world_to_view.Transposed());
     shader_->SetUniform(u_viewport_size_, viewport_size);
     shader_->SetUniform(u_thickness_, thickness_);
+    shader_->SetUniform(u_segment_pixel_length_, segment_pixel_length_);
     shader_->SendUniforms();
 
     mesh_->BindAndDraw();

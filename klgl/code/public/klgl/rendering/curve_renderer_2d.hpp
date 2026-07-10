@@ -30,11 +30,13 @@ public:
     void Draw(edt::Vec2f viewport_size, const edt::Mat3f& world_to_view);
 
     float thickness_ = 5.f;
+    float segment_pixel_length_ = 8.f;
     std::vector<uint32_t> indices;
     std::unique_ptr<Shader> shader_;
     std::shared_ptr<MeshOpenGL> mesh_;
     UniformHandle u_transform_ = UniformHandle("u_transform");
     UniformHandle u_viewport_size_ = UniformHandle("u_viewport_size");
     UniformHandle u_thickness_ = UniformHandle("u_thickness");
+    UniformHandle u_segment_pixel_length_ = UniformHandle("u_segment_pixel_length");
 };
 }  // namespace klgl

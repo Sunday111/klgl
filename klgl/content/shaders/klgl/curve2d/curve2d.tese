@@ -1,6 +1,8 @@
 layout(isolines, fractional_even_spacing, cw) in;
 in vec4 tc_color[];
 patch in float tc_segments;
+patch in float tc_prev_segments;
+patch in float tc_next_segments;
 out vec4 te_color;
 out vec2 te_prev_point;
 out vec2 te_next_point;
@@ -21,34 +23,37 @@ vec2 catmull_rom_vec2(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
 }
 void main() {
     float t = gl_TessCoord.x;
-    float dt = 1.0 / tc_segments;
-    float t_prev = t - dt;
-    float t_next = t + dt;
 
-    te_color = catmull_rom_vec4(tc_color[0], tc_color[1], tc_color[2], tc_color[3], t);
+    te_color = catmull_rom_vec4(tc_color[1], tc_color[2], tc_color[3], tc_color[4], t);
     gl_Position = vec4(catmull_rom_vec2(
-            gl_in[0].gl_Position.xy,
             gl_in[1].gl_Position.xy,
             gl_in[2].gl_Position.xy,
             gl_in[3].gl_Position.xy,
+            gl_in[4].gl_Position.xy,
             t
         ), 0, 1);
 
-    vec2 at_prev_t = catmull_rom_vec2(
-            gl_in[0].gl_Position.xy,
-            gl_in[1].gl_Position.xy,
-            gl_in[2].gl_Position.xy,
-            gl_in[3].gl_Position.xy,
-            max(0, t_prev)
-        );
+    if (t <= 0.0) {
+        te_prev_point = catmull_rom_vec2(
+            gl_in[0].gl_Position.xy, gl_in[1].gl_Position.xy,
+            gl_in[2].gl_Position.xy, gl_in[3].gl_Position.xy,
+            1.0 - 1.0 / tc_prev_segments);
+    } else {
+        te_prev_point = catmull_rom_vec2(
+            gl_in[1].gl_Position.xy, gl_in[2].gl_Position.xy,
+            gl_in[3].gl_Position.xy, gl_in[4].gl_Position.xy,
+            max(t - 1.0 / tc_segments, 0.0));
+    }
 
-    vec2 at_next_t = catmull_rom_vec2(
-            gl_in[0].gl_Position.xy,
-            gl_in[1].gl_Position.xy,
-            gl_in[2].gl_Position.xy,
-            gl_in[3].gl_Position.xy,
-            min(1, t_next)
-        );
-
-    te_prev_point = t_next >= 1 ? gl_in[3].gl_Position.xy : at_next_t;
+    if (t >= 1.0) {
+        te_next_point = catmull_rom_vec2(
+            gl_in[2].gl_Position.xy, gl_in[3].gl_Position.xy,
+            gl_in[4].gl_Position.xy, gl_in[5].gl_Position.xy,
+            1.0 / tc_next_segments);
+    } else {
+        te_next_point = catmull_rom_vec2(
+            gl_in[1].gl_Position.xy, gl_in[2].gl_Position.xy,
+            gl_in[3].gl_Position.xy, gl_in[4].gl_Position.xy,
+            min(t + 1.0 / tc_segments, 1.0));
+    }
 }

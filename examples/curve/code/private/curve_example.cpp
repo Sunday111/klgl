@@ -80,6 +80,24 @@ class CurveApp : public Application
             curve_renderer_2_.thickness_ = 20.f;
         }
 
+        // Deliberately doubles back on itself. The two almost-opposite tangents
+        // exercise the most difficult miter joins much more clearly than the
+        // smooth spiral above.
+        {
+            std::vector<CurveRenderer2d::ControlPoint> vertices{
+                {.position = {-0.8f, 0.6f}, .color = {1, 1, 0, 0.3f}},
+                {.position = {-0.4f, 0.6f}, .color = {1, 1, 0, 0.3f}},
+                {.position = {0.28f, 0.6f}, .color = {1, 1, 0, 0.3f}},
+                {.position = {0.42f, 0.5f}, .color = {1, 1, 0, 0.3f}},
+                {.position = {0.28f, 0.4f}, .color = {1, 1, 0, 0.3f}},
+                {.position = {-0.4f, 0.4f}, .color = {1, 1, 0, 0.3f}},
+                {.position = {-0.8f, 0.4f}, .color = {1, 1, 0, 0.3f}},
+            };
+            extreme_bend_renderer_.SetPoints(vertices);
+            extreme_bend_renderer_.thickness_ = 120.f;
+            extreme_bend_renderer_.segment_pixel_length_ = 100.f;
+        }
+
         OpenGl::EnableBlending();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
@@ -90,6 +108,7 @@ class CurveApp : public Application
         render_transforms.Update(camera, viewport, AspectRatioPolicy::ShrinkToFit);
         curve_renderer_.Draw(viewport.size.Cast<float>(), render_transforms.world_to_view);
         curve_renderer_2_.Draw(viewport.size.Cast<float>(), render_transforms.world_to_view);
+        extreme_bend_renderer_.Draw(viewport.size.Cast<float>(), render_transforms.world_to_view);
 
         HandleInput();
     }
@@ -129,6 +148,7 @@ class CurveApp : public Application
 
     CurveRenderer2d curve_renderer_;
     CurveRenderer2d curve_renderer_2_;
+    CurveRenderer2d extreme_bend_renderer_;
 
     // float line_width_ = 0.001f;
     float move_speed_ = 0.5f;
