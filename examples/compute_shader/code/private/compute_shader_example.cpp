@@ -68,8 +68,11 @@ class ComputeShaderExampleApp : public Application
         }
 
         {
-            const size_t a_particle_shader_velocity =
-                particle_shader_->GetInfo().VerifyAndGetVertexAttributeLocation<edt::Vec3f>("a_velocity");
+            // The default COLOR_FUNCTION does not really read a_velocity, and newer drivers
+            // (seen on NVIDIA 610) optimize the attribute away entirely, so it cannot be
+            // looked up by name here. The shader declares it with an explicit location,
+            // which stays valid whenever the attribute is active (COLOR_FUNCTION 1 and 2).
+            constexpr size_t a_particle_shader_velocity = 1;
             particles_velocities_buffer_ = OpenGl::GenBuffer();
             std::vector<Vec3f> velocities(kTotalParticles, Vec3f{});
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particles_velocities_buffer_.GetValue());
